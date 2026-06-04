@@ -1,0 +1,227 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Staffs{% endblock page_title %}
+{% block content %}
+    <style>
+        .staff-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .staff-card {
+            border: 1px solid #e6e9ed;
+            border-radius: 10px;
+            background: #fff;
+            padding: 16px;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+            height: 100%;
+        }
+        .staff-card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        .staff-card .staff-role {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #7f8c8d;
+            margin-bottom: 6px;
+        }
+        .staff-card .staff-name {
+            margin: 0;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .staff-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .staff-card-title {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .staff-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 11px;
+            border-radius: 12px;
+            background: #f5f7fa;
+            color: #5a5a5a;
+        }
+        .staff-meta-list li {
+            padding: 6px 0;
+            border-bottom: 1px dashed #f0f0f0;
+        }
+        .staff-meta-list li:last-child {
+            border-bottom: none;
+        }
+        .staff-avatar {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border: 2px solid #ecf0f1;
+        }
+        .staff-contact-label {
+            color: #95a5a6;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .staff-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eef1f4;
+        }
+        .staff-rating {
+            color: #f39c12;
+            font-size: 12px;
+        }
+    </style>
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Manage Staffs</h2>
+                    <ul class="nav navbar-right panel_toolbox">
+                    <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                    </li>
+                    </ul>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+
+                    <div class="staff-toolbar">
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".add-staff-modal">
+                            <i class="fa fa-plus"></i>
+                            Add Staff
+                        </button>
+                        <span class="text-muted">Total Staff: {{ staffs|length }}</span>
+                    </div>
+
+                    <!-- start staff list -->
+                    <div class="row">
+                        {% for staff in staffs %}
+                            <div class="col-md-4 col-sm-6 profile_details">
+                                <div class="staff-card">
+                                    <div class="staff-card-header">
+                                        <div class="staff-card-title">
+                                            <div class="staff-role">
+                                                {% if staff.is_academic_staff %}
+                                                    Teacher
+                                                {% elif staff.is_administrator_staff %}
+                                                    Administrator
+                                                {% elif staff.is_support_staff %}
+                                                    Support
+                                                {% else %}
+                                                    Staff
+                                                {% endif %}
+                                            </div>
+                                            <h3 class="staff-name">{{ staff }}</h3>
+                                            <div class="staff-badge">Dept: {{ staff.department|default:"Not specified" }}</div>
+                                        </div>
+                                        <div class="text-center">
+                                            {% if staff.staff_photo %}
+                                                <img src="{{ staff.staff_photo.url }}" alt="" class="img-circle staff-avatar">
+                                            {% else %}
+                                                <img src="media/images/user.png" alt="" class="img-circle staff-avatar">
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <ul class="list-unstyled staff-meta-list">
+                                        <li>
+                                            <div class="staff-contact-label">Phone</div>
+                                            <div><i class="fa fa-phone"></i> {{ staff.contacts|default:"Phone not specified" }}</div>
+                                        </li>
+                                        <li>
+                                            <div class="staff-contact-label">Email</div>
+                                            <div><i class="fa fa-envelope"></i> {{ staff.email|default:"Email not specified" }}</div>
+                                        </li>
+                                    </ul>
+
+                                    <div class="staff-actions">
+                                        <div class="staff-rating">
+                                            <i class="fa fa-star"></i>
+                                            <i class="fa fa-star"></i>
+                                            <i class="fa fa-star"></i>
+                                            <i class="fa fa-star"></i>
+                                            <i class="fa fa-star-o"></i>
+                                            <span class="text-muted">4.0</span>
+                                        </div>
+                                        <a href="{% url 'staff_details_page' staff.id %}" class="btn btn-primary btn-sm">
+                                            <i class="fa fa-user"></i> View Profile
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add staff Modal -->
+    <div class="modal fade add-staff-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h4 class="modal-title" id="myModalLabel">Add Staff</h4>
+              <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'add_staff' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{staff_form|crispy}}
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+
+          </div>
+        </div>
+    </div>
+
+    <!-- Bulk Upload Modal -->
+    <div class="modal fade bulk-upload-modal" tabindex="0" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h4 class="modal-title" id="myModalLabel">Bulk Upload</h4>
+              <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{csv_form}}
+
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-danger" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+
+          </div>
+        </div>
+      </div>
+{% endblock content%}

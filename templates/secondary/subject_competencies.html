@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Subject Competencies{% endblock page_title %}
+
+{% block content %}
+{% include 'secondary/_nav.html' %}
+
+<div class="row">
+  <div class="col-md-5">
+    <div class="x_panel">
+      <div class="x_title"><h2>Link Subject to Competency</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="x_panel">
+      <div class="x_title"><h2>Mappings</h2><div class="clearfix"></div></div>
+      <div class="x_content table-responsive">
+        <table class="table table-striped table-bordered">
+          <thead>
+            <tr><th>Section</th><th>Subject</th><th>Competency</th><th>Core</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for row in subject_competencies %}
+            <tr>
+              <td>{{ row.section }}</td>
+              <td>{{ row.subject }}</td>
+              <td>{{ row.competency }}</td>
+              <td>{% if row.is_core %}Yes{% else %}No{% endif %}</td>
+              <td>
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="delete_subject_competency_id" value="{{ row.id }}">
+                  <button type="submit" class="btn btn-xs btn-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center">No mappings found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

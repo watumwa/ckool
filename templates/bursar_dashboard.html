@@ -1,0 +1,79 @@
+{% load static %}
+
+<ul class="nav side-menu">
+  <li>
+    <a href="{% url 'index_page' %}">
+      <i class="fa fa-dashboard"></i> Dashboard
+    </a>
+  </li>
+
+
+  <li>
+    <a href="{% url 'bursar_quick_payment' %}">
+      <i class="fa fa-bolt"></i> Quick Payment
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'operations_center' %}">
+      <i class="fa fa-compass"></i> Task Center
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'student_bill_page' %}">
+      <i class="fa fa-money"></i> Fee Collection
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'financial_dashboard' %}">
+      <i class="fa fa-exchange"></i> Transactions
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'fees_status' %}">
+      <i class="fa fa-exclamation-circle"></i> Outstanding Balances
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'carry_forward_balances' %}">
+      <i class="fa fa-arrow-circle-right"></i> Carry Forward Balances
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'expense_page' %}">
+      <i class="fa fa-credit-card"></i> Expenses
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'financial_summary_report' %}">
+      <i class="fa fa-file-text-o"></i> Financial Reports
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'financial_dashboard' %}">
+      <i class="fa fa-pie-chart"></i> Payment Methods
+    </a>
+  </li>
+
+  <li>
+    <a>
+      <i class="fa fa-bullhorn"></i> Communication
+      {% if comm_unread_count > 0 %}
+      <span class="badge bg-green">{{ comm_unread_count }}</span>
+      {% endif %}
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'announcement_list' %}">Announcements</a></li>
+      <li><a href="{% url 'event_list' %}">Events</a></li>
+      <li><a href="{% url 'message_inbox' %}">Messages</a></li>
+    </ul>
+  </li>
+</ul>

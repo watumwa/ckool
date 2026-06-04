@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block content %}
+<div class="container-fluid px-4">
+
+
+    {% comment %} Student Profile Section {% endcomment %}
+    {% include "results/student_profile.html" %}
+
+    <div id="accordion">
+        {% include "results/performance_overview.html" %}
+        {% include "results/subject_summary.html" %}
+        {% include "results/detailed_assessments.html" %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'css/performance.css' %}">
+{% endblock %}

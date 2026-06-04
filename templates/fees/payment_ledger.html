@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block page_title %}Transaction Ledger{% endblock %}
+
+{% block content %}
+<style>
+/* ── Ledger page styles ── */
+.ledger-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid #e2e8f0;padding-bottom:0;}
+.ledger-tab{padding:10px 20px;border-radius:8px 8px 0 0;font-weight:600;font-size:.85rem;color:#64748b;cursor:pointer;border:1px solid transparent;border-bottom:none;text-decoration:none;transition:all .15s;}
+.ledger-tab:hover{color:#2563eb;background:#f0f6ff;}
+.ledger-tab.active{color:#2563eb;background:#fff;border-color:#e2e8f0;border-bottom:2px solid #fff;margin-bottom:-2px;}
+
+.filter-panel{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;}
+.filter-panel h5{font-weight:700;color:#1f2a44;margin:0 0 16px;font-size:.95rem;}
+.filter-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
+.filter-group{display:flex;flex-direction:column;gap:4px;min-width:140px;}
+.filter-group label{font-size:.78rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+.filter-group .form-control{font-size:.85rem;height:36px;padding:4px 10px;}
+.filter-group.wide{min-width:200px;}
+.filter-actions{display:flex;gap:8px;align-items:flex-end;margin-left:auto;}
+
+.check-group{display:flex;flex-wrap:wrap;gap:8px;}
+.check-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid #e2e8f0;border-radius:999px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;}
+.check-pill input{display:none;}
+.check-pill:hover{border-color:#2563eb;color:#2563eb;}
+.check-pill.checked{background:#2563eb;border-color:#2563eb;color:#fff;}
+
+/* Summary bar */
+.summary-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+@media(max-width:768px){.summary-bar{grid-template-columns:repeat(2,1fr);}}
+.summary-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;}
+.summary-card .sc-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#64748b;}
+.summary-card .sc-value{font-size:1.35rem;font-weight:700;color:#1f2a44;line-height:1.2;}
+.summary-card .sc-sub{font-size:.75rem;color:#94a3b8;}
+.summary-card.charged{border-left:4px solid #ef4444;}
+.summary-card.paid{border-left:4px solid #22c55e;}
+.summary-card.balance{border-left:4px solid #f59e0b;}
+.summary-card.count{border-left:4px solid #2563eb;}
+
+/* Active filters strip */
+.active-filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;}
+.af-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:999px;font-size:.78rem;color:#1d4ed8;font-weight:600;}
+.af-pill .af-remove{cursor:pointer;opacity:.6;font-size:.9em;}
+.af-pill .af-remove:hover{opacity:1;}
+
+/* Ledger table */
+.ledger-wrap{overflow-x:auto;border-radius:12px;border:1px solid #e2e8f0;}
+.ledger-tbl{width:100%;border-collapse:collapse;font-size:.82rem;}
+.ledger-tbl thead th{position:sticky;top:0;z-index:10;background:#1e3a5f;color:#fff;padding:10px 12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:.75rem;white-space:nowrap;border:none;}
+.ledger-tbl tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s;}
+.ledger-tbl tbody tr:hover{background:#f8fafc;}
+.ledger-tbl td{padding:8px 12px;vertical-align:middle;white-space:nowrap;}
+.ledger-tbl td.wrap{white-space:normal;max-width:180px;}
+.ledger-tbl .text-right{text-align:right;}
+
+/* Row types */
+tr.row-charge{background:#fff5f5;}
+tr.row-charge:hover{background:#fee2e2;}
+tr.row-payment{background:#f0fdf4;}
+tr.row-payment:hover{background:#dcfce7;}
+
+/* Badges */
+.badge-method{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.72rem;font-weight:700;letter-spacing:.03em;}
+.badge-cash{background:#fef9c3;color:#854d0e;}
+.badge-schoolpay{background:#dbeafe;color:#1e40af;}
+.badge-bank{background:#f3e8ff;color:#6b21a8;}
+.badge-other{background:#f1f5f9;color:#475569;}
+
+.badge-cat{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:600;}
+.badge-tuition{background:#eff6ff;color:#1d4ed8;}
+.badge-transport{background:#fef3c7;color:#92400e;}
+.badge-uniform{background:#f0fdf4;color:#166534;}
+.badge-other-cat{background:#f8fafc;color:#475569;}
+
+.badge-type{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.72rem;font-weight:700;}
+.badge-charge-type{background:#fee2e2;color:#b91c1c;}
+.badge-payment-type{background:#dcfce7;color:#15803d;}
+
+/* Balance cell */
+.bal-outstanding{color:#d97706;font-weight:700;}
+.bal-credit{color:#dc2626;font-weight:700;}
+.bal-cleared{color:#16a34a;font-weight:700;}
+
+/* Student group header row */
+tr.group-header td{background:#f8fafc;border-top:2px solid #e2e8f0;padding:10px 12px;}
+.group-meta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.group-name{font-weight:700;color:#1f2a44;font-size:.9rem;}
+.group-reg{color:#64748b;font-size:.8rem;}
+.group-stats{display:flex;gap:12px;margin-left:auto;font-size:.8rem;}
+.group-stats span{font-weight:600;}
+
+/* Empty state */
+.ledger-empty{text-align:center;padding:60px 20px;color:#94a3b8;}
+.ledger-empty i{font-size:3rem;margin-bottom:12px;display:block;}
+
+/* Table search bar */
+.tbl-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.tbl-toolbar input{flex:1;min-width:200px;max-width:360px;}
+.tbl-toolbar select{min-width:140px;}
+.tbl-count{font-size:.82rem;color:#64748b;margin-left:auto;}
+</style>
+
+<div class="clearfix"></div>
+<div class="row">
+<div class="col-md-12">
+
+<!-- Page tabs -->
+<div class="ledger-tabs">
+  <a href="{% url 'fees_status' %}" class="ledger-tab">Overview</a>
+  <a href="{% url 'fees_status' %}" class="ledger-tab">Student Payment Status</a>
+  <a href="{% url 'payment_ledger' %}" class="ledger-tab active">Transaction Ledger</a>
+  <a href="{% url 'fees_help' %}" class="ledger-tab">Help</a>
+</div>
+
+<!-- ── Filter Panel ── -->
+<div class="filter-panel">
+  <h5><i class="fa fa-filter"></i> Filters</h5>
+  <form method="get" id="ledgerFilterForm">
+    <div class="filter-row">
+      <div class="filter-group wide">
+        <label>Student Search</label>
+        <select name="student" class="form-control" id="studentSelect">
+          <option value="">All Students</option>
+          {% for s in ledger_students %}
+          <option value="{{ s.id }}" {% if selected_student_id == s.id|stringformat:"s" %}selected{% endif %}>
+            {{ s.student_name }} ({{ s.display_student_id }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Academic Year</label>
+        <select name="year" class="form-control">
+          <option value="">All Years</option>
+          {% for ay in ledger_academic_years %}
+          <option value="{{ ay.id }}" {% if selected_year_id == ay.id|stringformat:"s" %}selected{% endif %}>{{ ay.academic_year }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Term</label>
+        <select name="term" class="form-control">
+          <option value="">All Terms</option>
+          {% for t in ledger_terms %}
+          <option value="{{ t.id }}" {% if selected_term_id == t.id|stringformat:"s" %}selected{% endif %}>
+            Term {{ t.term }} {{ t.academic_year.academic_year }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Classroom</label>
+        <select name="classroom_code" class="form-control">
+          <option value="">All</option>
+          <optgroup label="KG">
+            <option value="KG1" {% if selected_classroom_code == "KG1" %}selected{% endif %}>KG1</option>
+            <option value="KG2" {% if selected_classroom_code == "KG2" %}selected{% endif %}>KG2</option>
+            <option value="KG3" {% if selected_classroom_code == "KG3" %}selected{% endif %}>KG3</option>
+          </optgroup>
+          <optgroup label="Grade">
+            <option value="GD1" {% if selected_classroom_code == "GD1" %}selected{% endif %}>GD1</option>
+            <option value="GD2" {% if selected_classroom_code == "GD2" %}selected{% endif %}>GD2</option>
+            <option value="GD3" {% if selected_classroom_code == "GD3" %}selected{% endif %}>GD3</option>
+            <option value="GD4" {% if selected_classroom_code == "GD4" %}selected{% endif %}>GD4</option>
+            <option value="GD5" {% if selected_classroom_code == "GD5" %}selected{% endif %}>GD5</option>
+            <option value="GD6" {% if selected_classroom_code == "GD6" %}selected{% endif %}>GD6</option>
+            <option value="GD7" {% if selected_classroom_code == "GD7" %}selected{% endif %}>GD7</option>
+          </optgroup>
+          <optgroup label="Tahfidh">
+            <option value="Tahfidh" {% if selected_classroom_code == "Tahfidh" %}selected{% endif %}>Tahfidh</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Date From</label>
+        <input type="date" name="date_from" value="{{ selected_date_from }}" class="form-control">
+      </div>
+      <div class="filter-group">
+        <label>Date To</label>
+        <input type="date" name="date_to" value="{{ selected_date_to }}" class="form-control">
+      </div>
+
+      <div class="filter-group">
+        <label>Balance Mode</label>
+        <select name="balance_mode" class="form-control">
+          <option value="student" {% if selected_balance_mode == "student" %}selected{% endif %}>Per Student</option>
+          <option value="overall" {% if selected_balance_mode == "overall" %}selected{% endif %}>Overall</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+      <div>
+        <div class="filter-group" style="margin-bottom:0;">
+          <label>Category</label>
+          <div class="check-group" id="catGroup">
+            {% for val, label in category_choices %}
+            <label class="check-pill {% if val in selected_categories %}checked{% endif %}">
+              <input type="checkbox" name="category" value="{{ val }}" {% if val in selected_categories %}checked{% endif %}>{{ label }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="filter-group" style="margin-bottom:0;">
+          <label>Payment Method</label>
+          <div class="check-group" id="methodGroup">
+            {% for val, label in method_choices %}
+            <label class="check-pill {% if val in selected_methods %}checked{% endif %}">
+              <input type="checkbox" name="payment_method" value="{{ val }}" {% if val in selected_methods %}checked{% endif %}>{{ label }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions" style="margin-left:auto;margin-top:auto;">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-search"></i> Apply</button>
+        <a href="{% url 'payment_ledger' %}" class="btn btn-default btn-sm"><i class="fa fa-refresh"></i> Reset</a>
+        <button type="submit" name="export" value="excel" class="btn btn-success btn-sm"><i class="fa fa-file-excel-o"></i> Export Excel</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Active filters -->
+{% if active_filter_items %}
+<div class="active-filters">
+  <span style="font-size:.78rem;font-weight:600;color:#64748b;">Active:</span>
+  {% for item in active_filter_items %}
+  <span class="af-pill">{{ item.label }}: {{ item.value }}</span>
+  {% endfor %}
+  <a href="{% url 'payment_ledger' %}" style="font-size:.78rem;color:#64748b;margin-left:4px;">Clear all</a>
+</div>
+{% endif %}
+
+<!-- ── Summary Bar ── -->
+<div class="summary-bar">
+  <div class="summary-card charged">
+    <span class="sc-label">Total Charged</span>
+    <span class="sc-value">UGX {{ ledger_total_charged|floatformat:0|intcomma }}</span>
+    <span class="sc-sub">All billed amounts</span>
+  </div>
+  <div class="summary-card paid">
+    <span class="sc-label">Total Paid</span>
+    <span class="sc-value">UGX {{ ledger_total_paid|floatformat:0|intcomma }}</span>
+    <span class="sc-sub">Recorded payments</span>
+  </div>
+  <div class="summary-card balance">
+    <span class="sc-label">Net Balance</span>
+    <span class="sc-value {% if ledger_running_balance > 0 %}bal-outstanding{% elif ledger_running_balance < 0 %}bal-credit{% else %}bal-cleared{% endif %}">
+      UGX {{ ledger_running_balance|floatformat:0|intcomma }}
+    </span>
+    <span class="sc-sub">{% if ledger_running_balance > 0 %}Outstanding{% elif ledger_running_balance < 0 %}Credit{% else %}Cleared{% endif %}</span>
+  </div>
+  <div class="summary-card count">
+    <span class="sc-label">Transactions</span>
+    <span class="sc-value">{{ ledger_transaction_count|intcomma }}</span>
+    <span class="sc-sub">{{ ledger_student_count|intcomma }} student{{ ledger_student_count|pluralize }}</span>
+  </div>
+</div>
+
+<!-- ── Student summary card (when filtered to one student) ── -->
+{% if selected_student and selected_student_summary %}
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+  <div>
+    <div style="font-weight:700;font-size:1rem;color:#1f2a44;">{{ selected_student.student_name }}</div>
+    <div style="font-size:.82rem;color:#64748b;">{{ selected_student.display_student_id }}{% if selected_student_summary.classroom %} · {{ selected_student_summary.classroom }}{% endif %}{% if selected_student_summary.term %} · {{ selected_student_summary.term }}{% endif %}</div>
+  </div>
+  <div style="display:flex;gap:20px;margin-left:auto;flex-wrap:wrap;font-size:.85rem;">
+    <span>Charged: <strong>UGX {{ selected_student_summary.total_charged|floatformat:0|intcomma }}</strong></span>
+    <span>Paid: <strong>UGX {{ selected_student_summary.total_paid|floatformat:0|intcomma }}</strong></span>
+    <span>Balance: <strong class="{% if selected_student_summary.balance > 0 %}bal-outstanding{% elif selected_student_summary.balance < 0 %}bal-credit{% else %}bal-cleared{% endif %}">UGX {{ selected_student_summary.balance|floatformat:0|intcomma }}</strong></span>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <a href="{% url 'student_details_page' selected_student.id %}" class="btn btn-default btn-xs"><i class="fa fa-user"></i> Profile</a>
+    <a href="{% url 'student_fees_history' selected_student.id %}" class="btn btn-default btn-xs"><i class="fa fa-list-alt"></i> Statement</a>
+    {% if selected_student_summary.action_bill_id %}
+    <a href="{% url 'record_payment' selected_student_summary.action_bill_id %}" class="btn btn-success btn-xs"><i class="fa fa-money"></i> Add Payment</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Ledger Table ── -->
+<div class="x_panel" style="padding:0;overflow:hidden;">
+  <div style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <h4 style="margin:0;font-weight:700;color:#1f2a44;font-size:.95rem;"><i class="fa fa-table"></i> Ledger Detail</h4>
+    <span style="font-size:.8rem;color:#94a3b8;margin-left:4px;" id="rowCountBadge">{{ ledger_transaction_count|intcomma }} row{{ ledger_transaction_count|pluralize }}</span>
+  </div>
+
+  {% if ledger_rows %}
+  <div style="padding:12px 16px;">
+    <div class="tbl-toolbar">
+      <input type="search" id="tblSearch" class="form-control" placeholder="Search student, reference, category…" style="max-width:320px;">
+      <select id="tblStatus" class="form-control" style="max-width:160px;">
+        <option value="">All statuses</option>
+        <option value="outstanding">Outstanding</option>
+        <option value="credit">Credit</option>
+        <option value="cleared">Cleared</option>
+      </select>
+      {% if show_student_group_headers %}
+      <button type="button" class="btn btn-default btn-xs" id="btnExpandAll">Expand All</button>
+      <button type="button" class="btn btn-default btn-xs" id="btnCollapseAll">Collapse All</button>
+      {% endif %}
+      <span class="tbl-count" id="visibleCount"></span>
+    </div>
+  </div>
+
+  <div class="ledger-wrap">
+    <table class="ledger-tbl" id="ledgerTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Student ID</th>
+          <th>Student Name</th>
+          <th>Classroom</th>
+          <th>Term</th>
+          <th>Category</th>
+          <th>Method</th>
+          <th class="text-right">Charged</th>
+          <th class="text-right">Paid</th>
+          <th class="text-right">{{ balance_column_label }}</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="ledgerBody">
+        {% for row in ledger_rows %}
+
+        {% if show_student_group_headers %}
+        {% ifchanged row.student_pk %}
+        <tr class="group-header" data-group="{{ row.student_pk }}">
+          <td colspan="13">
+            <div class="group-meta">
+              <button type="button" class="btn btn-default btn-xs toggle-group" data-key="{{ row.student_pk }}" style="min-width:80px;">
+                <i class="fa fa-chevron-up"></i> Collapse
+              </button>
+              <span class="group-name">{{ row.student_name }}</span>
+              <span class="group-reg">{{ row.reg_no }}</span>
+              {% if row.classroom %}<span class="group-reg">{{ row.classroom }}</span>{% endif %}
+              <div class="group-stats">
+                <span>Charged: UGX {{ row.student_total_charged|floatformat:0|intcomma }}</span>
+                <span>Paid: UGX {{ row.student_total_paid|floatformat:0|intcomma }}</span>
+                <span class="{% if row.student_balance_status == 'outstanding' %}bal-outstanding{% elif row.student_balance_status == 'credit' %}bal-credit{% else %}bal-cleared{% endif %}">
+                  Balance: UGX {{ row.student_balance|floatformat:0|intcomma }}
+                </span>
+              </div>
+              <div style="margin-left:auto;display:flex;gap:4px;">
+                <a href="{% url 'student_fees_history' row.student_pk %}" class="btn btn-default btn-xs"><i class="fa fa-list-alt"></i></a>
+                {% if row.student_action_bill_id %}
+                <a href="{% url 'record_payment' row.student_action_bill_id %}" class="btn btn-success btn-xs"><i class="fa fa-money"></i> Pay</a>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endifchanged %}
+        {% endif %}
+
+        <tr class="ledger-row row-{{ row.row_type }}"
+            data-group="{{ row.student_pk }}"
+            data-status="{{ row.balance_status }}"
+            data-search="{{ row.student_name|lower }} {{ row.reg_no|lower }} {{ row.category|lower }} {{ row.payment_method|lower }} {{ row.reference|lower }} {{ row.notes|lower }}">
+          <td>{{ row.date|date:"d M Y" }}</td>
+          <td>
+            <span class="badge-type {% if row.row_type == 'charge' %}badge-charge-type{% else %}badge-payment-type{% endif %}">
+              {{ row.type_label }}
+            </span>
+          </td>
+          <td>{{ row.reg_no }}</td>
+          <td class="wrap">{{ row.student_name }}</td>
+          <td>{{ row.classroom }}</td>
+          <td style="font-size:.78rem;">{{ row.term }}</td>
+          <td>
+            <span class="badge-cat {% if row.category == 'Tuition' %}badge-tuition{% elif row.category == 'Transport' %}badge-transport{% elif row.category == 'Uniform' %}badge-uniform{% else %}badge-other-cat{% endif %}">
+              {{ row.category }}
+            </span>
+          </td>
+          <td>
+            {% if row.payment_method %}
+            <span class="badge-method {% if row.payment_method == 'Cash' %}badge-cash{% elif row.payment_method == 'SchoolPay' %}badge-schoolpay{% elif row.payment_method == 'Bank' %}badge-bank{% else %}badge-other{% endif %}">
+              {{ row.payment_method }}
+            </span>
+            {% else %}-{% endif %}
+          </td>
+          <td class="text-right">
+            {% if row.amount_charged %}{{ row.amount_charged_display|floatformat:0|intcomma }}{% else %}-{% endif %}
+          </td>
+          <td class="text-right">
+            {% if row.amount_paid %}{{ row.amount_paid_display|floatformat:0|intcomma }}{% else %}-{% endif %}
+          </td>
+          <td class="text-right {% if row.running_balance > 0 %}bal-outstanding{% elif row.running_balance < 0 %}bal-credit{% else %}bal-cleared{% endif %}">
+            {{ row.running_balance|floatformat:0|intcomma }}
+          </td>
+          <td class="wrap" style="color:#64748b;font-size:.78rem;">{{ row.notes|default:"-"|truncatechars:60 }}</td>
+          <td>
+            <a href="{% url 'student_fees_history' row.student_pk %}" class="btn btn-default btn-xs" title="Statement"><i class="fa fa-list-alt"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="ledger-empty">
+    <i class="fa fa-inbox"></i>
+    <p>No transactions found for the selected filters.</p>
+    <a href="{% url 'payment_ledger' %}" class="btn btn-default btn-sm">Clear Filters</a>
+  </div>
+  {% endif %}
+</div><!-- /x_panel -->
+
+</div><!-- /col -->
+</div><!-- /row -->
+
+<script>
+(function(){
+  // Check-pill toggle
+  document.querySelectorAll('.check-pill').forEach(function(pill){
+    pill.addEventListener('click', function(){
+      var cb = this.querySelector('input[type=checkbox]');
+      cb.checked = !cb.checked;
+      this.classList.toggle('checked', cb.checked);
+    });
+  });
+
+  // Table search + status filter
+  var searchInput = document.getElementById('tblSearch');
+  var statusSelect = document.getElementById('tblStatus');
+  var visibleCount = document.getElementById('visibleCount');
+  var ledgerBody = document.getElementById('ledgerBody');
+
+  function filterTable(){
+    if(!ledgerBody) return;
+    var q = (searchInput ? searchInput.value.toLowerCase() : '');
+    var st = (statusSelect ? statusSelect.value : '');
+    var rows = ledgerBody.querySelectorAll('tr.ledger-row');
+    var visible = 0;
+    rows.forEach(function(row){
+      var searchText = row.getAttribute('data-search') || '';
+      var status = row.getAttribute('data-status') || '';
+      var matchSearch = !q || searchText.indexOf(q) !== -1;
+      var matchStatus = !st || status === st;
+      var show = matchSearch && matchStatus;
+      row.style.display = show ? '' : 'none';
+      if(show) visible++;
+    });
+    // Hide group headers with no visible children
+    var groups = ledgerBody.querySelectorAll('tr.group-header');
+    groups.forEach(function(gh){
+      var key = gh.getAttribute('data-group');
+      var hasVisible = Array.from(ledgerBody.querySelectorAll('tr.ledger-row[data-group="'+key+'"]'))
+        .some(function(r){ return r.style.display !== 'none'; });
+      gh.style.display = hasVisible ? '' : 'none';
+    });
+    if(visibleCount) visibleCount.textContent = visible + ' row' + (visible !== 1 ? 's' : '');
+  }
+
+  if(searchInput) searchInput.addEventListener('input', filterTable);
+  if(statusSelect) statusSelect.addEventListener('change', filterTable);
+  filterTable();
+
+  // Expand/collapse groups
+  function setGroupCollapsed(key, collapsed){
+    var rows = document.querySelectorAll('#ledgerBody tr.ledger-row[data-group="'+key+'"]');
+    rows.forEach(function(r){ r.style.display = collapsed ? 'none' : ''; });
+    var btn = document.querySelector('.toggle-group[data-key="'+key+'"]');
+    if(btn){
+      btn.innerHTML = collapsed
+        ? '<i class="fa fa-chevron-down"></i> Expand'
+        : '<i class="fa fa-chevron-up"></i> Collapse';
+    }
+  }
+
+  document.querySelectorAll('.toggle-group').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var key = this.getAttribute('data-key');
+      var collapsed = this.textContent.trim().indexOf('Expand') !== -1;
+      setGroupCollapsed(key, !collapsed);
+    });
+  });
+
+  var btnExpand = document.getElementById('btnExpandAll');
+  var btnCollapse = document.getElementById('btnCollapseAll');
+  if(btnExpand) btnExpand.addEventListener('click', function(){
+    document.querySelectorAll('.toggle-group').forEach(function(btn){
+      setGroupCollapsed(btn.getAttribute('data-key'), false);
+    });
+  });
+  if(btnCollapse) btnCollapse.addEventListener('click', function(){
+    document.querySelectorAll('.toggle-group').forEach(function(btn){
+      setGroupCollapsed(btn.getAttribute('data-key'), true);
+    });
+  });
+})();
+</script>
+{% endblock %}

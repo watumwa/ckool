@@ -1,0 +1,639 @@
+{% extends 'base.html' %}
+{% load static %}
+
+<!-- {% block title %}Class Performance Summary{% endblock %} -->
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- <div class="comm-header">
+    <div class="comm-title">
+        <span class="comm-icon"><i class="fa fa-line-chart"></i></span>
+        <div>
+            <h2>Class Performance Summary</h2>
+            <p class="text-muted">School Analytics Dashboard</p>
+        </div>
+    </div> -->
+    <div class="comm-meta">
+        Academic Year: <strong>{{ selected_academic_year_name|default:"All" }}</strong>
+        <span class="comm-sep">|</span>
+        Term: <strong>{{ selected_term_name|default:"All" }}</strong>
+    </div>
+</div>
+
+<div class="clearfix"></div>
+
+<style>
+    .right_col{overflow-x:hidden;}
+    .comm-header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
+    .comm-title{display:flex;gap:12px;align-items:center;}
+    .comm-title h2{margin:0;font-weight:700;}
+    .comm-title p{margin:4px 0 0;}
+    .comm-icon{width:46px;height:46px;border-radius:12px;background:#e0e7ff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:18px;}
+    .comm-meta{font-size:13px;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;padding:8px 12px;border-radius:999px;}
+    .comm-sep{margin:0 8px;color:#cbd5f5;}
+
+    .filter-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;box-shadow:0 6px 16px rgba(0,0,0,0.04);margin-bottom:16px;}
+    .filter-card h3{margin:0 0 12px;font-weight:700;color:#1f2937;}
+    .filter-card .row{row-gap:12px;}
+    .filter-card .form-control{min-height:40px;}
+
+    .dashboard-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px;}
+    .kpi-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px;box-shadow:0 6px 16px rgba(0,0,0,0.04);text-align:left;}
+    .kpi-card i{color:#1d4ed8;}
+    .kpi-stats{font-size:22px;font-weight:700;color:#0f172a;margin-top:6px;word-break:break-word;}
+    .kpi-subtitle{color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+
+    .dashboard-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;box-shadow:0 6px 16px rgba(0,0,0,0.04);overflow:hidden;}
+    .dashboard-card h3{margin:0 0 12px;font-weight:700;color:#1f2937;font-size:16px;}
+    .dashboard-card canvas{max-width:100%;height:260px !important;}
+
+    .table-responsive{margin-top:12px;}
+    .table{margin-bottom:0;}
+    .table th{background:#f8fafc;color:#334155;font-weight:700;}
+
+    .heatmap-cell{padding:8px;text-align:center;border:1px solid #e2e8f0;border-radius:8px;white-space:nowrap;}
+    .heatmap-high{background:#16a34a;color:#fff;}
+    .heatmap-medium{background:#f59e0b;color:#fff;}
+    .heatmap-low{background:#ef4444;color:#fff;}
+
+    .mini-stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;text-align:left;}
+    .mini-stat h5{margin:0 0 6px;font-weight:700;color:#1f2937;}
+    .mini-stat .kpi-stats{font-size:20px;}
+
+    .row.mb-4{row-gap:16px;}
+
+    @media (max-width: 768px) {
+        .comm-meta{width:100%;text-align:center;}
+        .dashboard-card canvas{height:220px !important;}
+    }
+</style>
+
+<!-- Filter Form -->
+<div class="filter-card">
+    <h3>Filter Performance Data</h3>
+    <form method="get" id="filter-form" class="form-horizontal">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <select name="academic_year_id" id="academic_year_id" class="form-control" required>
+                    <option value="">-- Select Academic Year --</option>
+                    {% for year in academic_years %}
+                        <option value="{{ year.id }}" {% if year.id|stringformat:"s" == selected_academic_year %}selected{% endif %}>
+                            {{ year.academic_year }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="term_id" id="term_id" class="form-control" required>
+                    <option value="">-- Select Term --</option>
+                    {% for term in terms %}
+                        <option value="{{ term.id }}" {% if term.id|stringformat:"s" == selected_term %}selected{% endif %}>
+                            {{ term.term }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="report_format" id="report_format" class="form-control" required>
+                    <option value="standard" {% if selected_report_format == "standard" %}selected{% endif %}>Standard Report</option>
+                    <option value="tahfiz" {% if selected_report_format == "tahfiz" %}selected{% endif %}>Tahfiz Report</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="class_id" id="class_id" class="form-control" required>
+                    <option value="">-- Select Class --</option>
+                    {% for c in classes %}
+                        <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_class %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="assessment_type_id" id="assessment_type_id" class="form-control">
+                    <option value="">-- Select Assessment Type --</option>
+                    {% for atype in assessment_types %}
+                        <option value="{{ atype.id }}" {% if atype.id|stringformat:"s" == selected_assessment_type %}selected{% endif %}>
+                            {{ atype.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 text-end">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                {% if academic_class_exists %}
+                    <a href="{% url 'class_bulk_reports' %}?academic_year_id={{ selected_academic_year }}&term_id={{ selected_term }}&class_id={{ selected_class }}&report_format={{ selected_report_format }}"
+                       class="btn btn-success" target="_blank">Print Bulk Reports</a>
+                    {% if selected_assessment_type %}
+                        <a href="{% url 'class_assessment_type_bulk_reports' %}?academic_year_id={{ selected_academic_year }}&term_id={{ selected_term }}&class_id={{ selected_class }}&assessment_type_id={{ selected_assessment_type }}"
+                           class="btn btn-info" target="_blank">Print Bulk Mini Reports</a>
+                    {% else %}
+                        <button class="btn btn-secondary" disabled title="Select an Assessment Type">Print Bulk Mini Reports</button>
+                    {% endif %}
+                {% else %}
+                    <button class="btn btn-secondary" disabled title="Select valid filters">Print Bulk Reports</button>
+                    <button class="btn btn-secondary" disabled title="Select valid filters">Print Bulk Mini Reports</button>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+{% if academic_class_exists %}
+
+<!-- 1. Top Summary Cards (KPIs) -->
+<div class="dashboard-content">
+    <div class="kpi-card">
+        <i class="fa fa-users fa-2x text-primary mb-2"></i>
+        <div class="kpi-stats">{{ total_students }}</div>
+        <div class="kpi-subtitle">Total Students</div>
+    </div>
+    <div class="kpi-card">
+        <i class="fa fa-chart-line fa-2x text-success mb-2"></i>
+        <div class="kpi-stats">{{ average_score|floatformat:1 }}%</div>
+        <div class="kpi-subtitle">Average Score</div>
+    </div>
+    <div class="kpi-card">
+        <i class="fa fa-percentage fa-2x text-info mb-2"></i>
+        <div class="kpi-stats">{{ pass_rate|floatformat:0 }}%</div>
+        <div class="kpi-subtitle">Pass Rate</div>
+    </div>
+    <div class="kpi-card">
+        <i class="fa fa-trophy fa-2x text-warning mb-2"></i>
+        <div class="kpi-stats">{{ top_performer.student__student_name|default:"N/A" }}</div>
+        <div class="kpi-subtitle">Top Performer</div>
+    </div>
+    <div class="kpi-card">
+        <i class="fa fa-graduation-cap fa-2x text-danger mb-2"></i>
+        <div class="kpi-stats">{{ current_term|default:"N/A" }}</div>
+        <div class="kpi-subtitle">Current Term</div>
+    </div>
+</div>
+
+<!-- 2. Class Performance Overview -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <h3>Class Performance Overview</h3>
+            <canvas id="classPerformanceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 3. Subject Performance Overview -->
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <h3>Subject Performance Overview</h3>
+            <canvas id="subjectPerformanceChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Assessment Type Comparison -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <h3>Assessment Type Comparison</h3>
+            <canvas id="assessmentTypeChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 5. Top 10 Students -->
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <h3>Top 10 Students</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>Average</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in top_students %}
+                        <tr>
+                            <td>{{ student.student__student_name }}</td>
+                            <td>{{ student.student__current_class__name }}</td>
+                            <td>{{ student.average|floatformat:2 }}%</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 6. Performance Trends Over Terms -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <h3>Performance Trends</h3>
+            <canvas id="performanceTrendsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 7. Stream Comparison -->
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <h3>Stream Comparison</h3>
+            <canvas id="streamComparisonChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- 8. Gender Performance Comparison -->
+<div class="row mb-4">
+    <div class="col-md-6">
+    <div class="dashboard-card">
+        <h3>Gender Performance</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mini-stat">
+                    <h5>Male Students</h5>
+                    <div class="kpi-stats">{{ gender_comparison.Male.average|default:0|floatformat:1 }}%</div>
+                    <p class="text-muted">{{ gender_comparison.Male.count|default:0 }} students</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mini-stat">
+                    <h5>Female Students</h5>
+                    <div class="kpi-stats">{{ gender_comparison.Female.average|default:0|floatformat:1 }}%</div>
+                    <p class="text-muted">{{ gender_comparison.Female.count|default:0 }} students</p>
+                </div>
+            </div>
+        </div>
+        <canvas id="genderComparisonChart"></canvas>
+    </div>
+    </div>
+
+    <!-- 9. Subject Difficulty Heatmap -->
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <h3>Subject Difficulty Heatmap</h3>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Average Score</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject, avg in subject_heatmap.items %}
+                        <tr>
+                            <td>{{ subject }}</td>
+                            <td>{{ avg|floatformat:2 }}%</td>
+                            <td class="heatmap-cell {% if avg >= 80 %}heatmap-high{% elif avg >= 60 %}heatmap-medium{% else %}heatmap-low{% endif %}">
+                                {% if avg >= 80 %}High{% elif avg >= 60 %}Medium{% else %}Low{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 10. Downloadable Reports -->
+<div class="dashboard-card">
+    <h3>Downloadable Reports</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <a href="{% url 'class_bulk_reports' %}?academic_year_id={{ selected_academic_year }}&term_id={{ selected_term }}&class_id={{ selected_class }}" class="btn btn-success btn-lg w-100 mb-2" target="_blank">
+                <i class="fa fa-download"></i> Detailed Results PDF
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a href="{% url 'class_assessment_type_bulk_reports' %}?academic_year_id={{ selected_academic_year }}&term_id={{ selected_term }}&class_id={{ selected_class }}&assessment_type_id={{ selected_assessment_type }}" class="btn btn-info btn-lg w-100 mb-2" target="_blank">
+                <i class="fa fa-download"></i> Class Averages by Subject
+            </a>
+        </div>
+    </div>
+</div>
+
+{% else %}
+    <p class="text-center text-muted">
+        Please select Academic Year, Term, and Class to see performance data.
+    </p>
+{% endif %}
+
+<!-- Chart.js Scripts -->
+{% if academic_class_exists %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // 2. Class Performance Overview
+    {% if class_performance %}
+    const classLabels = [{% for c in class_performance %}"{{ c.class }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const classData = [{% for c in class_performance %}{{ c.average }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+    const classCtx = document.getElementById('classPerformanceChart').getContext('2d');
+    new Chart(classCtx, {
+        type: 'bar',
+        data: {
+            labels: classLabels,
+            datasets: [{
+                label: 'Average Score',
+                data: classData,
+                backgroundColor: 'rgba(42, 63, 84, 0.8)',
+                borderColor: '#2A3F54',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#73879C'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // 3. Subject Performance Overview
+    {% if subject_performance %}
+    const subjectLabels = [{% for s in subject_performance %}"{{ s.subject }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const subjectData = [{% for s in subject_performance %}{{ s.average }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+    const subjectCtx = document.getElementById('subjectPerformanceChart').getContext('2d');
+    new Chart(subjectCtx, {
+        type: 'bar',
+        data: {
+            labels: subjectLabels,
+            datasets: [{
+                label: 'Average Score',
+                data: subjectData,
+                backgroundColor: 'rgba(38, 185, 154, 0.8)',
+                borderColor: '#26B99A',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#73879C'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                },
+                y: {
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // 4. Assessment Type Comparison
+    {% if assessment_type_performance %}
+    const assessmentLabels = [{% for a in assessment_type_performance %}"{{ a.assessment__assessment_type__name }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const assessmentData = [{% for a in assessment_type_performance %}{{ a.avg_score }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+    const assessmentCtx = document.getElementById('assessmentTypeChart').getContext('2d');
+    new Chart(assessmentCtx, {
+        type: 'bar',
+        data: {
+            labels: assessmentLabels,
+            datasets: [{
+                label: 'Average Score',
+                data: assessmentData,
+                backgroundColor: 'rgba(243, 156, 18, 0.8)',
+                borderColor: '#F39C12',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#73879C'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // 6. Performance Trends Over Terms
+    {% if performance_trends %}
+    const trendLabels = [{% for t in performance_trends %}"{{ t.term }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const trendData = [{% for t in performance_trends %}{{ t.average }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+    const trendCtx = document.getElementById('performanceTrendsChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: trendLabels,
+            datasets: [{
+                label: 'Average Score',
+                data: trendData,
+                borderColor: '#26B99A',
+                backgroundColor: 'rgba(38, 185, 154, 0.2)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#73879C'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // 7. Stream Comparison
+    {% if stream_comparison %}
+    const streamLabels = [{% for stream, count in stream_comparison.items %}"{{ stream }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const streamData = [{% for stream, count in stream_comparison.items %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+    const streamCtx = document.getElementById('streamComparisonChart').getContext('2d');
+    new Chart(streamCtx, {
+        type: 'bar',
+        data: {
+            labels: streamLabels,
+            datasets: [{
+                label: 'Number of Students',
+                data: streamData,
+                backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                borderColor: '#3498DB',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#73879C'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // 8. Gender Performance Comparison
+    const genderCtx = document.getElementById('genderComparisonChart').getContext('2d');
+    new Chart(genderCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Male', 'Female'],
+            datasets: [{
+                label: 'Average Score',
+                data: [
+                    {{ gender_comparison.Male.average|default:0 }},
+                    {{ gender_comparison.Female.average|default:0 }}
+                ],
+                backgroundColor: ['rgba(52, 152, 219, 0.8)', 'rgba(233, 30, 99, 0.8)'],
+                borderColor: ['#3498DB', '#E91E63'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#73879C'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: '#e7e7e7'
+                    },
+                    ticks: {
+                        color: '#73879C'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+
+{% endblock %}

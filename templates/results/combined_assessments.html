@@ -1,0 +1,647 @@
+{% extends 'base.html' %}
+{% load static dict_extras %}
+
+{% block title %}Combined Assessments{% endblock %}
+
+{% block content %}
+<div class="page-title">
+  <div class="title_left">
+    <h3><i class="fa fa-print"></i> Combined Assessments Report</h3>
+    <p class="page-subtitle">Generate and print consolidated student performance across multiple assessment stages.</p>
+  </div>
+  <div class="title_right">
+    <div class="pull-right top-action-group">
+      <button type="submit" form="combinedReportForm" class="btn btn-primary">
+        <i class="fa fa-filter"></i> Apply Filters
+      </button>
+      <a href="{% url 'class_assessment_combined' %}" class="btn btn-default">Reset</a>
+      {% if ready and class_obj and not report_state_message and students_data %}
+      <a
+        class="btn btn-success"
+        href="{% url 'class_assessment_combined_print' %}?academic_year_id={{ selected_year_id }}&term_id={{ selected_term_id }}&class_id={{ selected_class_id }}&report_format={{ selected_report_format }}{% for id in selected_assessment_type_ids %}&assessment_type_ids={{ id }}{% endfor %}"
+        target="_blank"
+        rel="noopener"
+      >
+        <i class="fa fa-print"></i> Print Reports
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="clearfix"></div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="row">
+  <div class="col-md-12 col-sm-12">
+    <div class="x_panel combined-builder-panel">
+      <div class="x_title">
+        <h2>Report Builder</h2>
+        <div class="pull-right builder-title-meta">Select academic context and at least two assessment types.</div>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <form method="get" id="combinedReportForm" novalidate>
+          <div class="row">
+            <div class="col-md-4 col-sm-6">
+              <div class="builder-field">
+                <label for="academic_year_id">Academic Year</label>
+                <select name="academic_year_id" id="academic_year_id" class="form-control">
+                  <option value="">Select Academic Year</option>
+                  {% for y in academic_years %}
+                    <option value="{{ y.id }}" {% if selected_year_id == y.id|stringformat:"s" %}selected{% endif %}>
+                      {{ y.academic_year }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-4 col-sm-6">
+              <div class="builder-field">
+                <label for="term_id">Term</label>
+                <select name="term_id" id="term_id" class="form-control">
+                  <option value="">Select Term</option>
+                  {% for t in terms %}
+                    <option value="{{ t.id }}" {% if selected_term_id == t.id|stringformat:"s" %}selected{% endif %}>
+                      {{ t.get_term_display }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-4 col-sm-12">
+              <div class="builder-field">
+                <label for="class_id">Class</label>
+                <select name="class_id" id="class_id" class="form-control">
+                  <option value="">Select Class</option>
+                  {% for c in classes %}
+                    <option value="{{ c.id }}" {% if selected_class_id == c.id|stringformat:"s" %}selected{% endif %}>
+                      {{ c.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 col-sm-6">
+              <div class="builder-field">
+                <label for="report_format">Report Format</label>
+                <select name="report_format" id="report_format" class="form-control">
+                  <option value="standard" {% if selected_report_format == "standard" %}selected{% endif %}>Standard</option>
+                  <option value="tahfiz" {% if selected_report_format == "tahfiz" %}selected{% endif %}>Tahfiz</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-8 col-sm-6">
+              <div class="builder-field">
+                <label for="assessmentSearch">Search Assessment Types</label>
+                <div class="assessment-search">
+                  <i class="fa fa-search"></i>
+                  <input type="search" id="assessmentSearch" class="form-control" placeholder="Search assessment types">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="assessment-builder-block">
+            <div class="assessment-builder-head">
+              <div>
+                <h3>Assessment Types</h3>
+                <p>Select at least 2 assessment types.</p>
+              </div>
+              <span class="selection-badge" id="assessmentSelectionCount">0 selected</span>
+            </div>
+
+            <div class="row assessment-card-row" id="assessmentGrid">
+              {% for at in assessment_types %}
+              <div class="col-md-6 col-sm-6 assessment-card-col" data-label="{{ at.name|lower }}">
+                <label class="assessment-choice {% if at.id|stringformat:'s' in selected_assessment_type_ids %}is-selected{% endif %}">
+                  <input
+                    type="checkbox"
+                    name="assessment_type_ids"
+                    value="{{ at.id }}"
+                    {% if at.id|stringformat:"s" in selected_assessment_type_ids %}checked{% endif %}
+                  >
+                  <span class="choice-indicator"><i class="fa fa-check"></i></span>
+                  <span class="choice-copy">
+                    <strong>{{ at.name }}</strong>
+                    <small>Weight: {{ at.weight|default:100|floatformat:0 }}%</small>
+                  </span>
+                </label>
+              </div>
+              {% empty %}
+              <div class="col-md-12">
+                <div class="empty-state-box">No assessment types available.</div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <p class="assessment-validation" id="assessmentValidationMessage" style="display:none;">
+              Please choose at least two assessment types to generate a combined report.
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12">
+    <div class="alert alert-info instruction-alert">
+      <strong>How to generate report:</strong>
+      Select Academic Year, Term, Class, and at least two Assessment Types. Click <strong>Apply Filters</strong> to generate a print-ready report.
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12">
+    <div class="x_panel output-panel">
+      <div class="x_title">
+        <h2>Output</h2>
+        {% if ready and class_obj %}
+        <div class="pull-right output-summary-meta">
+          {{ class_obj.Class.name }} | {{ class_obj.term.get_term_display }} | {{ class_obj.academic_year.academic_year }}
+        </div>
+        {% endif %}
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        {% if ready and class_obj %}
+          {% if selected_assessment_types %}
+          <div class="selected-pill-row">
+            {% for at in selected_assessment_types %}
+            <span class="selected-pill">{{ at.name }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if report_state_message %}
+            <div class="empty-state-box">
+              <i class="fa fa-exclamation-circle"></i>
+              <h4>Report not ready yet</h4>
+              <p>{{ report_state_message }}</p>
+            </div>
+          {% elif students_data|length == 0 %}
+            <div class="empty-state-box">
+              <i class="fa fa-folder-open"></i>
+              <h4>No students found</h4>
+              <p>No report data is available for the selected criteria.</p>
+            </div>
+          {% else %}
+            <div class="output-callout">
+              <strong>{{ students_data|length }}</strong> student report{{ students_data|length|pluralize }} ready for preview and print.
+            </div>
+
+            {% for row in students_data %}
+            <div class="x_panel student-preview-card">
+              <div class="x_title">
+                <h3 class="student-card-title">
+                  {{ row.no }}. {{ row.student.student_name }}
+                  <small class="student-meta">Reg. No: {{ row.student.reg_no }}</small>
+                </h3>
+                <div class="clearfix"></div>
+              </div>
+              <div class="x_content">
+                <div class="table-responsive">
+                  <table class="table table-striped table-bordered preview-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Subject</th>
+                        {% for at in selected_assessment_types %}
+                        <th>{{ at.name }}</th>
+                        {% endfor %}
+                        <th>Average</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for subj in subjects %}
+                      <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="subject-cell">{{ subj }}</td>
+                        {% for at in selected_assessment_types %}
+                          {% with sdata=row.subjects|get_item:subj %}
+                            {% if sdata %}
+                              {% with score=sdata.scores|get_item:at.id %}
+                              <td>{{ score|default:"-" }}</td>
+                              {% endwith %}
+                            {% else %}
+                              <td>-</td>
+                            {% endif %}
+                          {% endwith %}
+                        {% endfor %}
+                        {% with sdata=row.subjects|get_item:subj %}
+                        <td>
+                          {% if sdata and sdata.avg is not None %}
+                            {{ sdata.avg }}
+                          {% else %}
+                            -
+                          {% endif %}
+                        </td>
+                        {% endwith %}
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          {% endif %}
+        {% else %}
+          <div class="empty-state-box">
+            <i class="fa fa-file-text-o"></i>
+            <h4>No report generated yet</h4>
+            <p>Apply filters to view results.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .page-subtitle {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 13px;
+  }
+
+  .top-action-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .combined-builder-panel,
+  .output-panel,
+  .student-preview-card {
+    border-radius: 14px;
+  }
+
+  .builder-title-meta,
+  .output-summary-meta {
+    color: #64748b;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .builder-field {
+    margin-bottom: 18px;
+  }
+
+  .builder-field label {
+    display: block;
+    margin-bottom: 8px;
+    color: #0f172a;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .builder-field .form-control {
+    height: 44px;
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .assessment-search {
+    position: relative;
+  }
+
+  .assessment-search i {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    color: #94a3b8;
+  }
+
+  .assessment-search .form-control {
+    padding-left: 38px;
+  }
+
+  .assessment-builder-block {
+    border: 1px solid #dbe4ee;
+    border-radius: 14px;
+    background: #f8fafc;
+    padding: 18px;
+  }
+
+  .assessment-builder-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .assessment-builder-head h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .assessment-builder-head p {
+    margin: 4px 0 0;
+    color: #64748b;
+  }
+
+  .selection-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .assessment-card-row {
+    margin-left: -6px;
+    margin-right: -6px;
+  }
+
+  .assessment-card-col {
+    padding-left: 6px;
+    padding-right: 6px;
+    margin-bottom: 12px;
+  }
+
+  .assessment-choice {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #dbe4ee;
+    border-radius: 14px;
+    cursor: pointer;
+    min-height: 82px;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  }
+
+  .assessment-choice:hover {
+    border-color: #bfd2e8;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+  }
+
+  .assessment-choice input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .assessment-choice.is-selected {
+    background: #eef5ff;
+    border-color: #8eb5f4;
+    box-shadow: 0 10px 20px rgba(29, 78, 216, 0.08);
+  }
+
+  .choice-indicator {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #c7d8ea;
+    border-radius: 50%;
+    background: #fff;
+    color: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 28px;
+  }
+
+  .assessment-choice.is-selected .choice-indicator {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #fff;
+  }
+
+  .choice-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .choice-copy strong {
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .choice-copy small {
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .assessment-validation {
+    margin: 6px 0 0;
+    color: #b91c1c;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .instruction-alert {
+    border-radius: 14px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1e3a8a;
+  }
+
+  .selected-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .selected-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    color: #075985;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .output-callout {
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    border: 1px solid #dbe4ee;
+    border-radius: 14px;
+    background: #f8fafc;
+    color: #475569;
+  }
+
+  .output-callout strong {
+    color: #0f172a;
+    font-size: 20px;
+  }
+
+  .student-card-title {
+    margin: 0;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .student-meta {
+    color: #64748b;
+  }
+
+  .preview-table th {
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  .preview-table td,
+  .preview-table th {
+    text-align: center;
+  }
+
+  .preview-table .subject-cell {
+    text-align: left;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .empty-state-box {
+    padding: 34px 18px;
+    border: 1px dashed #dbe4ee;
+    border-radius: 14px;
+    background: #f8fafc;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .empty-state-box i {
+    font-size: 28px;
+    color: #94a3b8;
+    margin-bottom: 10px;
+  }
+
+  .empty-state-box h4 {
+    margin: 0 0 8px;
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  @media (max-width: 991px) {
+    .top-action-group {
+      float: none !important;
+      justify-content: flex-start;
+    }
+
+    .top-action-group .btn {
+      width: 100%;
+    }
+
+    .builder-title-meta,
+    .output-summary-meta {
+      float: none !important;
+      display: block;
+      margin-top: 8px;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var yearSelect = document.getElementById('academic_year_id');
+    var termSelect = document.getElementById('term_id');
+    var form = document.getElementById('combinedReportForm');
+    var assessmentSearch = document.getElementById('assessmentSearch');
+    var cardColumns = Array.prototype.slice.call(document.querySelectorAll('.assessment-card-col'));
+    var checkboxes = Array.prototype.slice.call(document.querySelectorAll('input[name="assessment_type_ids"]'));
+    var selectionCount = document.getElementById('assessmentSelectionCount');
+    var validationMessage = document.getElementById('assessmentValidationMessage');
+
+    function updateSelectionCount() {
+      var checked = checkboxes.filter(function (checkbox) {
+        return checkbox.checked;
+      }).length;
+      if (selectionCount) {
+        selectionCount.textContent = checked + ' selected';
+      }
+      return checked;
+    }
+
+    function updateChoiceState(checkbox) {
+      var choice = checkbox.closest('.assessment-choice');
+      if (!choice) return;
+      choice.classList.toggle('is-selected', checkbox.checked);
+    }
+
+    function filterAssessmentCards() {
+      var term = ((assessmentSearch && assessmentSearch.value) || '').toLowerCase().trim();
+      cardColumns.forEach(function (column) {
+        var label = column.getAttribute('data-label') || '';
+        column.style.display = !term || label.indexOf(term) !== -1 ? '' : 'none';
+      });
+    }
+
+    if (yearSelect) {
+      yearSelect.addEventListener('change', function () {
+        if (termSelect) {
+          termSelect.selectedIndex = 0;
+        }
+      });
+    }
+
+    checkboxes.forEach(function (checkbox) {
+      updateChoiceState(checkbox);
+      checkbox.addEventListener('change', function () {
+        updateChoiceState(checkbox);
+        updateSelectionCount();
+        if (validationMessage) {
+          validationMessage.style.display = 'none';
+        }
+      });
+    });
+
+    if (assessmentSearch) {
+      assessmentSearch.addEventListener('input', filterAssessmentCards);
+    }
+
+    if (form) {
+      form.addEventListener('submit', function (event) {
+        if (updateSelectionCount() < 2) {
+          event.preventDefault();
+          if (validationMessage) {
+            validationMessage.style.display = 'block';
+          }
+        }
+      });
+    }
+
+    updateSelectionCount();
+    filterAssessmentCards();
+  })();
+</script>
+{% endblock %}

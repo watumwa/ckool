@@ -1,0 +1,226 @@
+{% load static %}
+{% with url_name=request.resolver_match.url_name %}
+
+<div class="admin-menu-tools">
+  <button type="button" class="btn btn-xs btn-default" data-admin-menu-action="collapse">
+    <i class="fa fa-compress"></i> Collapse
+  </button>
+  <button type="button" class="btn btn-xs btn-primary" data-admin-menu-action="expand">
+    <i class="fa fa-expand"></i> Expand
+  </button>
+</div>
+
+<ul class="nav side-menu admin-side-menu">
+
+  <!-- Dashboard -->
+  <li>
+    <a href="{% url 'index_page' %}">
+      <i class="fa fa-dashboard"></i> Dashboard
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'operations_center' %}">
+      <i class="fa fa-compass"></i> Task Center
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'setup_checklist' %}">
+      <i class="fa fa-check-square-o"></i> Setup Checklist
+    </a>
+  </li>
+
+  <!-- Admin Control Tower -->
+  <li class="has-admin-section" data-section-id="control_tower">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-rocket"></i> Admin Control Tower
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'dashboard_overview' %}">Overview</a></li>
+      <li><a href="{% url 'dashboard_finance' %}">Finance</a></li>
+      <li><a href="{% url 'dashboard_academics' %}">Academics</a></li>
+      <li><a href="{% url 'dashboard_attendance' %}">Attendance</a></li>
+      <li><a href="{% url 'dashboard_reports' %}">Reports</a></li>
+    </ul>
+  </li>
+
+  <!-- Administration -->
+  <li class="has-admin-section" data-section-id="administration">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-cogs"></i> Administration
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'settings_page' %}">School Profile</a></li>
+      <li><a href="{% url 'user_list' %}">Manage Users</a></li>
+    </ul>
+  </li>
+
+  <!-- Academics -->
+  <li class="has-admin-section" data-section-id="academics">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-book"></i> Academics
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'class_page' %}">Classes</a></li>
+      <li><a href="{% url 'stream_page' %}">Streams</a></li>
+      <li><a href="{% url 'subjects_page' %}">Subjects</a></li>
+      <li><a href="{% url 'subject_allocation_page' %}">Subject Allocation</a></li>
+      <li><a href="{% url 'academic_class_page' %}">Academic Classes</a></li>
+    </ul>
+  </li>
+
+  <!-- Students -->
+  <li class="has-admin-section" data-section-id="students">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-users"></i> Students
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'student_page' %}">Student Directory</a></li>
+      <li><a href="{% url 'student_attendance_report' %}">Student Attendance</a></li>
+      <li><a href="{% url 'class_attendance_report' %}">Class Attendance</a></li>
+      <li><a href="{% url 'attendance_dashboard' %}">Student Attendance Dashboard </a></li>
+      <li><a href="{% url 'take_attendance' %}">Take Attendance</a></li>
+      <li><a href="{% url 'attendance_analysis' %}">Attendance Analysis</a></li>
+    </ul>
+  </li>
+
+  <!-- Human Resource -->
+  <li class="has-admin-section" data-section-id="human_resource">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-user-tie"></i> Human Resource
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'staff_page' %}">Manage Staff</a></li>
+    </ul>
+  </li>
+
+  <!-- Timetable -->
+  <li class="has-admin-section" data-section-id="timetable">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-calendar"></i> Timetable
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'timetable_center' %}">Set Timetable</a></li>
+      <li><a href="{% url 'exam_timetable' %}">Exam Timetable</a></li>
+      {% if request.user.is_authenticated and request.user.staff_account and request.user.staff_account.role.name == "Teacher" %}
+      <li><a href="{% url 'teacher_timetable' %}">Teacher Timetable</a></li>
+      {% endif %}
+    </ul>
+  </li>
+
+  <!-- Examinations -->
+  <li class="has-admin-section" data-section-id="examinations">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-graduation-cap"></i> Examinations
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+
+      <li><a href="{% url 'school_results_dashboard' %}">Results Overview</a></li>
+      <li><a href="{% url 'verification_overview' %}">Verification Monitor</a></li>
+
+      <li class="divider"></li>
+
+      <li><strong class="menu-section">Setup</strong></li>
+      <li><a href="{% url 'assesment_type_page' %}">Assessment Types</a></li>
+      <li><a href="{% url 'assessment_create' %}">Assessment Structure</a></li>
+      <li><a href="{% url 'add_grading_system_page' %}">Grading System</a></li>
+
+      <li><strong class="menu-section">Data Entry</strong></li>
+      <li><a href="{% url 'add_results_page' %}">Enter Results</a></li>
+      <li><a href="{% url 'bulk_result_entry' %}">Bulk Result Import</a></li>
+
+      <li><strong class="menu-section">Reports</strong></li>
+      <li><a href="{% url 'class_stream_filter' %}">Academic Reports</a></li>
+      <li><a href="{% url 'class_performance_summary' %}">Performance Analytics</a></li>
+      <li><a href="{% url 'class_assessment_combined' %}">Combined Assessments</a></li>
+      <li><a href="{% url 'assessment_sheet' %}">Assessment Sheet</a></li>
+      <li><a href="{% url 'class_performance_summary' %}">Result Cards Generator</a></li>
+
+    </ul>
+  </li>
+
+  <!-- Fees -->
+  <li class="has-admin-section" data-section-id="fees">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-coins"></i> Fees Management
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'student_bill_page' %}">Student Bills</a></li>
+      <li><a href="{% url 'class_bill_list' %}">Class Bills</a></li>
+      <li><a href="{% url 'bulk_create_class_bills' %}">Bulk Create Bills</a></li>
+      <li><a href="{% url 'fees_status' %}">Fees Status</a></li>
+      <li><a href="{% url 'carry_forward_balances' %}">Carry Forward Balances</a></li>
+    </ul>
+  </li>
+
+  <!-- Accounting -->
+  <li class="has-admin-section" data-section-id="accounting">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-chart-line"></i> Finance Management
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'financial_dashboard' %}">Financial Dashboard</a></li>
+      <li><a href="{% url 'income_source_page' %}">Income Sources</a></li>
+      <li><a href="{% url 'expense_page' %}">Expenses</a></li>
+      <li><a href="{% url 'budget_page' %}">Budget</a></li>
+      <li><a href="{% url 'vendor_page' %}">Vendors</a></li>
+      <li><a href="{% url 'bank_reconciliation' %}">Bank Reconciliation</a></li>
+      <li><a href="{% url 'expenditure_page' %}">Expenditure</a></li>
+      <li><a href="{% url 'approval_workflow' %}">Approvals</a></li>
+      <li><a href="{% url 'financial_summary_report' %}">Financial Summary</a></li>
+      <li><a href="{% url 'income_statement' %}">Income Statement</a></li>
+      <li><a href="{% url 'cash_flow' %}">Cash Flow Report</a></li>
+      <li><a href="{% url 'vendor_report' %}">Vendor Payments</a></li>
+    </ul>
+  </li>
+
+  <!-- Communication -->
+  <li class="has-admin-section" data-section-id="communication">
+    <a href="javascript:;" class="admin-section-toggle">
+      <i class="fa fa-bullhorn"></i> Communication
+      {% if comm_unread_count > 0 %}
+      <span class="badge bg-green">{{ comm_unread_count }}</span>
+      {% endif %}
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li>
+        <a href="{% url 'announcement_list' %}">
+          Announcements
+          {% if comm_unread_breakdown.announcements > 0 %}
+          <span class="badge bg-green">{{ comm_unread_breakdown.announcements }}</span>
+          {% endif %}
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'event_list' %}">
+          Events
+          {% if comm_unread_breakdown.events > 0 %}
+          <span class="badge bg-green">{{ comm_unread_breakdown.events }}</span>
+          {% endif %}
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'message_inbox' %}">
+          Messages
+          {% if comm_unread_breakdown.messages > 0 %}
+          <span class="badge bg-green">{{ comm_unread_breakdown.messages }}</span>
+          {% endif %}
+        </a>
+      </li>
+    </ul>
+  </li>
+
+</ul>
+
+{% endwith %}

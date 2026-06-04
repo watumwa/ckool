@@ -1,0 +1,388 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Assessments{% endblock page_title %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2>Assessments</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+
+        <!-- Breadcrumbs -->
+        <nav aria-label="breadcrumb" class="mb-4">
+          <ol class="breadcrumb" style="margin-bottom:6px;">
+            <li class="breadcrumb-item"><a href="#">Results</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Assessments</li>
+          </ol>
+        </nav>
+
+        <!-- Top actions -->
+        <div class="d-flex justify-content-between align-items-center">
+          <small class="text-muted">Use filters to narrow assessments. Create directly via the button.</small>
+          {% if not is_teacher_role %}
+          <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#createAssessmentModal">
+            <i class="fa fa-plus"></i> Create Assessment
+          </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="x_content">
+        <!-- Filter toolbar -->
+        <form method="get" class="form-horizontal form-label-left" id="assessmentFiltersForm">
+          <div class="row filter-toolbar sticky">
+            <div class="col-md-3 col-sm-6 mb-10">
+              <label for="year_id" class="small text-muted">Academic Year</label>
+              <select id="year_id" name="year_id" class="form-control">
+                <option value="">All Years</option>
+                {% for y in academic_years %}
+                  <option value="{{ y.id }}" {% if selected_year_id == y.id|stringformat:"s" %}selected{% endif %}>
+                    {{ y.academic_year }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3 col-sm-6 mb-10">
+              <label for="term_id" class="small text-muted">Term</label>
+              <select id="term_id" name="term_id" class="form-control">
+                <option value="">All Terms</option>
+                {% for t in terms %}
+                  <option value="{{ t.id }}" {% if selected_term_id == t.id|stringformat:"s" %}selected{% endif %}>
+                    {{ t.get_term_display }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3 col-sm-6 mb-10">
+              <label for="class_id" class="small text-muted">Class</label>
+              <select id="class_id" name="class_id" class="form-control">
+                <option value="">All Classes</option>
+                {% for c in classes %}
+                  <option value="{{ c.id }}" {% if selected_class_id == c.id|stringformat:"s" %}selected{% endif %}>
+                    {{ c.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3 col-sm-6 mb-10">
+              <label for="subject_id" class="small text-muted">Subject</label>
+              <select id="subject_id" name="subject_id" class="form-control">
+                <option value="">All Subjects</option>
+                {% for s in subjects %}
+                  <option value="{{ s.id }}" {% if selected_subject_id == s.id|stringformat:"s" %}selected{% endif %}>
+                    {{ s.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3 col-sm-6 mb-10">
+              <label for="assessment_type_id" class="small text-muted">Assessment Type</label>
+              <select id="assessment_type_id" name="assessment_type_id" class="form-control">
+                <option value="">All Types</option>
+                {% for at in assessment_types %}
+                  <option value="{{ at.id }}" {% if selected_assessment_type_id == at.id|stringformat:"s" %}selected{% endif %}>
+                    {{ at.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3 col-sm-6 mb-10">
+              <label for="is_done" class="small text-muted">Done</label>
+              <select id="is_done" name="is_done" class="form-control">
+                <option value="" {% if selected_is_done == "" %}selected{% endif %}>All</option>
+                <option value="yes" {% if selected_is_done == "yes" %}selected{% endif %}>Yes</option>
+                <option value="no" {% if selected_is_done == "no" %}selected{% endif %}>No</option>
+              </select>
+            </div>
+
+            <div class="col-md-3 col-sm-6 mb-10">
+              <label for="verification_status" class="small text-muted">Verification</label>
+              <select id="verification_status" name="verification_status" class="form-control">
+                <option value="" {% if verification_status == "" %}selected{% endif %}>All</option>
+                <option value="PENDING_OR_DRAFT" {% if verification_status == "PENDING_OR_DRAFT" %}selected{% endif %}>Pending + Draft</option>
+                <option value="PENDING" {% if verification_status == "PENDING" %}selected{% endif %}>Pending</option>
+                <option value="VERIFIED" {% if verification_status == "VERIFIED" %}selected{% endif %}>Verified</option>
+                <option value="FLAGGED" {% if verification_status == "FLAGGED" %}selected{% endif %}>Flagged</option>
+              </select>
+            </div>
+
+            <div class="col-md-2 col-sm-6 mb-10">
+              <label for="date_from" class="small text-muted">Date From</label>
+              <input type="date" id="date_from" name="date_from" value="{{ date_from }}" class="form-control" />
+            </div>
+
+            <div class="col-md-2 col-sm-6 mb-10">
+              <label for="date_to" class="small text-muted">Date To</label>
+              <input type="date" id="date_to" name="date_to" value="{{ date_to }}" class="form-control" />
+            </div>
+
+            <div class="col-md-2 col-sm-12 mb-10 d-flex align-items-end">
+              <button type="submit" class="btn btn-dark mr-2">
+                <i class="fa fa-filter mr-1"></i> Apply
+              </button>
+              <a href="?" class="btn btn-default">Reset</a>
+            </div>
+
+            <div class="col-md-12">
+              <div class="mt-10">
+                <span class="badge badge-secondary p-2">
+                  Showing {{ assessments|length|default:0 }} assessment{{ assessments|length|pluralize }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Quick chips -->
+            <div class="col-md-12">
+              <div class="chips-scroll">
+                {% for at in assessment_types %}
+                  <a class="chip chip-alt {% if selected_assessment_type_id == at.id|stringformat:"s" %}active{% endif %}"
+                     href="?assessment_type_id={{ at.id }}{% if selected_year_id %}&year_id={{ selected_year_id }}{% endif %}{% if selected_term_id %}&term_id={{ selected_term_id }}{% endif %}{% if verification_status %}&verification_status={{ verification_status }}{% endif %}">
+                    {{ at.name }}
+                  </a>
+                {% endfor %}
+                <a class="chip {% if selected_is_done == 'yes' %}active{% endif %}" href="?is_done=yes{% if verification_status %}&verification_status={{ verification_status }}{% endif %}">Done</a>
+                <a class="chip {% if selected_is_done == 'no' %}active{% endif %}" href="?is_done=no{% if verification_status %}&verification_status={{ verification_status }}{% endif %}">Not Done</a>
+                <a class="chip {% if verification_status == 'PENDING_OR_DRAFT' %}active{% endif %}" href="?verification_status=PENDING_OR_DRAFT">Pending + Draft</a>
+                <a class="chip {% if verification_status == 'PENDING' %}active{% endif %}" href="?verification_status=PENDING">Pending</a>
+                <a class="chip {% if verification_status == 'VERIFIED' %}active{% endif %}" href="?verification_status=VERIFIED">Verified</a>
+                <a class="chip {% if verification_status == 'FLAGGED' %}active{% endif %}" href="?verification_status=FLAGGED">Flagged</a>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- Data table -->
+        <table class="table table-striped table-bordered datatable" style="width:100%">
+          <thead>
+            <tr>
+              <th>Class</th>
+              <th>Type</th>
+              <th>Subject</th>
+              <th>Date</th>
+              <th>Out Of</th>
+              <th>Done</th>
+              {% if not is_teacher_role %}
+              <th style="width:160px;">Actions</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for assessment in assessments %}
+              <tr>
+                <td>{{ assessment.academic_class }}</td>
+                <td><span class="badge badge-info">{{ assessment.assessment_type }}</span></td>
+                <td><span class="badge badge-light">{{ assessment.subject }}</span></td>
+                <td>{{ assessment.date|date:"M j, Y" }}</td>
+                <td><span class="badge badge-dark">{{ assessment.out_of }}</span></td>
+                <td>
+                  {% if assessment.is_done %}
+                    <span class="badge badge-success">Yes</span>
+                  {% else %}
+                    <span class="badge badge-secondary">No</span>
+                  {% endif %}
+                </td>
+                {% if not is_teacher_role %}
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+                    <a href="{% url 'edit_assessment_page' assessment.id %}" class="btn btn-warning" title="Edit Assessment">
+                      <i class="fa fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_assessment' assessment.id %}" class="btn btn-danger" onclick="return confirm('Delete this assessment?');" title="Delete Assessment">
+                      <i class="fa fa-trash"></i>
+                    </a>
+                  </div>
+                </td>
+                {% endif %}
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center">No assessments found. Adjust filters above.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Assessment Modal -->
+<div class="modal fade" id="createAssessmentModal" tabindex="-1" role="dialog" aria-labelledby="createAssessmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-dark text-white">
+        <h4 class="modal-title" id="createAssessmentModalLabel">
+          <i class="fa fa-plus-circle"></i> Create New Assessment
+        </h4>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" role="alert" style="margin-bottom: 12px;">
+          <strong>Tip:</strong> Use <em>Bulk Subjects</em> to create one assessment type for multiple subjects in a single action.
+        </div>
+
+        <form method="post" class="form-horizontal form-label-left" action="{% url 'assessment_create' %}">
+          {% csrf_token %}
+
+          <div class="form-group">
+            <label class="control-label col-md-4 col-sm-4 col-xs-12">Creation Mode</label>
+            <div class="col-md-8 col-sm-8 col-xs-12">
+              <div class="btn-group" role="group" aria-label="Creation Mode">
+                <button type="button" class="btn btn-dark" id="modeSingleBtn">Single Subject</button>
+                <button type="button" class="btn btn-default" id="modeBulkBtn">Bulk Subjects</button>
+              </div>
+              <input type="hidden" name="bulk_subjects" id="bulk_subjects" value="0" />
+            </div>
+          </div>
+
+          <div id="singleAssessmentSection">
+            {{ form|crispy }}
+          </div>
+
+          <div id="bulkAssessmentSection" style="display:none;">
+            {{ bulk_form|crispy }}
+          </div>
+
+          <div class="ln_solid"></div>
+          <div class="form-group">
+            <div class="col-md-6 col-sm-6 col-xs-12">
+              <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-success">Save Assessment</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .filter-toolbar .mb-10 { margin-bottom: 10px; }
+  .filter-toolbar .mt-10 { margin-top: 10px; }
+  .filter-toolbar.sticky {
+    position: sticky; top: 0; z-index: 2; background: #fff; padding-top: 8px; padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .chips-scroll {
+    display: flex; gap: 8px; overflow-x: auto; padding: 6px 0;
+  }
+  .chip {
+    display: inline-block; padding: 6px 10px; border-radius: 16px; background: #f3f4f6; color: #374151;
+    text-decoration: none; border: 1px solid #e5e7eb; white-space: nowrap; font-size: 12px;
+  }
+  .chip:hover { background: #e5e7eb; }
+  .chip.active { background: #2c3e50; color: #fff; border-color: #2c3e50; }
+  .chip-alt { background: #eef2ff; border-color: #e0e7ff; }
+  .chip-alt.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+</style>
+
+<script>
+  (function() {
+    var form = document.getElementById('assessmentFiltersForm');
+    ['year_id','term_id','class_id','subject_id','assessment_type_id','is_done','date_from','date_to'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', function(){ form.submit(); });
+      }
+    });
+  })();
+</script>
+<script>
+  (function() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var shouldOpen = params.get('open_modal');
+      if (shouldOpen) {
+        $('#createAssessmentModal').modal('show');
+      }
+      // Prefill modal fields where possible using current filters
+      var subj = "{{ selected_subject_id|default:'' }}";
+      if (subj) {
+        var elS = document.getElementById('id_subject');
+        if (elS) elS.value = subj;
+      }
+      var at = "{{ selected_assessment_type_id|default:'' }}";
+      if (at) {
+        var elT = document.getElementById('id_assessment_type');
+        if (elT) elT.value = at;
+      }
+      var ac = params.get('academic_class_id') || '';
+      if (ac) {
+        var elAC = document.getElementById('id_academic_class');
+        if (elAC) elAC.value = ac;
+      }
+    } catch (e) {}
+  })();
+</script>
+<script>
+  (function() {
+    var singleBtn = document.getElementById('modeSingleBtn');
+    var bulkBtn = document.getElementById('modeBulkBtn');
+    var singleSection = document.getElementById('singleAssessmentSection');
+    var bulkSection = document.getElementById('bulkAssessmentSection');
+    var bulkFlag = document.getElementById('bulk_subjects');
+
+    if (!singleBtn || !bulkBtn || !singleSection || !bulkSection || !bulkFlag) {
+      return;
+    }
+
+    function toggleSectionInputs(section, disabled) {
+      var inputs = section.querySelectorAll('input, select, textarea, button');
+      inputs.forEach(function(el) {
+        if (el.type === 'hidden') {
+          return;
+        }
+        el.disabled = disabled;
+      });
+    }
+
+    function setMode(mode) {
+      if (mode === 'bulk') {
+        singleSection.style.display = 'none';
+        bulkSection.style.display = 'block';
+        bulkFlag.value = '1';
+        toggleSectionInputs(singleSection, true);
+        toggleSectionInputs(bulkSection, false);
+        bulkBtn.classList.add('btn-dark');
+        bulkBtn.classList.remove('btn-default');
+        singleBtn.classList.add('btn-default');
+        singleBtn.classList.remove('btn-dark');
+      } else {
+        singleSection.style.display = 'block';
+        bulkSection.style.display = 'none';
+        bulkFlag.value = '0';
+        toggleSectionInputs(singleSection, false);
+        toggleSectionInputs(bulkSection, true);
+        singleBtn.classList.add('btn-dark');
+        singleBtn.classList.remove('btn-default');
+        bulkBtn.classList.add('btn-default');
+        bulkBtn.classList.remove('btn-dark');
+      }
+    }
+
+    singleBtn.addEventListener('click', function() { setMode('single'); });
+    bulkBtn.addEventListener('click', function() { setMode('bulk'); });
+
+    var params = new URLSearchParams(window.location.search);
+    var openModal = params.get('open_modal');
+    if (openModal === 'bulk') {
+      setMode('bulk');
+    } else {
+      setMode('single');
+    }
+  })();
+</script>
+{% endblock content %}

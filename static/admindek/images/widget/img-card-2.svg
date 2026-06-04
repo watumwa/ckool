@@ -1,0 +1,15 @@
+<svg width="85" height="54" viewBox="0 0 85 54" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cardGradmastercard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#dc2626;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b91c1c;stop-opacity:1" />
+    </linearGradient>
+    <pattern id="cardPattern" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="1" fill="white" opacity="0.1"/>
+    </pattern>
+  </defs>
+  <rect width="85" height="54" rx="6" fill="url(#cardGradmastercard)"/>
+  <rect width="85" height="54" rx="6" fill="url(#cardPattern)"/>
+  <circle cx="65" cy="27" r="6" fill="#eb001b" opacity="0.8"/>
+             <circle cx="73" cy="27" r="6" fill="#f79e1b" opacity="0.8"/>
+</svg>

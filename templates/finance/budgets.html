@@ -1,0 +1,267 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Budgets{% endblock page_title %}
+{% block content %}
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+            <div class="x_title">
+                <h2>Manage Budgets</h2>
+                <ul class="nav navbar-right panel_toolbox">
+                <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                </li>
+                </ul>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-success btn-sm mb-2" data-toggle="modal" data-target="#addBudgetModal">
+                            <i class="fa fa-plus-circle"></i> Add Budget
+                        </button>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <span class="badge bg-blue">Total Budgets: {{ budgets|length }}</span>
+                    </div>
+                </div>
+                <div class="row mt-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="budgetSearch" placeholder="Search budgets...">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="clearSearch">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fa fa-filter"></i> Filter by Status
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a class="dropdown-item" href="#" data-filter="">All</a>
+                                <a class="dropdown-item" href="#" data-filter="Active">Active</a>
+                                <a class="dropdown-item" href="#" data-filter="Inactive">Inactive</a>
+                                <a class="dropdown-item" href="#" data-filter="Pending">Pending</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- start budget list -->
+                 {% if budgets %}
+                <table id="datatable-checkbox" class="table table-striped table-bordered bulk_action dt-responsive nowrap" style="width:100%" cellspacing="0">
+                    <thead>
+                      <tr>
+                        <th>
+                           <input type="checkbox" id="check-all" >
+                        </th>
+                        <th>#</th>
+                        <th>Budget Name</th>
+                        <th>Budget Total</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for budget in budgets %}
+                    <tr class="budget-row" data-status="{{budget.status}}">
+                        <td class="align-middle">
+                            <input type="checkbox" class="flat" name="table_records">
+                         </td>
+                        <td class="align-middle">{{forloop.counter}}</td>
+                        <td class="align-middle">
+                            <strong>{{budget}}</strong>
+                            {% if budget.description %}
+                            <br><small class="text-muted">{{ budget.description|truncatechars:50 }}</small>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            <span class="badge badge-pill badge-success p-2">{{budget.budget_total|intcomma}}/-</span>
+                        </td>
+                        <td class="align-middle">
+                            {% if budget.status == 'Active' %}
+                                <span class="badge badge-pill badge-success p-2">{{budget.status}}</span>
+                            {% elif budget.status == 'Inactive' %}
+                                <span class="badge badge-pill badge-secondary p-2">{{budget.status}}</span>
+                            {% else %}
+                                <span class="badge badge-pill badge-warning p-2">{{budget.status}}</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'budget_item_page' budget.id %}" class="btn btn-outline-primary btn-sm"><i class="fa fa-info-circle"></i> Items</a>
+                                <a href="{% url 'edit_budget' budget.id %}" class="btn btn-outline-info btn-sm"><i class="fa fa-edit"></i> Edit</a>
+                                <a href="{% url 'delete_budget' budget.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this record?')"><i class="fa fa-trash"></i> Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="d-md-none budget-card-row" data-status="{{budget.status}}">
+                        <td colspan="6">
+                            <div class="card mb-3 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-1">{{budget}}</h5>
+                                    {% if budget.description %}
+                                    <p class="card-text text-muted small">{{ budget.description|truncatechars:100 }}</p>
+                                    {% endif %}
+                                    <p class="card-text mb-1">
+                                        <span class="badge badge-pill badge-success p-2">{{budget.budget_total|intcomma}}/-</span>
+                                    </p>
+                                    <p class="card-text mb-3">
+                                        {% if budget.status == 'Active' %}
+                                            <span class="badge badge-pill badge-success p-2">{{budget.status}}</span>
+                                        {% elif budget.status == 'Inactive' %}
+                                            <span class="badge badge-pill badge-secondary p-2">{{budget.status}}</span>
+                                        {% else %}
+                                            <span class="badge badge-pill badge-warning p-2">{{budget.status}}</span>
+                                        {% endif %}
+                                    </p>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'budget_item_page' budget.id %}" class="btn btn-outline-primary btn-sm"><i class="fa fa-info-circle"></i> Items</a>
+                                        <a href="{% url 'edit_budget' budget.id %}" class="btn btn-outline-info btn-sm"><i class="fa fa-edit"></i> Edit</a>
+                                        <a href="{% url 'delete_budget' budget.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this record?')"><i class="fa fa-trash"></i> Delete</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                </table>
+                {% else %}
+                    <div class="text-center">
+                        <h4>No Budgets Available</h4>
+                        <p>Get started by adding your first budget.</p>
+                        <button type="button" class="btn btn-success btn-sm mt-2" data-toggle="modal" data-target="#addBudgetModal">
+                            <i class="fa fa-plus-circle"></i> Add First Budget
+                        </button>
+                    </div>
+                {% endif %}
+                <!-- end budget list -->
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add budget Modal -->
+    <div class="modal fade add-budget-modal" id="addBudgetModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h4 class="modal-title" id="myModalLabel">Add Budget</h4>
+              <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'add_budget_page' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group row">
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable if not already initialized
+        if (!$.fn.DataTable.isDataTable('#datatable-checkbox')) {
+            $('#datatable-checkbox').DataTable({
+                responsive: true,
+                pageLength: 10,
+                order: [[1, 'asc']],
+                columnDefs: [
+                    { orderable: false, targets: 0 },
+                    { responsivePriority: 1, targets: 2 },
+                    { responsivePriority: 2, targets: 5 }
+                ],
+                drawCallback: function(settings) {
+                    // Hide card rows if table view is active
+                    if ($(window).width() < 768) {
+                        $('.budget-row').hide();
+                        $('.budget-card-row').show();
+                    } else {
+                        $('.budget-row').show();
+                        $('.budget-card-row').hide();
+                    }
+                }
+            });
+        }
+
+        // Search functionality
+        $('#budgetSearch').on('keyup', function() {
+            $('#datatable-checkbox').DataTable().search(this.value).draw();
+        });
+
+        // Clear search input
+        $('#clearSearch').on('click', function() {
+            $('#budgetSearch').val('');
+            $('#datatable-checkbox').DataTable().search('').draw();
+        });
+
+        // Filter by status
+        $('.dropdown-item[data-filter]').on('click', function(e) {
+            e.preventDefault();
+            var filter = $(this).data('filter');
+            var table = $('#datatable-checkbox').DataTable();
+            
+            if (filter === '') {
+                table.column(4).search('').draw();
+            } else {
+                table.column(4).search(filter).draw();
+            }
+        });
+
+        // Responsive handling for card view
+        $(window).resize(function() {
+            if ($(window).width() < 768) {
+                $('.budget-row').hide();
+                $('.budget-card-row').show();
+            } else {
+                $('.budget-row').show();
+                $('.budget-card-row').hide();
+            }
+        });
+    });
+</script>
+<style>
+    .budget-card-row {
+        display: none;
+    }
+    .card {
+        border-radius: 0.5rem;
+        border: 1px solid rgba(0,0,0,0.125);
+    }
+    .card-body {
+        padding: 1rem;
+    }
+    .badge-pill {
+        border-radius: 50rem !important;
+    }
+    .table th, .table td {
+        vertical-align: middle;
+    }
+    .btn-outline-primary, .btn-outline-info, .btn-outline-danger {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    .input-group {
+        margin-bottom: 0 !important;
+    }
+</style>
+{% endblock extra_js %}
+                        {{form|crispy}}
+                    </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+
+          </div>
+        </div>
+    </div>
+
+{% endblock content%}

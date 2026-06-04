@@ -1,0 +1,862 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Student Details{% endblock page_title %}
+
+{% block content %}
+<div class="container p-3">
+
+  <div class="student-header">
+    <a href="{% url 'student_page' %}" class="btn btn-default btn-sm">
+      <i class="fa fa-arrow-left"></i> Back to Students
+    </a>
+    <div class="student-identity">
+      <div class="avatar">
+        {% if student.photo %}
+        <img src="{{ student.photo.url }}" alt="Student Photo" />
+        {% else %}
+        <img src="/static/images/default_student.png" alt="Default Student Photo" />
+        {% endif %}
+      </div>
+      <div>
+        <h3 class="student-name">{{ student.student_name }}</h3>
+        <div class="student-subtext">Student ID: {{ student.display_student_id }}{% if student.current_class %} - {{ student.current_class }}{% endif %}</div>
+      </div>
+    </div>
+    <div class="student-status">
+      <span class="badge {% if student.is_active %}badge-success{% else %}badge-default{% endif %}">
+        {% if student.is_active %}Active{% else %}Inactive{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    <!-- LEFT: PROFILE -->
+    <div class="col-md-4">
+      <div class="profile-card text-center">
+        <div class="profile-photo mb-3">
+          {% if student.photo %}
+          <img src="{{ student.photo.url }}" alt="Student Photo" />
+          {% else %}
+          <img src="/static/images/default_student.png" alt="Default Student Photo" />
+          {% endif %}
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label"><i class="fa fa-envelope"></i> Email</span>
+            <span class="detail-value">{{ student.email|default:"-" }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label"><i class="fa fa-birthday-cake"></i> DOB</span>
+            <span class="detail-value">{{ student.birthdate|date:"M d, Y"|default:"-" }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label"><i class="fa fa-calendar"></i> Registered Session</span>
+            <span class="detail-value">{{ student.academic_year.academic_year|default:"-" }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label"><i class="fa fa-graduation-cap"></i> Class</span>
+            <span class="detail-value">{{ student.current_class|default:"-" }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label"><i class="fa fa-user"></i> Gender</span>
+            <span class="detail-value">{{ student.get_gender_display|default:student.gender }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label"><i class="fa fa-map-marker"></i> Address</span>
+            <span class="detail-value">{{ student.address|default:"-" }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label"><i class="fa fa-user-circle"></i> Guardian</span>
+            <span class="detail-value">{{ student.guardian|default:"-" }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label"><i class="fa fa-phone"></i> Guardian Contact</span>
+            <span class="detail-value">{{ student.contact|default:"-" }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: CONTENT -->
+    <div class="col-md-8">
+
+      <!-- NAV TABS -->
+      <div class="nav-tabs-modern">
+        <button class="tab-btn {% if active_tab == 'docs' %}active{% endif %}" onclick="showSection('docs', event)">Docs</button>
+        <button class="tab-btn {% if active_tab == 'exam' %}active{% endif %}" onclick="showSection('exam', event)">Exam Reports</button>
+        <button class="tab-btn {% if active_tab == 'library' %}active{% endif %}" onclick="showSection('library', event)">Library</button>
+        <button class="tab-btn {% if active_tab == 'extra' %}active{% endif %}" onclick="showSection('extra', event)">Activities</button>
+        <button class="tab-btn {% if active_tab == 'payments' %}active{% endif %}" onclick="showSection('payments', event)">Payments</button>
+        <button class="tab-btn {% if active_tab == 'attendance' %}active{% endif %}" onclick="showSection('attendance', event)">Attendance</button>
+      </div>
+
+      <!-- DOCS SECTION -->
+      <div id="docs-section" class="content-section"
+        style="display: {% if active_tab == 'docs' %}block{% else %}none{% endif %};">
+        <div class="profile-card">
+
+          <h6 class="fw-bold mb-2">General Documents</h6>
+
+          {% if user.staff_account.role.name == "Admin" %}
+          <div class="mb-3">
+            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#uploadDocumentModal">
+              <i class="fa fa-plus"></i> Upload Document
+            </button>
+          </div>
+          {% endif %}
+
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th width="80">S.No</th>
+                <th>Document Type</th>
+                <th>Upload Date</th>
+                <th width="200">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in general_documents %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ doc.get_document_type_display }}</td>
+                <td>{{ doc.uploaded_at|date:"M d, Y" }}</td>
+                <td>
+                  <a href="{{ doc.file.url }}" class="btn btn-sm btn-primary me-2" target="_blank">
+                    <i class="fa fa-eye"></i>
+                  </a>
+                  {% if user.staff_account.role.name == "Admin" %}
+                  <a href="{% url 'delete_student_document' doc.id %}" class="btn btn-sm btn-danger"
+                    onclick="return confirm('Are you sure you want to delete this document?');">
+                    <i class="fa fa-trash"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4">No documents available</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+        </div>
+      </div>
+
+      <!-- PAYMENTS SECTION -->
+      <div id="payments-section" class="content-section"
+        style="display: {% if active_tab == 'payments' %}block{% else %}none{% endif %};">
+        <div class="profile-card">
+          <h6 class="fw-bold mb-2">Payment History</h6>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th>Bill #</th>
+                <th>Amount</th>
+                <th>Payment Method</th>
+                <th>Reference</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for bill in student.bills.all %}
+              {% for payment in bill.payments.all %}
+              <tr>
+                <td>{{ forloop.parentloop.counter }}.{{ forloop.counter }}</td>
+                <td>{{ bill.id }}</td>
+                <td>{{ payment.amount }}</td>
+                <td>{{ payment.payment_method }}</td>
+                <td>{{ payment.reference_no }}</td>
+                <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+              </tr>
+              {% empty %}
+              {% if forloop.first %}
+              <tr>
+                <td colspan="6">No payment records available</td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+              {% empty %}
+              <tr>
+                <td colspan="6">No bills found</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <hr>
+
+          <h6 class="fw-bold mb-2">Fee Receipts</h6>
+
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th>Document Type</th>
+                <th>Upload Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in bill_documents %}
+              {% if doc.document_type == "FEE_RECEIPT" %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ doc.get_document_type_display }}</td>
+                <td>{{ doc.uploaded_at|date:"M d, Y" }}</td>
+                <td>
+                  <a href="{{ doc.file.url }}" class="btn btn-sm btn-primary" target="_blank">View</a>
+                  {% if user.staff_account.role.name == "Admin" %}
+                  <a href="{% url 'delete_student_document' doc.id %}" class="btn btn-sm btn-danger"
+                    onclick="return confirm('Are you sure you want to delete this document?');">Delete</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endif %}
+              {% empty %}
+              <tr>
+                <td colspan="4">No fee receipts available</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- EXAM REPORTS SECTION -->
+      <div id="exam-section" class="content-section"
+        style="display: {% if active_tab == 'exam' %}block{% else %}none{% endif %};">
+        <div class="profile-card">
+          <h6 class="fw-bold mb-3">Exam Reports</h6>
+
+          <!-- Filters -->
+          <div class="mb-3">
+            <form method="get" class="row g-3">
+              <input type="hidden" name="tab" value="exam">
+              <div class="col-md-4">
+                <label for="academic_year" class="form-label small">Academic Year</label>
+                <select class="form-select form-select-sm" id="academic_year" name="academic_year" onchange="this.form.submit()">
+                  <option value="">All Years</option>
+                  {% for year in academic_years %}
+                  <option value="{{ year.id }}" {% if selected_academic_year == year.id|stringformat:"s" %}selected{% endif %}>{{ year.academic_year }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="term" class="form-label small">Term</label>
+                <select class="form-select form-select-sm" id="term" name="term" onchange="this.form.submit()">
+                  <option value="">All Terms</option>
+                  {% for term in terms %}
+                  <option value="{{ term.id }}" {% if selected_term == term.id|stringformat:"s" %}selected{% endif %}>{{ term.get_term_display }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="assessment_type" class="form-label small">Assessment Type</label>
+                <select class="form-select form-select-sm" id="assessment_type" name="assessment_type" onchange="this.form.submit()">
+                  <option value="">All Types</option>
+                  {% for atype in assessment_types %}
+                  <option value="{{ atype.id }}" {% if selected_assessment_type == atype.id|stringformat:"s" %}selected{% endif %}>{{ atype.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </form>
+          </div>
+
+          {% if selected_academic_year or selected_term or selected_assessment_type %}
+          <div class="alert alert-info mb-3">
+            <strong>Showing results for:</strong>
+            {% if selected_academic_year %}
+              Academic Year: {% for year in academic_years %}{% if year.id|stringformat:"s" == selected_academic_year %}{{ year.academic_year }}{% endif %}{% endfor %}
+            {% endif %}
+            {% if selected_term %}
+              {% if selected_academic_year %}, {% endif %}Term: {% for term in terms %}{% if term.id|stringformat:"s" == selected_term %}{{ term.get_term_display }}{% endif %}{% endfor %}
+            {% endif %}
+            {% if selected_assessment_type %}
+              {% if selected_academic_year or selected_term %}, {% endif %}Assessment Type: {% for atype in assessment_types %}{% if atype.id|stringformat:"s" == selected_assessment_type %}{{ atype.name }}{% endif %}{% endfor %}
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% if exam_reports %}
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+              <thead class="table-light">
+                <tr>
+                  <th>S.No</th>
+                  <th>Subject</th>
+                  {% if not selected_academic_year %}<th>Academic Year</th>{% endif %}
+                  {% if not selected_term %}<th>Term</th>{% endif %}
+                  {% if not selected_assessment_type %}<th>Assessment Type</th>{% endif %}
+                  <th>Date</th>
+                  <th>Score</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for report in exam_reports %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ report.assessment.subject.name }}</td>
+                  {% if not selected_academic_year %}<td>{{ report.assessment.academic_class.academic_year.academic_year }}</td>{% endif %}
+                  {% if not selected_term %}<td>{{ report.assessment.academic_class.term.get_term_display }}</td>{% endif %}
+                  {% if not selected_assessment_type %}<td>{{ report.assessment.assessment_type.name }}</td>{% endif %}
+                  <td>{{ report.assessment.date|date:"M d, Y" }}</td>
+                  <td>{{ report.score }}</td>
+                  <td>{{ report.grade }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="{% if selected_academic_year and selected_term and selected_assessment_type %}5{% elif selected_academic_year and selected_term %}6{% elif selected_academic_year and selected_assessment_type %}6{% elif selected_term and selected_assessment_type %}6{% elif selected_academic_year %}7{% elif selected_term %}7{% elif selected_assessment_type %}7{% else %}8{% endif %}" class="text-center">No exam reports available</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-center text-muted">No exam reports available</p>
+          {% endif %}
+
+          {% if exam_reports %}
+          <hr>
+          <h6 class="fw-bold mb-3">Performance Summary</h6>
+          <div class="mb-3">
+            <strong>Overall Average Score: {{ overall_avg|floatformat:1 }}%</strong>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="text-primary">Average by Assessment Type</h6>
+              {% for perf in assessment_performance %}
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>{{ perf.assessment__assessment_type__name }}</span>
+                <div>
+                  <span style="color: {% if perf.avg_score >= 70 %}green{% elif perf.avg_score >= 50 %}orange{% else %}red{% endif %};">{{ perf.avg_score|floatformat:1 }}%</span>
+                  <small class="text-muted ms-2">{% if perf.avg_score >= 70 %}{% elif perf.avg_score >= 50 %}{% else %}{% endif %}</small>
+                </div>
+              </div>
+              {% empty %}
+              <p class="text-muted">No data</p>
+              {% endfor %}
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-primary">Average by Subject</h6>
+              {% for perf in subject_performance %}
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>{{ perf.assessment__subject__name }}</span>
+                <div>
+                  <span style="color: {% if perf.avg_score >= 70 %}green{% elif perf.avg_score >= 50 %}orange{% else %}red{% endif %};">{{ perf.avg_score|floatformat:1 }}%</span>
+                  <small class="text-muted ms-2">{% if perf.avg_score >= 70 %}{% elif perf.avg_score >= 50 %}{% else %}Poor{% endif %}</small>
+                </div>
+              </div>
+              {% empty %}
+              <p class="text-muted">No data</p>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <div id="library-section" class="content-section"
+        style="display: {% if active_tab == 'library' %}block{% else %}none{% endif %};">
+        <div class="profile-card">
+          <h6 class="fw-bold mb-2">Library History</h6>
+          <p>Library history content will be displayed here.</p>
+        </div>
+      </div>
+
+      <div id="extra-section" class="content-section"
+        style="display: {% if active_tab == 'extra' %}block{% else %}none{% endif %};">
+        <div class="profile-card">
+          <h6 class="fw-bold mb-2">Extra Activities</h6>
+          <p>Extra activities content will be displayed here.</p>
+        </div>
+      </div>
+
+      <div id="attendance-section" class="content-section"
+        style="display: {% if active_tab == 'attendance' %}block{% else %}none{% endif %};">
+        <div class="profile-card">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h6 class="fw-bold mb-0">Attendance</h6>
+            <span class="attendance-rate-pill {% if attendance_rate >= 75 %}good{% elif attendance_rate >= 50 %}fair{% else %}low{% endif %}">
+              Effective Attendance: {{ attendance_rate|floatformat:1 }}%
+            </span>
+          </div>
+
+          <form method="get" class="attendance-filter mb-3">
+            <input type="hidden" name="tab" value="attendance">
+            <div class="row g-2">
+              <div class="col-md-4">
+                <label for="attendance_from" class="form-label small">From</label>
+                <input type="date" id="attendance_from" name="attendance_from" class="form-control form-control-sm"
+                  value="{{ attendance_date_from|date:'Y-m-d' }}">
+              </div>
+              <div class="col-md-4">
+                <label for="attendance_to" class="form-label small">To</label>
+                <input type="date" id="attendance_to" name="attendance_to" class="form-control form-control-sm"
+                  value="{{ attendance_date_to|date:'Y-m-d' }}">
+              </div>
+              <div class="col-md-4">
+                <label for="attendance_status" class="form-label small">Status</label>
+                <select id="attendance_status" name="attendance_status" class="form-control form-control-sm">
+                  <option value="">All Statuses</option>
+                  {% for code, label in attendance_status_choices %}
+                  <option value="{{ code }}" {% if attendance_status_filter == code %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary btn-sm">Apply Filter</button>
+              <a href="{% url 'student_details_page' student.id %}?tab=attendance" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </div>
+          </form>
+
+          <div class="attendance-kpis">
+            <div class="attendance-kpi">
+              <span class="kpi-label">Total Sessions</span>
+              <span class="kpi-value">{{ attendance_total }}</span>
+            </div>
+            <div class="attendance-kpi">
+              <span class="kpi-label">Present</span>
+              <span class="kpi-value">{{ attendance_present }}</span>
+            </div>
+            <div class="attendance-kpi">
+              <span class="kpi-label">Late</span>
+              <span class="kpi-value">{{ attendance_late }}</span>
+            </div>
+            <div class="attendance-kpi">
+              <span class="kpi-label">Absent</span>
+              <span class="kpi-value">{{ attendance_absent }}</span>
+            </div>
+            <div class="attendance-kpi">
+              <span class="kpi-label">Excused</span>
+              <span class="kpi-value">{{ attendance_excused }}</span>
+            </div>
+          </div>
+
+          <p class="text-muted small mt-2 mb-3">
+            Showing attendance from {{ attendance_date_from|date:"M d, Y" }} to {{ attendance_date_to|date:"M d, Y" }}.
+            Effective attendance counts Present, Late, and Excused.
+          </p>
+
+          {% if attendance_records %}
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm attendance-table">
+              <thead class="table-light">
+                <tr>
+                  <th>S.No</th>
+                  <th>Date</th>
+                  <th>Subject</th>
+                  <th>Class</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                  <th>Teacher</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in attendance_records %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ record.session.date|date:"M d, Y" }}</td>
+                  <td>{{ record.session.subject.name|default:"-" }}</td>
+                  <td>
+                    {{ record.session.class_stream.academic_class.Class.code|default:record.session.class_stream.academic_class.Class.name|default:"-" }}
+                    - {{ record.session.class_stream.stream.stream|default:"-" }}
+                  </td>
+                  <td>
+                    {% if record.session.time_slot %}
+                    {{ record.session.time_slot.start_time|time:"H:i" }} - {{ record.session.time_slot.end_time|time:"H:i" }}
+                    {% else %}
+                    -
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="attendance-status-badge {{ record.status }}">{{ record.get_status_display }}</span>
+                  </td>
+                  <td>{{ record.session.teacher|default:"-" }}</td>
+                  <td>{{ record.remarks|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-light border text-muted mb-0">
+            No attendance records found for the selected range.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Upload Modal -->
+      {% if user.staff_account.role.name == "Admin" %}
+      <div class="modal fade" id="uploadDocumentModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">
+                <i class="fa fa-cloud-upload"></i> Upload Document for {{ student.student_name }}
+              </h5>
+              <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <form method="post" action="{% url 'upload_student_document' student.id %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="modal-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label>
+                        <i class="fa fa-tag text-primary"></i> Document Type *
+                      </label>
+                      <select class="form-control" name="document_type" required>
+                        <option value="">Select Document Type</option>
+                        {% for code, display in document_type_choices %}
+                        <option value="{{ code }}">{{ display }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label>
+                        <i class="fa fa-file text-success"></i> Select File *
+                      </label>
+                      <input type="file" class="form-control" name="file" accept=".pdf,.doc,.docx,.jpg,.png,.jpeg"
+                        required>
+                    </div>
+                  </div>
+                </div>
+                <div class="alert alert-info">
+                  <strong>Guidelines:</strong>
+                  <ul class="mb-0 mt-2">
+                    <li>Max size: 3MB</li>
+                    <li>Use clear file names</li>
+                    <li>Ensure readability</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                  <i class="fa fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="btn btn-success">
+                  <i class="fa fa-cloud-upload"></i> Upload
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function showSection(section, event) {
+    // Hide all sections
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(sec => sec.style.display = 'none');
+
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => tab.classList.remove('active'));
+
+    // Show selected section
+    document.getElementById(section + '-section').style.display = 'block';
+
+    // Add active class to clicked tab
+    if (event && event.currentTarget) {
+      event.currentTarget.classList.add('active');
+    }
+
+    // Persist active tab in URL without page reload
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', section);
+    window.history.replaceState({}, '', url.toString());
+  }
+</script>
+<style>
+  body {
+    background: #f5f7fa;
+  }
+
+  .student-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: #ffffff;
+    border: 1px solid #eef1f4;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    color: #2c3e50;
+    box-shadow: 0 10px 20px rgba(17, 24, 39, 0.08);
+  }
+
+  .student-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .student-identity .avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid #eef1f4;
+    background: #f6f8fb;
+  }
+
+  .student-identity .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .student-name {
+    margin: 0 0 4px;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+
+  .student-subtext {
+    color: #7b8a97;
+    font-size: 13px;
+  }
+
+  .student-status .badge {
+    background: #e8f4ff;
+    border: 1px solid #cfe6ff;
+    color: #1f6fd6;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .profile-card {
+    border: 1px solid #eef1f4;
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 18px;
+    box-shadow: 0 10px 20px rgba(17, 24, 39, 0.06);
+  }
+
+  .profile-photo img {
+    width: 120px;
+    height: 120px;
+    border-radius: 14px;
+    object-fit: cover;
+    border: 3px solid #eef1f4;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    text-align: left;
+  }
+
+  .detail-item {
+    border: 1px solid #eef1f4;
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: #ffffff;
+    box-shadow: 0 6px 12px rgba(17, 24, 39, 0.04);
+  }
+
+  .detail-label {
+    display: block;
+    text-transform: uppercase;
+    font-size: 11px;
+    color: #8a97a5;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  .detail-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2a37;
+  }
+
+  .nav-tabs-modern {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .tab-btn {
+    border: 1px solid #e6ebf1;
+    background: #ffffff;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: #425466;
+    box-shadow: 0 6px 12px rgba(15, 23, 42, 0.06);
+  }
+
+  .tab-btn.active {
+    background: #2a7fdb;
+    border-color: #2a7fdb;
+    color: #ffffff;
+    box-shadow: 0 10px 20px rgba(42, 127, 219, 0.2);
+  }
+
+  .attendance-rate-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+
+  .attendance-rate-pill.good {
+    background: #e8f6ee;
+    color: #1f6b3d;
+    border-color: #bfe7cf;
+  }
+
+  .attendance-rate-pill.fair {
+    background: #fff7e8;
+    color: #8f5b00;
+    border-color: #f6ddad;
+  }
+
+  .attendance-rate-pill.low {
+    background: #fdeeee;
+    color: #9b2d30;
+    border-color: #f6c9cb;
+  }
+
+  .attendance-kpis {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .attendance-kpi {
+    border: 1px solid #e8edf2;
+    border-radius: 10px;
+    background: #f9fbfd;
+    padding: 10px;
+  }
+
+  .attendance-kpi .kpi-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #8592a0;
+    margin-bottom: 4px;
+  }
+
+  .attendance-kpi .kpi-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2a37;
+  }
+
+  .attendance-status-badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid transparent;
+  }
+
+  .attendance-status-badge.present {
+    background: #e9f8ef;
+    color: #1f6b3d;
+    border-color: #bee5cd;
+  }
+
+  .attendance-status-badge.late {
+    background: #eef4ff;
+    color: #285ea9;
+    border-color: #cddcf8;
+  }
+
+  .attendance-status-badge.absent {
+    background: #fdeeee;
+    color: #9b2d30;
+    border-color: #f3c3c5;
+  }
+
+  .attendance-status-badge.excused {
+    background: #fff7e8;
+    color: #8f5b00;
+    border-color: #f6ddad;
+  }
+
+  @media (max-width: 992px) {
+    .student-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+    .attendance-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .extra {
+    background: #ff9800;
+  }
+
+  .payments {
+    background: #4caf50;
+  }
+
+  .attendance {
+    background: #f44336;
+  }
+
+  .library {
+    background: #673ab7;
+  }
+
+  .exam {
+    background: #2196f3;
+  }
+
+  .docs {
+    background: #00b3ff;
+  }
+
+  .extra {
+    background: #4caf50;
+  }
+
+  .payments {
+    background: #ff9800;
+  }
+
+  .attendance {
+    background: #f44336;
+  }
+
+  .table td,
+  .table th {
+    vertical-align: middle;
+  }
+</style>
+
+
+{% endblock content %}

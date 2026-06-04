@@ -1,0 +1,118 @@
+{% load static %}
+<!-- jQuery (required by existing page templates) -->
+<script src="{% static 'vendors/jquery/dist/jquery.min.js' %}"></script>
+<!-- Bootstrap 5 + Admindek core -->
+<script src="{% static 'admindek/js/plugins/popper.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/simplebar.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/bootstrap.min.js' %}"></script>
+<!-- Admindek theme -->
+<script src="{% static 'admindek/js/script.js' %}"></script>
+<script src="{% static 'admindek/js/theme.js' %}"></script>
+
+<!-- DataTables (Bootstrap 5) -->
+<script src="{% static 'admindek/js/plugins/dataTables.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/dataTables.bootstrap5.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/dataTables.buttons.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/buttons.bootstrap5.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/buttons.html5.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/buttons.print.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/responsive.bootstrap5.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/dataTables.fixedHeader.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/jszip.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/pdfmake.min.js' %}"></script>
+<script src="{% static 'admindek/js/plugins/vfs_fonts.js' %}"></script>
+
+<!-- ApexCharts -->
+<script src="{% static 'admindek/js/plugins/apexcharts.min.js' %}"></script>
+
+<!-- Theme init -->
+<script>
+  layout_change('light');
+  change_box_container('false');
+  layout_caption_change('true');
+  layout_rtl_change('false');
+  preset_change('preset-1');
+  layout_theme_sidebar_change('false');
+</script>
+
+<!-- Compatibility + init shims -->
+<script>
+$(function () {
+  // Bootstrap 3 data-* → data-bs-* shim
+  ['toggle', 'dismiss', 'target', 'parent', 'placement'].forEach(function (attr) {
+    $('[data-' + attr + ']').each(function () {
+      if (!$(this).attr('data-bs-' + attr)) {
+        $(this).attr('data-bs-' + attr, $(this).attr('data-' + attr));
+      }
+    });
+  });
+
+  // Bootstrap 5 tooltips
+  $('[data-bs-toggle="tooltip"]').each(function () { new bootstrap.Tooltip(this); });
+
+  // Panel toolbox: collapse / close (Gentelella)
+  $(document).on('click', '.collapse-link', function () {
+    var $content = $(this).closest('.x_panel').find('.x_content');
+    var $icon = $(this).find('i');
+    $content.slideToggle(200, function () {
+      $icon.toggleClass('fa-chevron-up fa-chevron-down');
+    });
+  });
+  $(document).on('click', '.close-link', function () {
+    $(this).closest('.x_panel').slideUp(200);
+  });
+
+  // jQuery DataTable alias (existing templates call $(...).DataTable())
+  if (typeof DataTable !== 'undefined') {
+    var schoolTableDefaults = {
+      responsive: true,
+      fixedHeader: true,
+      pageLength: 25,
+      lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+      order: [],
+      language: {
+        search: '',
+        searchPlaceholder: 'Search records...',
+        lengthMenu: 'Show _MENU_',
+        info: 'Showing _START_–_END_ of _TOTAL_',
+        emptyTable: 'No records found',
+        zeroRecords: 'No matching records found'
+      },
+      buttons: [
+        { extend: 'copyHtml5', text: 'Copy', className: 'btn btn-sm btn-outline-primary' },
+        { extend: 'csvHtml5', text: 'CSV', className: 'btn btn-sm btn-outline-primary' },
+        { extend: 'excelHtml5', text: 'Excel', className: 'btn btn-sm btn-outline-primary' },
+        { extend: 'print', text: 'Print', className: 'btn btn-sm btn-outline-primary' }
+      ],
+      dom: "<'row align-items-center g-2 mb-3'<'col-lg-4'l><'col-lg-4 text-lg-center'B><'col-lg-4 text-lg-end'f>>" +
+           "<'row'<'col-12'tr>>" +
+           "<'row align-items-center g-2 mt-3'<'col-md-6'i><'col-md-6'p>>"
+    };
+
+    $.fn.DataTable = function (opts) {
+      var firstInstance = null;
+      this.each(function () {
+        if (this.dataset.dtInitialized === 'true') return;
+        var instance = new DataTable(this, $.extend(true, {}, schoolTableDefaults, opts || {}));
+        this.dataset.dtInitialized = 'true';
+        $(this).addClass('dt-initialized');
+        if (!firstInstance) firstInstance = instance;
+      });
+      return firstInstance || this;
+    };
+    $.fn.dataTable = $.fn.DataTable;
+  }
+
+  // Auto-init tables with class 'datatable'
+  $('table.datatable:not(.dt-initialized)').each(function () {
+    $(this).DataTable();
+  });
+
+  // Switch role card highlight
+  $(document).on('change', '.role-radio', function () {
+    $('.role-card').removeClass('border-success');
+    $(this).closest('label').find('.role-card').addClass('border-success');
+  });
+});
+</script>

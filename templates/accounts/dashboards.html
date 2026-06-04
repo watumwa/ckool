@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Information Modal</title>
+    
+</head>
+<body>
+
+    <!-- The Modal -->
+    <div id="roleModal" class="modal">
+        <!-- Modal Content -->
+        <div class="modal-content">
+            <span id="closeModalBtn" class="close">&times;</span>
+            <h2>Current Role: {{ current_role }}</h2>
+            <h3>Assigned Roles</h3>
+            <ul>
+                {% for role in roles %}
+                    <li>{{ role.name }}</li>
+                {% endfor %}
+            </ul>
+
+            <!-- Include the role-switching form here -->
+            <form action="{% url 'switch_role' %}" method="post">
+                {% csrf_token %}
+                <label for="role">Switch Role:</label>
+                <select id="role" name="role" required>
+                    {% for role in roles %}
+                        <option value="{{ role.id }}">{{ role.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="switch-role-btn">Switch Role</button>
+            </form>
+
+        </div>
+    </div>
+    <style>
+        /* Style for modal background */
+        .modal {
+            display: block;  /* Show by default */
+            position: fixed;
+            z-index: 1;  /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);  /* Fade effect */
+            overflow: auto;
+            transition: all 0.3s ease;
+        }
+
+        /* Modal Content */
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 60%; /* Adjust width to be narrower */
+            max-width: 600px; /* Optional: maximum width */
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Close Button */
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+
+        /* Hover effect on close button */
+        .close:hover,
+        .close:focus {
+            color: #003366;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Adjusted padding for roles list */
+        ul {
+            padding-left: 20px;
+        }
+
+        /* Style for list items (roles) */
+        ul li {
+            font-size: 18px;
+            padding: 10px 0;
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            color: #003366;  /* Dark Blue color for the text */
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        /* Hover effect on list item (role) */
+        ul li:hover {
+            transform: scale(1.05);  /* Slightly enlarge the role */
+            color: #003366;  /* Keep dark blue on hover */
+        }
+
+        /* Style for the button to open the modal */
+        #openModalBtn {
+            background-color: #003366;  /* Dark Blue button */
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+        }
+
+        #openModalBtn:hover {
+            background-color: #002244;  /* Darker blue on hover */
+        }
+
+        /* Heading Style */
+        h2 {
+            font-family: 'Arial', sans-serif;
+            color: #003366;  /* Dark Blue */
+        }
+
+        /* Style for dropdown and form fields */
+        select, input[type="text"], input[type="password"], button {
+            background-color: #f4f7f9;
+            border: 1px solid #003366;
+            color: #003366;
+            font-size: 16px;
+            padding: 10px;
+            width: 100%;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            font-family: 'Arial', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus, input[type="text"]:focus, input[type="password"]:focus {
+            border-color: #0055a5;  /* Light blue on focus */
+            outline: none;
+        }
+
+        /* Style for form buttons (e.g., for switching roles) */
+        .switch-role-btn {
+            background-color: #003366;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .switch-role-btn:hover {
+            background-color: #002244;  /* Darker blue on hover */
+        }
+    </style>
+
+    <script>
+        // Get the modal
+        var modal = document.getElementById("roleModal");
+
+        // Get the <span> element that closes the modal
+        var closeBtn = document.getElementById("closeModalBtn");
+
+        // When the user clicks on <span> (x), close the modal
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

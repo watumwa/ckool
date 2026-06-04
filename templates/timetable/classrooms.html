@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-building"></i> Classrooms</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="alert alert-info" role="alert">
+          <i class="fa fa-info-circle"></i> Room availability is used for timetable allocation and conflict checks.
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Room</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for room in classrooms %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ room }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="2" class="text-muted">No classrooms configured.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

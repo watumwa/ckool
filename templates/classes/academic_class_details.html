@@ -1,0 +1,820 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}{{ academic_class.Class.name|default:academic_class.Class.code }} - Class Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid class-detail-page">
+
+  <div class="x_panel detail-hero">
+    <div class="x_content">
+      <div class="hero-head">
+        <div class="hero-identity">
+          <h2>{{ academic_class.Class.name|default:academic_class.Class.code }}</h2>
+          <p class="hero-subtitle">Term {{ academic_class.term.term }} &bull; {{ academic_class.academic_year.academic_year }}</p>
+          <span class="section-chip">
+            <i class="fa fa-th-large"></i>
+            {{ academic_class.section.section_name|default:academic_class.section }}
+          </span>
+        </div>
+        <div class="hero-actions">
+          {% if academic_class.term.is_current %}
+            <span class="status-chip status-active"><i class="fa fa-circle"></i> Active</span>
+          {% else %}
+            <span class="status-chip status-inactive"><i class="fa fa-circle"></i> Inactive</span>
+          {% endif %}
+
+          {% if can_manage_class_detail %}
+          <a href="{% url 'edit_academic_class_details_page' academic_class.id %}" class="btn btn-primary btn-sm">
+            <i class="fa fa-edit"></i> Edit
+          </a>
+          {% endif %}
+
+          <a href="{% url 'academic_class_page' %}" class="btn btn-default btn-sm">
+            <i class="fa fa-arrow-left"></i> Back to Classes
+          </a>
+        </div>
+      </div>
+
+      <div class="stats-strip-wrap">
+        <div class="stats-strip">
+          <div class="metric-card metric-students">
+            <div class="metric-icon"><i class="fa fa-users"></i></div>
+            <div class="metric-copy">
+              <strong>{{ total_students|default:0 }}</strong>
+              <span>Total Students</span>
+            </div>
+          </div>
+
+          <div class="metric-card metric-male">
+            <div class="metric-icon"><i class="fa fa-mars"></i></div>
+            <div class="metric-copy">
+              <strong>{{ male_students|default:0 }}</strong>
+              <span>Male</span>
+            </div>
+          </div>
+
+          <div class="metric-card metric-female">
+            <div class="metric-icon"><i class="fa fa-venus"></i></div>
+            <div class="metric-copy">
+              <strong>{{ female_students|default:0 }}</strong>
+              <span>Female</span>
+            </div>
+          </div>
+
+          <div class="metric-card metric-streams">
+            <div class="metric-icon"><i class="fa fa-stream"></i></div>
+            <div class="metric-copy">
+              <strong>{{ stream_count|default:0 }}</strong>
+              <span>Streams</span>
+            </div>
+          </div>
+
+          <div class="metric-card metric-fees">
+            <div class="metric-icon"><i class="fa fa-money"></i></div>
+            <div class="metric-copy">
+              <strong>UGX {{ academic_class.fees_amount|intcomma }}</strong>
+              <span>Fees</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-5 col-md-12">
+      <div class="x_panel detail-panel">
+        <div class="x_title">
+          <h2><i class="fa fa-info-circle"></i> Class Information</h2>
+          <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+          <table class="table info-table mb-0">
+            <tbody>
+              <tr>
+                <th>Class</th>
+                <td>{{ academic_class.Class.name|default:academic_class.Class.code }}</td>
+              </tr>
+              <tr>
+                <th>Academic Year</th>
+                <td>{{ academic_class.academic_year.academic_year }}</td>
+              </tr>
+              <tr>
+                <th>Term</th>
+                <td>Term {{ academic_class.term.term }}</td>
+              </tr>
+              <tr>
+                <th>Section</th>
+                <td>{{ academic_class.section.section_name|default:academic_class.section }}</td>
+              </tr>
+              <tr>
+                <th>Fees</th>
+                <td class="fees-value">UGX {{ academic_class.fees_amount|intcomma }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="x_panel stream-panel">
+        <div class="x_title d-flex align-items-center justify-content-between">
+          <h2 class="mb-0"><i class="fa fa-stream"></i> Class Streams & Teachers</h2>
+          {% if can_manage_class_detail %}
+          <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addStreamModal">
+            <i class="fa fa-plus-circle"></i> Add Stream
+          </button>
+          {% endif %}
+          <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+          {% if has_duplicate_teacher_assignment %}
+          <div class="alert alert-warning stream-warning">
+            <i class="fa fa-exclamation-triangle"></i>
+            Same teacher is assigned to multiple streams in this class.
+          </div>
+          {% endif %}
+
+          {% if stream_cards %}
+          <div class="row">
+            {% for card in stream_cards %}
+            <div class="col-sm-12">
+              <div class="stream-tile">
+                <div class="stream-tile-head">
+                  <div>
+                    <h4>Stream {{ card.stream_name }}</h4>
+                    {% if card.has_teacher %}
+                    <span class="badge badge-success">Assigned</span>
+                    {% else %}
+                    <span class="badge badge-default">Unassigned</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="stream-meta">
+                  <p><strong>Class Teacher:</strong> {{ card.teacher_name }}</p>
+                  <p><strong>Role:</strong> {{ card.teacher_role }}</p>
+                </div>
+
+                <div class="stream-actions">
+                  <a href="{% url 'academic_class_details_page' academic_class.id %}?stream={{ card.id }}#class-register-section" class="btn btn-default btn-sm">
+                    <i class="fa fa-users"></i> View Students
+                  </a>
+                  {% if can_manage_class_detail %}
+                  <a href="{% url 'edit_class_stream' card.id %}" class="btn btn-primary btn-sm">
+                    <i class="fa fa-edit"></i> Edit Stream
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-state compact text-center">
+            <i class="fa fa-stream fa-2x"></i>
+            <h4>No Streams Added Yet</h4>
+            <p>Add class streams to assign teachers and organize student registers.</p>
+            {% if can_manage_class_detail %}
+            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addStreamModal">
+              <i class="fa fa-plus"></i> Add First Stream
+            </button>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7 col-md-12">
+      <div class="x_panel register-panel" id="class-register-section">
+        <div class="x_title d-flex align-items-center justify-content-between">
+          <h2 class="mb-0"><i class="fa fa-address-book"></i> Class Register</h2>
+          <div class="register-actions">
+            <button type="button" id="exportRegisterCsv" class="btn btn-default btn-sm"><i class="fa fa-file-excel-o"></i> Export</button>
+            <button type="button" id="printRegister" class="btn btn-default btn-sm"><i class="fa fa-print"></i> Print</button>
+            {% if can_manage_promotions %}
+            <a href="{% url 'student_promotion_workflow' %}?source_academic_class_id={{ academic_class.id }}" class="btn btn-info btn-sm">
+              <i class="fa fa-cogs"></i> Promotion Center
+            </a>
+            <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#promoteStudentsModal">
+              <i class="fa fa-random"></i> Promote Students
+            </button>
+            {% endif %}
+            <a href="{% url 'bulk_register_students' %}" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> Register Student</a>
+          </div>
+          <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+          <form method="get" class="row register-filter-form">
+            <div class="col-md-5 col-sm-12">
+              <label for="q" class="control-label">Search</label>
+              <div class="input-group">
+                <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                <input type="text" id="q" name="q" value="{{ search_query }}" class="form-control" placeholder="Search student name or ID...">
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-12">
+              <label for="stream" class="control-label">Filter By Stream</label>
+              <select id="stream" name="stream" class="form-control">
+                <option value="">All Streams</option>
+                {% for stream in class_streams %}
+                <option value="{{ stream.id }}" {% if selected_stream_filter == stream.id|stringformat:"s" %}selected{% endif %}>{{ stream.stream.stream }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 col-sm-12 filter-btns">
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-check"></i> Apply</button>
+              <a href="{% url 'academic_class_details_page' academic_class.id %}#class-register-section" class="btn btn-default btn-sm"><i class="fa fa-refresh"></i> Reset</a>
+            </div>
+          </form>
+
+          {% if register_rows %}
+          <div class="table-responsive">
+            <table id="classRegisterTable" class="table table-striped table-bordered class-register-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>ID No</th>
+                  <th>Student Name</th>
+                  <th>Gender</th>
+                  <th>Stream</th>
+                  <th>Attendance %</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in register_rows %}
+                <tr>
+                  <td>{{ row.index }}</td>
+                  <td>{{ row.register.student.reg_no|default:"-" }}</td>
+                  <td>{{ row.register.student.student_name }}</td>
+                  <td>{{ row.register.student.gender|default:"-" }}</td>
+                  <td>{{ row.register.academic_class_stream.stream.stream|default:"-" }}</td>
+                  <td>{{ row.attendance_rate }}%</td>
+                  <td>
+                    {% if row.attendance_status_tone == "success" %}
+                    <span class="status-pill success">{{ row.attendance_status_label }}</span>
+                    {% elif row.attendance_status_tone == "danger" %}
+                    <span class="status-pill danger">{{ row.attendance_status_label }}</span>
+                    {% else %}
+                    <span class="status-pill muted">{{ row.attendance_status_label }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'student_details_page' row.register.student.id %}" class="btn btn-default btn-xs">
+                      <i class="fa fa-eye"></i> View
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state register-empty text-center">
+            <i class="fa fa-book fa-3x"></i>
+            <h4>No students have been registered to this class yet.</h4>
+            <p>Register students to start tracking attendance and performance for this class.</p>
+            <a href="{% url 'bulk_register_students' %}" class="btn btn-primary btn-sm">
+              <i class="fa fa-plus-circle"></i> Register Student
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="x_panel">
+        <div class="x_title">
+          <h2><i class="fa fa-history"></i> Promotion History</h2>
+          <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>By</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Counts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in recent_promotion_history %}
+                <tr>
+                  <td>{{ row.promoted_at|date:"d-M-Y H:i" }}</td>
+                  <td>{% if row.promoted_by %}{{ row.promoted_by.username }}{% else %}System{% endif %}</td>
+                  <td>
+                    {{ row.source_academic_class.Class.name|default:row.source_academic_class.Class.code }}
+                    (T{{ row.source_academic_class.term.term }} {{ row.source_academic_class.academic_year.academic_year }})
+                  </td>
+                  <td>
+                    {{ row.target_academic_class.Class.name|default:row.target_academic_class.Class.code }}
+                    (T{{ row.target_academic_class.term.term }} {{ row.target_academic_class.academic_year.academic_year }})
+                  </td>
+                  <td>
+                    {{ row.promoted_count }}/{{ row.total_candidates }} promoted
+                    {% if row.already_registered_count %}<br><small>{{ row.already_registered_count }} already registered</small>{% endif %}
+                    {% if row.skipped_inactive_count %}<br><small>{{ row.skipped_inactive_count }} inactive skipped</small>{% endif %}
+                    {% if row.missing_stream_names %}<br><small class="text-danger">Missing streams: {{ row.missing_stream_names|join:", " }}</small>{% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No promotion history yet for this class.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="x_panel attendance-summary-panel">
+        <div class="x_title">
+          <h2><i class="fa fa-bar-chart"></i> Attendance Overview (Term {{ academic_class.term.term }})</h2>
+          <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+          <div class="attendance-summary-grid">
+            <div class="attendance-item">
+              <span class="label-text">Average Attendance</span>
+              <strong>{{ attendance_average_rate }}%</strong>
+            </div>
+            <div class="attendance-item">
+              <span class="label-text">Total Lessons Conducted</span>
+              <strong>{{ lessons_conducted }}</strong>
+            </div>
+            <div class="attendance-item">
+              <span class="label-text">Chronic Absentees</span>
+              <strong>{{ chronic_absentees_count }}</strong>
+            </div>
+          </div>
+          <p class="attendance-note">
+            Chronic absenteeism threshold: below {{ minimum_attendance_percent }}% attendance after at least 5 recorded lessons.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can_manage_class_detail %}
+<div class="modal fade" id="addStreamModal" tabindex="-1" role="dialog" aria-labelledby="addStreamLabel">
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="addStreamLabel"><i class="fa fa-plus-circle"></i> Add Class Stream</h4>
+      </div>
+      <form method="POST" action="{% url 'add_class_stream_page' academic_class.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-info" style="margin-bottom:10px;">
+            <i class="fa fa-info-circle"></i>
+            Select a Stream and assign a class teacher where available.
+          </div>
+          {{ class_stream_form|crispy }}
+          <p class="text-muted"><small>Streams must be unique per class and term.</small></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Add Stream</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if can_manage_promotions %}
+<div class="modal fade" id="promoteStudentsModal" tabindex="-1" role="dialog" aria-labelledby="promoteStudentsLabel">
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-white">
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="promoteStudentsLabel"><i class="fa fa-random"></i> Promote Students</h4>
+      </div>
+      <form method="POST" action="{% url 'promote_academic_class_students' academic_class.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-warning" style="margin-bottom:10px;">
+            <i class="fa fa-info-circle"></i>
+            Promotion maps students by stream (for example, Stream A to Stream A). Ensure target class streams are configured first.
+          </div>
+          {{ promotion_form|crispy }}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning">Run Promotion</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+  .class-detail-page .x_panel {
+    border-radius: 14px;
+    border: 1px solid #e5edf7;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  }
+
+  .detail-hero {
+    background: linear-gradient(130deg, #f8fbff 0%, #ffffff 65%);
+  }
+
+  .hero-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .hero-identity h2 {
+    margin: 0;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .hero-subtitle {
+    margin: 6px 0 10px;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .section-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    background: #e0ecff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .status-chip {
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-chip i {
+    font-size: 9px;
+  }
+
+  .status-active {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+
+  .status-inactive {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  .stats-strip-wrap {
+    margin-top: 16px;
+    overflow-x: auto;
+  }
+
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(170px, 1fr));
+    gap: 10px;
+    min-width: 900px;
+  }
+
+  .metric-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    background: #fff;
+  }
+
+  .metric-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .metric-copy strong {
+    display: block;
+    font-size: 18px;
+    color: #0f172a;
+    line-height: 1.1;
+  }
+
+  .metric-copy span {
+    display: block;
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-top: 3px;
+  }
+
+  .metric-students .metric-icon { background: #0f766e; }
+  .metric-male .metric-icon { background: #0369a1; }
+  .metric-female .metric-icon { background: #be185d; }
+  .metric-streams .metric-icon { background: #6d28d9; }
+  .metric-fees .metric-icon { background: #b45309; }
+
+  .detail-panel .x_title h2,
+  .stream-panel .x_title h2,
+  .register-panel .x_title h2,
+  .attendance-summary-panel .x_title h2 {
+    font-weight: 700;
+  }
+
+  .info-table th {
+    width: 42%;
+    color: #64748b;
+    font-weight: 600;
+    border-top: 1px solid #edf2f7;
+  }
+
+  .info-table td {
+    font-weight: 700;
+    color: #1e293b;
+    border-top: 1px solid #edf2f7;
+  }
+
+  .fees-value {
+    color: #0f766e;
+  }
+
+  .stream-warning {
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+
+  .stream-tile {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .stream-tile-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .stream-tile h4 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .stream-meta p {
+    margin: 0 0 5px;
+    color: #334155;
+  }
+
+  .stream-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .register-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .register-filter-form {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 14px;
+  }
+
+  .register-filter-form .control-label {
+    font-weight: 600;
+    color: #334155;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .filter-btns {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding-top: 20px;
+  }
+
+  .class-register-table th {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .05em;
+    color: #475569;
+  }
+
+  .class-register-table td {
+    vertical-align: middle;
+  }
+
+  .status-pill {
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .status-pill.success {
+    color: #166534;
+    background: #dcfce7;
+  }
+
+  .status-pill.danger {
+    color: #991b1b;
+    background: #fee2e2;
+  }
+
+  .status-pill.muted {
+    color: #475569;
+    background: #e2e8f0;
+  }
+
+  .empty-state {
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 24px;
+    background: #f8fafc;
+  }
+
+  .empty-state i {
+    color: #64748b;
+    margin-bottom: 10px;
+  }
+
+  .empty-state h4 {
+    margin: 0 0 6px;
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  .empty-state p {
+    margin: 0 0 12px;
+    color: #64748b;
+  }
+
+  .attendance-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .attendance-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    background: #fff;
+  }
+
+  .attendance-item .label-text {
+    display: block;
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 6px;
+  }
+
+  .attendance-item strong {
+    font-size: 20px;
+    color: #0f172a;
+  }
+
+  .attendance-note {
+    margin-top: 10px;
+    margin-bottom: 0;
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  @media (max-width: 1200px) {
+    .attendance-summary-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 991px) {
+    .filter-btns {
+      padding-top: 8px;
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .hero-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .hero-actions,
+    .register-actions {
+      width: 100%;
+    }
+
+    .hero-actions .btn,
+    .register-actions .btn {
+      width: 100%;
+    }
+
+    .stats-strip {
+      min-width: 760px;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var registerTable = null;
+
+    function initRegisterTable() {
+      var $table = $('#classRegisterTable');
+      if (!$table.length) return;
+
+      registerTable = $table.DataTable({
+        responsive: true,
+        paging: true,
+        ordering: true,
+        searching: true,
+        pageLength: 10,
+        lengthChange: false,
+        autoWidth: false,
+        dom: 'Brt<"row mt-10"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        buttons: [
+          { extend: 'csv', className: 'buttons-csv', title: 'Class Register - {{ academic_class.Class.name|default:academic_class.Class.code|escapejs }}' },
+          { extend: 'print', className: 'buttons-print', title: 'Class Register - {{ academic_class.Class.name|default:academic_class.Class.code|escapejs }}' }
+        ],
+        columnDefs: [
+          { orderable: false, targets: [-1] }
+        ]
+      });
+
+      $('.dt-buttons').hide();
+    }
+
+    function bindRegisterActions() {
+      $('#exportRegisterCsv').on('click', function (e) {
+        e.preventDefault();
+        if (registerTable) registerTable.button('.buttons-csv').trigger();
+      });
+
+      $('#printRegister').on('click', function (e) {
+        e.preventDefault();
+        if (registerTable) registerTable.button('.buttons-print').trigger();
+      });
+    }
+
+    $(document).ready(function () {
+      initRegisterTable();
+      bindRegisterActions();
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,909 @@
+{% extends "../base.html" %}
+{% load humanize %}
+
+{% block page_title %}Student Promotion{% endblock %}
+
+{% block content %}
+<div class="container-fluid promotion-workflow-page">
+  <div class="x_panel header-card">
+    <div class="x_content">
+      <div class="header-row">
+        <div>
+          <h2 class="page-title">Student Promotion</h2>
+          <p class="text-muted">Controlled academic transition workflow with eligibility checks, preview, and confirmation.</p>
+        </div>
+        <a href="{% url 'academic_class_page' %}" class="btn btn-default btn-sm">
+          <i class="fa fa-arrow-left"></i> Back to Academic Classes
+        </a>
+      </div>
+
+      <form method="get" class="filter-grid">
+        <div class="filter-field">
+          <label>From Academic Year</label>
+          <select name="source_year_id" class="form-control input-sm">
+            {% for year in academic_years %}
+              <option value="{{ year.id }}" {% if selected_source_year_id == year.id %}selected{% endif %}>{{ year.academic_year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>From Term</label>
+          <select name="source_term_id" class="form-control input-sm">
+            {% for term in source_terms %}
+              <option value="{{ term.id }}" {% if selected_source_term_id == term.id %}selected{% endif %}>Term {{ term.term }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>To Academic Year</label>
+          <select name="target_year_id" class="form-control input-sm">
+            {% for year in academic_years %}
+              <option value="{{ year.id }}" {% if selected_target_year_id == year.id %}selected{% endif %}>{{ year.academic_year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>To Term</label>
+          <select name="target_term_id" class="form-control input-sm">
+            {% for term in target_terms %}
+              <option value="{{ term.id }}" {% if selected_target_term_id == term.id %}selected{% endif %}>Term {{ term.term }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Section</label>
+          <select name="section_id" class="form-control input-sm">
+            <option value="">All Sections</option>
+            {% for section in sections %}
+              <option value="{{ section.id }}" {% if selected_section_id == section.id %}selected{% endif %}>{{ section.section_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Current Class</label>
+          <select name="source_academic_class_id" class="form-control input-sm">
+            <option value="">Select class</option>
+            {% for item in source_class_options %}
+              <option value="{{ item.id }}" {% if selected_source_academic_class_id == item.id %}selected{% endif %}>
+                {{ item.Class.name|default:item.Class.code }} · Term {{ item.term.term }} · {{ item.academic_year.academic_year }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Promote To</label>
+          <select name="target_academic_class_id" class="form-control input-sm">
+            <option value="">Select target class</option>
+            {% for item in target_class_options %}
+              <option value="{{ item.id }}" {% if selected_target_academic_class_id == item.id %}selected{% endif %}>
+                {{ item.Class.name|default:item.Class.code }} · Term {{ item.term.term }} · {{ item.academic_year.academic_year }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field search-field">
+          <label>Search Student</label>
+          <input type="text" name="q" value="{{ search_query }}" class="form-control input-sm" placeholder="Name or Admission No">
+        </div>
+        <input type="hidden" name="tab" value="{{ active_tab }}">
+        <input type="hidden" name="sort" value="{{ sort_by }}">
+        <input type="hidden" name="order" value="{{ sort_dir }}">
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'student_promotion_workflow' %}" class="btn btn-default btn-sm">Reset</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row indicator-row">
+    <div class="col-md-3 col-sm-6">
+      <div class="indicator-card">
+        <span class="indicator-label">Academic Eligible</span>
+        <strong>{{ summary.academic_pass }}/{{ summary.total }}</strong>
+        <span class="indicator-meta {% if summary.academic_pass == summary.total and summary.total %}ok{% else %}warn{% endif %}">
+          {% if summary.academic_pass == summary.total and summary.total %}Ready{% else %}Review{% endif %}
+        </span>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="indicator-card">
+        <span class="indicator-label">Fees Cleared</span>
+        <strong>{{ summary.fees_cleared }}/{{ summary.total }}</strong>
+        <span class="indicator-meta {% if summary.fees_cleared == summary.total and summary.total %}ok{% else %}warn{% endif %}">
+          {% if summary.fees_cleared == summary.total and summary.total %}Cleared{% else %}Pending{% endif %}
+        </span>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="indicator-card">
+        <span class="indicator-label">Attendance ≥ {{ attendance_threshold }}%</span>
+        <strong>{{ summary.attendance_pass }}/{{ summary.total }}</strong>
+        <span class="indicator-meta {% if summary.attendance_pass == summary.total and summary.total %}ok{% else %}warn{% endif %}">
+          {% if summary.attendance_pass == summary.total and summary.total %}Good{% else %}Below Threshold{% endif %}
+        </span>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="indicator-card">
+        <span class="indicator-label">Promotion Blockers</span>
+        <strong>{{ summary.blocked|intcomma }}</strong>
+        <span class="indicator-meta {% if summary.blocked %}danger{% else %}ok{% endif %}">
+          {% if summary.blocked %}Resolve Issues{% else %}None{% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="x_panel">
+    <div class="x_title">
+      <h2><i class="fa fa-users"></i> Promotion Candidates</h2>
+      <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+      <div class="promotion-tabs-wrap">
+        <a class="promotion-tab {% if active_tab == 'eligible' %}active{% endif %}" href="?source_year_id={{ selected_source_year_id }}&source_term_id={{ selected_source_term_id }}&target_year_id={{ selected_target_year_id }}&target_term_id={{ selected_target_term_id }}{% if selected_section_id %}&section_id={{ selected_section_id }}{% endif %}{% if selected_source_academic_class_id %}&source_academic_class_id={{ selected_source_academic_class_id }}{% endif %}{% if selected_target_academic_class_id %}&target_academic_class_id={{ selected_target_academic_class_id }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&tab=eligible&sort={{ sort_by }}&order={{ sort_dir }}">
+          Eligible <span>{{ tab_counts.eligible|intcomma }}</span>
+        </a>
+        <a class="promotion-tab {% if active_tab == 'conditional' %}active{% endif %}" href="?source_year_id={{ selected_source_year_id }}&source_term_id={{ selected_source_term_id }}&target_year_id={{ selected_target_year_id }}&target_term_id={{ selected_target_term_id }}{% if selected_section_id %}&section_id={{ selected_section_id }}{% endif %}{% if selected_source_academic_class_id %}&source_academic_class_id={{ selected_source_academic_class_id }}{% endif %}{% if selected_target_academic_class_id %}&target_academic_class_id={{ selected_target_academic_class_id }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&tab=conditional&sort={{ sort_by }}&order={{ sort_dir }}">
+          Conditional <span>{{ tab_counts.conditional|intcomma }}</span>
+        </a>
+        <a class="promotion-tab {% if active_tab == 'repeat' %}active{% endif %}" href="?source_year_id={{ selected_source_year_id }}&source_term_id={{ selected_source_term_id }}&target_year_id={{ selected_target_year_id }}&target_term_id={{ selected_target_term_id }}{% if selected_section_id %}&section_id={{ selected_section_id }}{% endif %}{% if selected_source_academic_class_id %}&source_academic_class_id={{ selected_source_academic_class_id }}{% endif %}{% if selected_target_academic_class_id %}&target_academic_class_id={{ selected_target_academic_class_id }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&tab=repeat&sort={{ sort_by }}&order={{ sort_dir }}">
+          Repeaters <span>{{ tab_counts.repeat|intcomma }}</span>
+        </a>
+        <a class="promotion-tab {% if active_tab == 'graduating' %}active{% endif %}" href="?source_year_id={{ selected_source_year_id }}&source_term_id={{ selected_source_term_id }}&target_year_id={{ selected_target_year_id }}&target_term_id={{ selected_target_term_id }}{% if selected_section_id %}&section_id={{ selected_section_id }}{% endif %}{% if selected_source_academic_class_id %}&source_academic_class_id={{ selected_source_academic_class_id }}{% endif %}{% if selected_target_academic_class_id %}&target_academic_class_id={{ selected_target_academic_class_id }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&tab=graduating&sort={{ sort_by }}&order={{ sort_dir }}">
+          Graduating <span>{{ tab_counts.graduating|intcomma }}</span>
+        </a>
+        <a class="promotion-tab {% if active_tab == 'archived' %}active{% endif %}" href="?source_year_id={{ selected_source_year_id }}&source_term_id={{ selected_source_term_id }}&target_year_id={{ selected_target_year_id }}&target_term_id={{ selected_target_term_id }}{% if selected_section_id %}&section_id={{ selected_section_id }}{% endif %}{% if selected_source_academic_class_id %}&source_academic_class_id={{ selected_source_academic_class_id }}{% endif %}{% if selected_target_academic_class_id %}&target_academic_class_id={{ selected_target_academic_class_id }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&tab=archived&sort={{ sort_by }}&order={{ sort_dir }}">
+          Archived <span>{{ tab_counts.archived|intcomma }}</span>
+        </a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-striped table-hover promotion-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllStudents"></th>
+              <th>Photo</th>
+              <th><a href="?{{ filter_query }}&sort=name&order={% if sort_by == 'name' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">Student Name</a></th>
+              <th><a href="?{{ filter_query }}&sort=adm_no&order={% if sort_by == 'adm_no' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">Adm No</a></th>
+              <th>Gender</th>
+              <th>Current Class</th>
+              <th><a href="?{{ filter_query }}&sort=avg_score&order={% if sort_by == 'avg_score' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">Avg Score</a></th>
+              <th><a href="?{{ filter_query }}&sort=status&order={% if sort_by == 'status' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">Status</a></th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in promotion_rows %}
+            <tr class="promotion-row {% if not row.can_promote %}blocked-row{% endif %}">
+              <td>
+                <input
+                  type="checkbox"
+                  class="student-select"
+                  value="{{ row.student_id }}"
+                  data-can-promote="{{ row.can_promote|yesno:'1,0' }}"
+                  data-student-name="{{ row.student_name }}"
+                  data-admission-no="{{ row.admission_no }}"
+                  data-status="{{ row.status_label }}"
+                >
+              </td>
+              <td>
+                {% if row.photo_url %}
+                  <img src="{{ row.photo_url }}" alt="{{ row.student_name }}" class="student-avatar">
+                {% else %}
+                  <span class="avatar-fallback"><i class="fa fa-user"></i></span>
+                {% endif %}
+              </td>
+              <td>
+                <strong>{{ row.student_name }}</strong><br>
+                <small class="text-muted">Attendance: {% if row.attendance_percent is not None %}{{ row.attendance_percent }}%{% else %}-{% endif %}</small>
+              </td>
+              <td>{{ row.admission_no }}</td>
+              <td>{{ row.gender|default:"-" }}</td>
+              <td>{{ row.current_class_label }}</td>
+              <td>{% if row.avg_score is not None %}{{ row.avg_score|floatformat:1 }}{% else %}-{% endif %}</td>
+              <td>
+                <span class="status-badge {{ row.status_tone }}">{{ row.status_label }}</span>
+                <div class="rule-dot-row">
+                  <span class="rule-dot {% if row.academic_ok %}ok{% else %}bad{% endif %}" title="Academic"></span>
+                  <span class="rule-dot {% if row.fees_ok %}ok{% else %}bad{% endif %}" title="Fees"></span>
+                  <span class="rule-dot {% if row.attendance_ok %}ok{% else %}bad{% endif %}" title="Attendance"></span>
+                  <span class="rule-dot {% if row.discipline_ok %}ok{% else %}bad{% endif %}" title="Discipline"></span>
+                </div>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="btn btn-xs {% if row.can_promote %}btn-primary{% else %}btn-default{% endif %} single-promo-btn"
+                  data-student-id="{{ row.student_id }}"
+                  data-student-name="{{ row.student_name }}"
+                  data-admission-no="{{ row.admission_no }}"
+                  data-current-class="{{ row.current_class_label }}"
+                  data-target-class="{% if selected_target_class %}{{ selected_target_class.Class.name|default:selected_target_class.Class.code }}{% else %}-{% endif %}"
+                  data-avg-score="{% if row.avg_score is not None %}{{ row.avg_score|floatformat:1 }}{% else %}-{% endif %}"
+                  data-fees="{% if row.fees_ok %}Cleared{% else %}Pending{% endif %}"
+                  data-attendance="{% if row.attendance_percent is not None %}{{ row.attendance_percent }}%{% else %}No records{% endif %}"
+                  data-discipline="{% if row.discipline_ok %}Clear{% else %}Flagged{% endif %}"
+                  data-status="{{ row.status_label }}"
+                  data-can-promote="{{ row.can_promote|yesno:'1,0' }}"
+                  data-toggle="modal"
+                  data-target="#singlePromotionModal"
+                >
+                  {% if row.can_promote %}Promote{% else %}Review{% endif %}
+                </button>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted">No students found in this promotion queue.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if page_obj.paginator.num_pages > 1 %}
+      <nav class="text-center">
+        <ul class="pagination">
+          {% if page_obj.has_previous %}
+            <li><a href="?{{ filter_query }}&page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+          {% else %}
+            <li class="disabled"><span>&laquo;</span></li>
+          {% endif %}
+
+          <li class="active"><span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+
+          {% if page_obj.has_next %}
+            <li><a href="?{{ filter_query }}&page={{ page_obj.next_page_number }}">&raquo;</a></li>
+          {% else %}
+            <li class="disabled"><span>&raquo;</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div id="bulkActionBar" class="promotion-action-bar">
+  <form id="promotionActionForm" method="post" action="{% url 'student_promotion_workflow' %}">
+    {% csrf_token %}
+    <input type="hidden" name="source_year_id" value="{{ selected_source_year_id|default:'' }}">
+    <input type="hidden" name="source_term_id" value="{{ selected_source_term_id|default:'' }}">
+    <input type="hidden" name="target_year_id" value="{{ selected_target_year_id|default:'' }}">
+    <input type="hidden" name="target_term_id" value="{{ selected_target_term_id|default:'' }}">
+    <input type="hidden" name="section_id" value="{{ selected_section_id|default:'' }}">
+    <input type="hidden" name="source_academic_class_id" value="{{ selected_source_academic_class_id|default:'' }}">
+    <input type="hidden" name="target_academic_class_id" id="hiddenTargetAcademicClassId" value="{{ selected_target_academic_class_id|default:'' }}">
+    <input type="hidden" name="q" value="{{ search_query }}">
+    <input type="hidden" name="tab" value="{{ active_tab }}">
+    <input type="hidden" name="sort" value="{{ sort_by }}">
+    <input type="hidden" name="order" value="{{ sort_dir }}">
+    <input type="hidden" name="selected_student_ids_csv" id="selectedStudentIdsCsv">
+    <input type="hidden" name="confirm_transition" id="confirmTransitionInput" value="0">
+
+    <div class="action-bar-content">
+      <div class="action-bar-summary">
+        <span id="selectedCount">0</span> student(s) selected
+        <small id="selectionHint" class="text-muted">Select students to enable actions.</small>
+      </div>
+
+      <div class="action-field">
+        <label>Promote To</label>
+        <select class="form-control input-sm" id="bulkTargetClassSelect">
+          <option value="">Select target class</option>
+          {% for item in target_class_options %}
+            <option value="{{ item.id }}" {% if selected_target_academic_class_id == item.id %}selected{% endif %}>
+              {{ item.Class.name|default:item.Class.code }} · Term {{ item.term.term }} · {{ item.academic_year.academic_year }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="action-buttons">
+        <button type="submit" class="btn btn-success btn-sm" name="action" value="bulk_promote" id="bulkPromoteBtn" disabled>
+          <i class="fa fa-arrow-up"></i> Promote Selected
+        </button>
+        <button type="submit" class="btn btn-warning btn-sm" name="action" value="mark_repeat" id="markRepeatBtn" disabled>
+          <i class="fa fa-refresh"></i> Mark as Repeat
+        </button>
+        <button type="submit" class="btn btn-info btn-sm" name="action" value="export_list" id="exportListBtn" disabled>
+          <i class="fa fa-download"></i> Export List
+        </button>
+        <button type="button" class="btn btn-default btn-sm" id="clearSelectionBtn">
+          <i class="fa fa-times"></i> Cancel
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="modal fade" id="singlePromotionModal" tabindex="-1" role="dialog" aria-labelledby="singlePromotionModalLabel">
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="singlePromotionModalLabel"><i class="fa fa-user"></i> Individual Promotion Preview</h4>
+      </div>
+      <form method="post" id="singlePromotionForm" action="{% url 'student_promotion_workflow' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="promote_single">
+        <input type="hidden" name="student_id" id="singleStudentId">
+        <input type="hidden" name="source_year_id" value="{{ selected_source_year_id|default:'' }}">
+        <input type="hidden" name="source_term_id" value="{{ selected_source_term_id|default:'' }}">
+        <input type="hidden" name="target_year_id" value="{{ selected_target_year_id|default:'' }}">
+        <input type="hidden" name="target_term_id" value="{{ selected_target_term_id|default:'' }}">
+        <input type="hidden" name="section_id" value="{{ selected_section_id|default:'' }}">
+        <input type="hidden" name="source_academic_class_id" value="{{ selected_source_academic_class_id|default:'' }}">
+        <input type="hidden" name="target_academic_class_id" id="singleTargetClassId" value="{{ selected_target_academic_class_id|default:'' }}">
+        <input type="hidden" name="q" value="{{ search_query }}">
+        <input type="hidden" name="tab" value="{{ active_tab }}">
+        <input type="hidden" name="sort" value="{{ sort_by }}">
+        <input type="hidden" name="order" value="{{ sort_dir }}">
+        <input type="hidden" name="confirm_transition" id="singleConfirmTransitionInput" value="1">
+
+        <div class="modal-body">
+          <div class="preview-grid">
+            <div><label>Student</label><p id="previewStudentName">-</p></div>
+            <div><label>Admission No</label><p id="previewAdmissionNo">-</p></div>
+            <div><label>Current Class</label><p id="previewCurrentClass">-</p></div>
+            <div><label>Target Class</label><p id="previewTargetClass">-</p></div>
+            <div><label>Average Score</label><p id="previewAvgScore">-</p></div>
+            <div><label>Attendance</label><p id="previewAttendance">-</p></div>
+            <div><label>Fees Status</label><p id="previewFees">-</p></div>
+            <div><label>Discipline</label><p id="previewDiscipline">-</p></div>
+          </div>
+          <div class="alert alert-info" id="singlePromoMessage"></div>
+          <div class="alert alert-danger" id="singlePromoBlocked" style="display:none;">
+            This student does not meet promotion rules. Use the repeat action or resolve exceptions first.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="singlePromoConfirmBtn">Confirm Promotion</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="promotionProgressOverlay">
+  <div class="overlay-card">
+    <h4><i class="fa fa-spinner fa-spin"></i> Processing Promotion Workflow</h4>
+    <p>Please wait while records are validated and updated.</p>
+    <div class="progress">
+      <div id="promotionProgressBar" class="progress-bar progress-bar-striped active" style="width: 5%;">5%</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .promotion-workflow-page .x_panel {
+    border-radius: 12px;
+    border: 1px solid #e1e8ef;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  }
+
+  .header-card {
+    background: linear-gradient(140deg, #f7fbff 0%, #ffffff 65%);
+  }
+
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .page-title {
+    margin: 0;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .filter-grid {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 10px;
+    align-items: end;
+  }
+
+  .filter-field label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #475569;
+    margin-bottom: 4px;
+  }
+
+  .filter-field.search-field {
+    grid-column: span 2;
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .indicator-row {
+    margin-bottom: 12px;
+  }
+
+  .indicator-card {
+    background: #ffffff;
+    border: 1px solid #d9e3ec;
+    border-radius: 10px;
+    padding: 12px;
+    min-height: 96px;
+  }
+
+  .indicator-label {
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  .indicator-card strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 24px;
+    color: #0f172a;
+  }
+
+  .indicator-meta {
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .indicator-meta.ok { color: #15803d; }
+  .indicator-meta.warn { color: #b45309; }
+  .indicator-meta.danger { color: #b91c1c; }
+
+  .promotion-tabs-wrap {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .promotion-tab {
+    border: 1px solid #d5dee8;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    text-decoration: none;
+    background: #fff;
+  }
+
+  .promotion-tab span {
+    background: #eef2f7;
+    border-radius: 999px;
+    padding: 2px 8px;
+    margin-left: 6px;
+  }
+
+  .promotion-tab.active {
+    background: #0f766e;
+    color: #fff;
+    border-color: #0f766e;
+  }
+
+  .promotion-tab.active span {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .promotion-table th {
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  .promotion-table th a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .promotion-row:hover {
+    background: #f8fbff;
+  }
+
+  .blocked-row {
+    opacity: 0.82;
+  }
+
+  .student-avatar, .avatar-fallback {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    object-fit: cover;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #e2e8f0;
+    color: #475569;
+  }
+
+  .status-badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .status-badge.success { background: #dcfce7; color: #166534; }
+  .status-badge.warning { background: #fef3c7; color: #92400e; }
+  .status-badge.danger { background: #fee2e2; color: #991b1b; }
+  .status-badge.info { background: #dbeafe; color: #1e40af; }
+  .status-badge.muted { background: #e2e8f0; color: #334155; }
+
+  .rule-dot-row {
+    margin-top: 4px;
+    display: flex;
+    gap: 4px;
+  }
+
+  .rule-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    display: inline-block;
+  }
+
+  .rule-dot.ok { background: #16a34a; }
+  .rule-dot.bad { background: #dc2626; }
+
+  .promotion-action-bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 1050;
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    background: #111827;
+    color: #f9fafb;
+    box-shadow: 0 18px 30px rgba(2, 6, 23, 0.3);
+    padding: 10px;
+    display: none;
+  }
+
+  .promotion-action-bar.visible {
+    display: block;
+  }
+
+  .action-bar-content {
+    display: flex;
+    gap: 12px;
+    align-items: end;
+    flex-wrap: wrap;
+  }
+
+  .action-bar-summary {
+    min-width: 180px;
+    font-weight: 700;
+  }
+
+  .action-bar-summary #selectedCount {
+    font-size: 20px;
+  }
+
+  .action-bar-summary small {
+    display: block;
+    margin-top: 3px;
+  }
+
+  .action-field label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 4px;
+  }
+
+  .action-field .form-control {
+    min-width: 280px;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .preview-grid label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #64748b;
+    margin-bottom: 2px;
+  }
+
+  .preview-grid p {
+    margin: 0;
+    font-weight: 700;
+    color: #1f2937;
+  }
+
+  #promotionProgressOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(2, 6, 23, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  #promotionProgressOverlay.visible {
+    display: flex;
+  }
+
+  .overlay-card {
+    width: min(480px, 100%);
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #d9e3ec;
+    padding: 16px;
+    box-shadow: 0 16px 32px rgba(2, 6, 23, 0.25);
+  }
+
+  .overlay-card h4 {
+    margin-top: 0;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+
+  @media (max-width: 992px) {
+    .filter-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .filter-field.search-field {
+      grid-column: span 2;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .filter-grid {
+      grid-template-columns: 1fr;
+    }
+    .filter-field.search-field {
+      grid-column: span 1;
+    }
+    .action-field .form-control {
+      min-width: 100%;
+    }
+    .preview-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var actionBar = document.getElementById('bulkActionBar');
+    var selectAll = document.getElementById('selectAllStudents');
+    var rowChecks = Array.prototype.slice.call(document.querySelectorAll('.student-select'));
+    var selectedCsvInput = document.getElementById('selectedStudentIdsCsv');
+    var selectedCountEl = document.getElementById('selectedCount');
+    var selectionHintEl = document.getElementById('selectionHint');
+    var bulkPromoteBtn = document.getElementById('bulkPromoteBtn');
+    var markRepeatBtn = document.getElementById('markRepeatBtn');
+    var exportListBtn = document.getElementById('exportListBtn');
+    var clearSelectionBtn = document.getElementById('clearSelectionBtn');
+    var targetSelect = document.getElementById('bulkTargetClassSelect');
+    var hiddenTargetInput = document.getElementById('hiddenTargetAcademicClassId');
+    var confirmTransitionInput = document.getElementById('confirmTransitionInput');
+    var actionForm = document.getElementById('promotionActionForm');
+    var overlay = document.getElementById('promotionProgressOverlay');
+    var overlayBar = document.getElementById('promotionProgressBar');
+
+    function getSelectedRows() {
+      return rowChecks.filter(function (node) { return node.checked; });
+    }
+
+    function syncSelectedCsv() {
+      var values = getSelectedRows().map(function (node) { return node.value; });
+      selectedCsvInput.value = values.join(',');
+      return values;
+    }
+
+    function updateActionBar() {
+      var selectedRows = getSelectedRows();
+      var selectedCount = selectedRows.length;
+      var hasSelection = selectedCount > 0;
+      var hasBlockedSelection = selectedRows.some(function (node) { return node.getAttribute('data-can-promote') !== '1'; });
+      var hasTarget = !!(targetSelect && targetSelect.value);
+
+      selectedCountEl.textContent = selectedCount;
+      actionBar.classList.toggle('visible', hasSelection);
+      exportListBtn.disabled = !hasSelection;
+      markRepeatBtn.disabled = !hasSelection;
+      bulkPromoteBtn.disabled = !hasSelection || hasBlockedSelection || !hasTarget;
+
+      if (!hasSelection) {
+        selectionHintEl.textContent = 'Select students to enable actions.';
+      } else if (hasBlockedSelection) {
+        selectionHintEl.textContent = 'Bulk promotion disabled: selection includes non-eligible student(s).';
+      } else if (!hasTarget) {
+        selectionHintEl.textContent = 'Choose a target class to continue.';
+      } else {
+        selectionHintEl.textContent = 'Selection ready for controlled transition.';
+      }
+
+      syncSelectedCsv();
+    }
+
+    if (selectAll) {
+      selectAll.addEventListener('change', function () {
+        rowChecks.forEach(function (node) { node.checked = selectAll.checked; });
+        updateActionBar();
+      });
+    }
+
+    rowChecks.forEach(function (node) {
+      node.addEventListener('change', function () {
+        if (!node.checked && selectAll) {
+          selectAll.checked = false;
+        }
+        updateActionBar();
+      });
+    });
+
+    if (targetSelect) {
+      targetSelect.addEventListener('change', function () {
+        hiddenTargetInput.value = targetSelect.value;
+        var singleTarget = document.getElementById('singleTargetClassId');
+        if (singleTarget) {
+          singleTarget.value = targetSelect.value;
+        }
+        updateActionBar();
+      });
+    }
+
+    if (clearSelectionBtn) {
+      clearSelectionBtn.addEventListener('click', function () {
+        rowChecks.forEach(function (node) { node.checked = false; });
+        if (selectAll) selectAll.checked = false;
+        updateActionBar();
+      });
+    }
+
+    function startProgressOverlay() {
+      if (!overlay) return;
+      overlay.classList.add('visible');
+      var percent = 5;
+      if (overlayBar) {
+        overlayBar.style.width = percent + '%';
+        overlayBar.textContent = percent + '%';
+      }
+      var timer = setInterval(function () {
+        if (percent >= 92) {
+          clearInterval(timer);
+          return;
+        }
+        percent += 7;
+        if (overlayBar) {
+          overlayBar.style.width = percent + '%';
+          overlayBar.textContent = percent + '%';
+        }
+      }, 180);
+    }
+
+    if (actionForm) {
+      actionForm.addEventListener('submit', function (event) {
+        var submitter = event.submitter;
+        if (!submitter) return;
+        var action = submitter.value || '';
+        hiddenTargetInput.value = targetSelect ? targetSelect.value : hiddenTargetInput.value;
+        confirmTransitionInput.value = '0';
+
+        if (action === 'bulk_promote') {
+          if (!selectedCsvInput.value) {
+            event.preventDefault();
+            return;
+          }
+          var selectedCount = selectedCsvInput.value.split(',').filter(Boolean).length;
+          var sourceLabel = "{{ selected_source_class.Class.name|default:selected_source_class.Class.code|default:'selected class'|escapejs }}";
+          var targetLabel = targetSelect && targetSelect.options[targetSelect.selectedIndex]
+            ? targetSelect.options[targetSelect.selectedIndex].text
+            : 'selected target class';
+          var ok = window.confirm(
+            "You are promoting " + selectedCount + " student(s) from " + sourceLabel + " to " + targetLabel + ". Proceed?"
+          );
+          if (!ok) {
+            event.preventDefault();
+            return;
+          }
+          confirmTransitionInput.value = '1';
+          startProgressOverlay();
+        } else if (action === 'mark_repeat') {
+          var confirmRepeat = window.confirm(
+            "Mark selected student(s) as repeaters for the chosen destination term/year?"
+          );
+          if (!confirmRepeat) {
+            event.preventDefault();
+            return;
+          }
+          confirmTransitionInput.value = '1';
+          startProgressOverlay();
+        } else if (action === 'export_list') {
+          confirmTransitionInput.value = '0';
+        }
+      });
+    }
+
+    var singleButtons = Array.prototype.slice.call(document.querySelectorAll('.single-promo-btn'));
+    var singleStudentId = document.getElementById('singleStudentId');
+    var singleTargetClassId = document.getElementById('singleTargetClassId');
+    var singlePromoConfirmBtn = document.getElementById('singlePromoConfirmBtn');
+    var singleBlocked = document.getElementById('singlePromoBlocked');
+    var singleMessage = document.getElementById('singlePromoMessage');
+    var singleForm = document.getElementById('singlePromotionForm');
+
+    function setText(id, value) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    singleButtons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var canPromote = button.getAttribute('data-can-promote') === '1';
+        if (singleStudentId) singleStudentId.value = button.getAttribute('data-student-id') || '';
+        if (singleTargetClassId && targetSelect) singleTargetClassId.value = targetSelect.value || '';
+
+        setText('previewStudentName', button.getAttribute('data-student-name') || '-');
+        setText('previewAdmissionNo', button.getAttribute('data-admission-no') || '-');
+        setText('previewCurrentClass', button.getAttribute('data-current-class') || '-');
+        setText('previewTargetClass', targetSelect && targetSelect.options[targetSelect.selectedIndex]
+          ? targetSelect.options[targetSelect.selectedIndex].text
+          : (button.getAttribute('data-target-class') || '-'));
+        setText('previewAvgScore', button.getAttribute('data-avg-score') || '-');
+        setText('previewFees', button.getAttribute('data-fees') || '-');
+        setText('previewAttendance', button.getAttribute('data-attendance') || '-');
+        setText('previewDiscipline', button.getAttribute('data-discipline') || '-');
+
+        if (singleMessage) {
+          singleMessage.textContent =
+            "You are promoting 1 student from {{ selected_source_class.Class.name|default:selected_source_class.Class.code|default:'selected class'|escapejs }} ({{ selected_source_class.academic_year.academic_year|default:'-' }} Term {{ selected_source_class.term.term|default:'-' }}) to "
+            + (targetSelect && targetSelect.options[targetSelect.selectedIndex]
+              ? targetSelect.options[targetSelect.selectedIndex].text
+              : "the selected target class")
+            + ".";
+        }
+
+        if (singlePromoConfirmBtn) singlePromoConfirmBtn.disabled = !canPromote || !(targetSelect && targetSelect.value);
+        if (singleBlocked) singleBlocked.style.display = canPromote ? 'none' : 'block';
+      });
+    });
+
+    if (singleForm) {
+      singleForm.addEventListener('submit', function (event) {
+        if (singlePromoConfirmBtn && singlePromoConfirmBtn.disabled) {
+          event.preventDefault();
+          return;
+        }
+        startProgressOverlay();
+      });
+    }
+
+    updateActionBar();
+  })();
+</script>
+{% endblock %}

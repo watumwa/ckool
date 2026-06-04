@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}Class Subject Allocation{% endblock page_title %}
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+    <div class="col-md-12 col-sm-12 col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-link"></i> Class Subject Allocation</h2>
+                <ul class="nav navbar-right panel_toolbox">
+                    <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+                    <li><a class="close-link"><i class="fa fa-close"></i></a></li>
+                </ul>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <form method="get" id="allocationFilterForm" class="row" style="margin-bottom:10px;">
+                    <div class="col-md-3 col-sm-6 col-xs-12">
+                        <label>Academic Year</label>
+                        <select name="academic_year" id="yearFilter" class="form-control allocation-filter">
+                            <option value="">Select year</option>
+                            {% for year in academic_years %}
+                            <option value="{{ year.id }}" {% if selected_year_id == year.id|stringformat:"s" %}selected{% endif %}>
+                                {{ year.academic_year }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-sm-6 col-xs-12">
+                        <label>Term</label>
+                        <select name="term" id="termFilter" class="form-control allocation-filter">
+                            <option value="">Select term</option>
+                            {% for term in terms %}
+                            <option value="{{ term.id }}" {% if selected_term_id == term.id|stringformat:"s" %}selected{% endif %}>
+                                Term {{ term.term }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-sm-6 col-xs-12">
+                        <label>Class Stream</label>
+                        <select name="class_stream" id="streamFilter" class="form-control allocation-filter">
+                            <option value="">Select stream</option>
+                            {% for class_stream in class_streams %}
+                            <option value="{{ class_stream.id }}" {% if selected_stream_id == class_stream.id|stringformat:"s" %}selected{% endif %}>
+                                {{ class_stream.academic_class.Class.code }}{{ class_stream.stream.stream }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-sm-6 col-xs-12" style="margin-top:24px;">
+                        {% if can_manage %}
+                        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#addAllocationModal" {% if not selected_stream %}disabled{% endif %}>
+                            <i class="fa fa-plus"></i> Allocate Subject
+                        </button>
+                        <a href="{% url 'copy_allocations' %}" class="btn btn-primary" onclick="return confirm('Copy allocations from previous term to current term? Existing records stay unchanged.');">
+                            <i class="fa fa-copy"></i> Copy
+                        </a>
+                        {% else %}
+                        <span class="label label-default">View Only</span>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if selected_stream %}
+<div class="row">
+    <div class="col-md-8 col-sm-12 col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2>
+                    {{ selected_stream.academic_class.Class.code }}{{ selected_stream.stream.stream }}
+                    <small>{{ selected_stream.academic_class.academic_year.academic_year }} - Term {{ selected_stream.academic_class.term.term }}</small>
+                </h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <div class="form-group" style="max-width:360px;margin-bottom:12px;">
+                    <div class="input-group">
+                        <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                        <input type="text" id="allocationSearch" class="form-control" placeholder="Search subject or teacher">
+                    </div>
+                </div>
+
+                {% if allocations %}
+                <div class="table-responsive hidden-xs hidden-sm">
+                    <table class="table table-striped table-bordered" id="allocationsTable">
+                        <thead>
+                            <tr>
+                                <th style="width:6%;">#</th>
+                                <th>Subject</th>
+                                <th>Subject Teacher</th>
+                                {% if can_manage %}
+                                <th style="width:18%;">Action</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for allocation in allocations %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ allocation.subject.name }}</td>
+                                <td>{{ allocation.subject_teacher }}</td>
+                                {% if can_manage %}
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="btn btn-info btn-sm open-edit-modal"
+                                        data-toggle="modal"
+                                        data-target="#editAllocationModal"
+                                        data-allocation-id="{{ allocation.id }}"
+                                        data-subject-name="{{ allocation.subject.name }}"
+                                        data-teacher-id="{{ allocation.subject_teacher_id }}"
+                                    >
+                                        <i class="fa fa-pencil"></i> Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-danger btn-sm open-delete-modal"
+                                        data-toggle="modal"
+                                        data-target="#deleteAllocationModal"
+                                        data-allocation-id="{{ allocation.id }}"
+                                        data-subject-name="{{ allocation.subject.name }}"
+                                    >
+                                        <i class="fa fa-trash"></i> Delete
+                                    </button>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="visible-xs visible-sm">
+                    {% for allocation in allocations %}
+                    <div class="panel panel-default allocation-card">
+                        <div class="panel-body">
+                            <h4 style="margin:0 0 6px;">{{ allocation.subject.name }}</h4>
+                            <p class="text-muted" style="margin:0 0 10px;">Teacher: {{ allocation.subject_teacher }}</p>
+                            {% if can_manage %}
+                            <button
+                                type="button"
+                                class="btn btn-info btn-xs open-edit-modal"
+                                data-toggle="modal"
+                                data-target="#editAllocationModal"
+                                data-allocation-id="{{ allocation.id }}"
+                                data-subject-name="{{ allocation.subject.name }}"
+                                data-teacher-id="{{ allocation.subject_teacher_id }}"
+                            >
+                                <i class="fa fa-pencil"></i> Edit
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info" style="margin:0;">
+                    <strong>No subjects allocated yet.</strong>
+                    {% if can_manage %}Click "Allocate Subject" to begin.{% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 col-sm-12 col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2>Class Summary</h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <p><strong>Class Stream:</strong> {{ selected_stream.academic_class.Class.code }}{{ selected_stream.stream.stream }}</p>
+                <p><strong>Class Teacher:</strong> {{ class_teacher_name }}</p>
+                <p><strong>Total Students:</strong> {{ total_students }}</p>
+                <p><strong>Subjects Allocated:</strong> {{ subjects_allocated_count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-md-12 col-sm-12 col-xs-12">
+        <div class="alert alert-info">
+            Select Academic Year, Term, and Class Stream to view allocations.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if can_manage %}
+<div class="modal fade" id="addAllocationModal" tabindex="-1" role="dialog" aria-labelledby="addAllocationModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" id="addAllocationForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_allocation">
+                <input type="hidden" name="academic_year" value="{{ selected_year_id }}">
+                <input type="hidden" name="term" value="{{ selected_term_id }}">
+                <input type="hidden" name="class_stream" value="{{ selected_stream_id }}">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h4 class="modal-title" id="addAllocationModalLabel">
+                        Allocate Subject{% if selected_stream %} to {{ selected_stream.academic_class.Class.code }}{{ selected_stream.stream.stream }}{% endif %}
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="subjectSelect">Subject</label>
+                        <select class="form-control" id="subjectSelect" name="subject" required>
+                            <option value="">Select subject</option>
+                            {% for subject in subjects %}
+                            <option value="{{ subject.id }}" {% if subject.id in allocated_subject_ids %}disabled{% endif %}>
+                                {{ subject.name }}{% if subject.id in allocated_subject_ids %} (Already Assigned){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="addTeacherSelect">Teacher</label>
+                        <select class="form-control teacher-select" id="addTeacherSelect" name="subject_teacher" required>
+                            <option value="">Select teacher</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">{{ teacher }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="confirm_allocation"> Confirm allocation
+                        </label>
+                    </div>
+                    <div class="well" id="addTeacherInfo">
+                        Select a teacher to view workload details.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary submit-btn">
+                        <i class="fa fa-save"></i> Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editAllocationModal" tabindex="-1" role="dialog" aria-labelledby="editAllocationModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" id="editAllocationForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit_allocation">
+                <input type="hidden" name="academic_year" value="{{ selected_year_id }}">
+                <input type="hidden" name="term" value="{{ selected_term_id }}">
+                <input type="hidden" name="class_stream" value="{{ selected_stream_id }}">
+                <input type="hidden" name="allocation_id" id="editAllocationId">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h4 class="modal-title" id="editAllocationModalLabel">Edit Allocation</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" class="form-control" id="editSubjectName" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTeacherSelect">Subject Teacher</label>
+                        <select class="form-control teacher-select" id="editTeacherSelect" name="subject_teacher" required>
+                            <option value="">Select teacher</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">{{ teacher }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="well" id="editTeacherInfo">
+                        Select a teacher to view workload details.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary submit-btn">
+                        <i class="fa fa-save"></i> Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteAllocationModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllocationModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" id="deleteAllocationForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_allocation">
+                <input type="hidden" name="academic_year" value="{{ selected_year_id }}">
+                <input type="hidden" name="term" value="{{ selected_term_id }}">
+                <input type="hidden" name="class_stream" value="{{ selected_stream_id }}">
+                <input type="hidden" name="allocation_id" id="deleteAllocationId">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h4 class="modal-title" id="deleteAllocationModalLabel">Delete Allocation</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Delete allocation for <strong id="deleteSubjectName"></strong>?</p>
+                    <p class="text-muted">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger submit-btn">
+                        <i class="fa fa-trash"></i> Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{{ teacher_stats|json_script:"teacher-stats-data" }}
+
+<script>
+    (function () {
+        var filterForm = document.getElementById("allocationFilterForm");
+        var allocationSearch = document.getElementById("allocationSearch");
+        var teacherStatsElement = document.getElementById("teacher-stats-data");
+        var teacherStats = {};
+
+        if (teacherStatsElement && teacherStatsElement.textContent) {
+            teacherStats = JSON.parse(teacherStatsElement.textContent);
+        }
+
+        document.querySelectorAll(".allocation-filter").forEach(function (el) {
+            el.addEventListener("change", function () {
+                filterForm.submit();
+            });
+        });
+
+        if (allocationSearch) {
+            allocationSearch.addEventListener("keyup", function () {
+                var value = allocationSearch.value.toLowerCase();
+                document.querySelectorAll("#allocationsTable tbody tr").forEach(function (row) {
+                    row.style.display = row.textContent.toLowerCase().indexOf(value) > -1 ? "" : "none";
+                });
+                document.querySelectorAll(".allocation-card").forEach(function (card) {
+                    card.style.display = card.textContent.toLowerCase().indexOf(value) > -1 ? "" : "none";
+                });
+            });
+        }
+
+        function renderTeacherInfo(selectEl, targetId) {
+            var container = document.getElementById(targetId);
+            if (!container || !selectEl) {
+                return;
+            }
+            var teacherId = selectEl.value;
+            if (!teacherId || !teacherStats[teacherId]) {
+                container.innerHTML = "Select a teacher to view workload details.";
+                return;
+            }
+            var info = teacherStats[teacherId];
+            var streamText = info.class_streams.length ? info.class_streams.join(", ") : "-";
+            container.innerHTML =
+                "<strong>" + info.name + "</strong><br>" +
+                "Subjects Teaching: " + info.subjects_count + "<br>" +
+                "Classes Handling: " + streamText;
+        }
+
+        var addTeacherSelect = document.getElementById("addTeacherSelect");
+        if (addTeacherSelect) {
+            addTeacherSelect.addEventListener("change", function () {
+                renderTeacherInfo(addTeacherSelect, "addTeacherInfo");
+            });
+        }
+
+        var editTeacherSelect = document.getElementById("editTeacherSelect");
+        if (editTeacherSelect) {
+            editTeacherSelect.addEventListener("change", function () {
+                renderTeacherInfo(editTeacherSelect, "editTeacherInfo");
+            });
+        }
+
+        document.querySelectorAll(".open-edit-modal").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var allocationId = btn.getAttribute("data-allocation-id");
+                var subjectName = btn.getAttribute("data-subject-name");
+                var teacherId = btn.getAttribute("data-teacher-id");
+
+                document.getElementById("editAllocationId").value = allocationId || "";
+                document.getElementById("editSubjectName").value = subjectName || "";
+                if (editTeacherSelect) {
+                    editTeacherSelect.value = teacherId || "";
+                    renderTeacherInfo(editTeacherSelect, "editTeacherInfo");
+                }
+            });
+        });
+
+        document.querySelectorAll(".open-delete-modal").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                document.getElementById("deleteAllocationId").value = btn.getAttribute("data-allocation-id") || "";
+                document.getElementById("deleteSubjectName").textContent = btn.getAttribute("data-subject-name") || "";
+            });
+        });
+
+        ["addAllocationForm", "editAllocationForm", "deleteAllocationForm"].forEach(function (formId) {
+            var form = document.getElementById(formId);
+            if (!form) {
+                return;
+            }
+            form.addEventListener("submit", function () {
+                var submitButton = form.querySelector(".submit-btn");
+                if (!submitButton) {
+                    return;
+                }
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving...';
+            });
+        });
+    })();
+</script>
+{% endblock %}

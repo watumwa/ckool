@@ -1,0 +1,261 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Cash Flow Report{% endblock %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_content">
+        <div class="comm-header">
+          <div class="comm-title">
+            <span class="comm-icon"><i class="fa fa-exchange"></i></span>
+            <div>
+              <h2>Cash Flow Report</h2>
+              <p class="text-muted">Monitor inflows, outflows, and daily net cash movement.</p>
+            </div>
+          </div>
+          <div class="comm-actions">
+            <a class="btn btn-outline-secondary" onclick="window.print()" title="Print Report">
+              <i class="fa fa-print"></i> Print
+            </a>
+            <a class="btn btn-success" href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}export=csv" title="Export to CSV">
+              <i class="fa fa-download"></i> Export CSV
+            </a>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card">
+          <form method="get" class="form-inline">
+            <div class="form-group">
+              <label for="start_date"><strong>Start Date:</strong></label>
+              <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
+            </div>
+            <div class="form-group">
+              <label for="end_date"><strong>End Date:</strong></label>
+              <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-refresh"></i> Apply
+            </button>
+          </form>
+        </div>
+
+        <!-- Active range notice (term default aware) -->
+        {% if used_term_default %}
+        <div class="alert alert-info range-alert" role="alert">
+          Using current term by default:
+          <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong>.
+          Included rows: {{ income_tx|length }} inflow(s), {{ expense_tx|length }} outflow(s).
+        </div>
+        {% else %}
+        <div class="alert alert-info range-alert" role="alert">
+          Showing cash flow from <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong>.
+          Included rows: {{ income_tx|length }} inflow(s), {{ expense_tx|length }} outflow(s).
+        </div>
+        {% endif %}
+
+        <!-- Sample rows -->
+        <div class="row section-space">
+          <div class="col-md-6">
+            <div class="mini-card">
+              <div class="mini-title">Sample inflows (first {{ sample_income|length }}):</div>
+            {% if sample_income %}
+              <ul class="mini-list">
+              {% for t in sample_income %}
+              <li class="mini-item">
+                <span class="mini-date">{{ t.date|date:"Y-m-d" }}</span>
+                <span class="mini-text">{{ t.description }}</span>
+                <span class="mini-amount text-success">UGX {{ t.amount|floatformat:0|intcomma }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+              <div class="text-muted">No inflows in range.</div>
+            {% endif %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mini-card">
+              <div class="mini-title">Sample outflows (first {{ sample_expense|length }}):</div>
+            {% if sample_expense %}
+              <ul class="mini-list">
+              {% for t in sample_expense %}
+              <li class="mini-item">
+                <span class="mini-date">{{ t.date|date:"Y-m-d" }}</span>
+                <span class="mini-text">{{ t.description }}</span>
+                <span class="mini-amount text-danger">UGX {{ t.amount|floatformat:0|intcomma }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+              <div class="text-muted">No outflows in range.</div>
+            {% endif %}
+            </div>
+          </div>
+        </div>
+        <!-- Summary Cards -->
+        <div class="row section-space">
+          <div class="col-md-4">
+            <div class="stat-card stat-success">
+              <div class="stat-label">Total Inflows</div>
+              <div class="stat-value">UGX {{ total_income|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card stat-danger">
+              <div class="stat-label">Total Outflows</div>
+              <div class="stat-value">UGX {{ total_expenses|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card stat-primary">
+              <div class="stat-label">Net Cash Flow</div>
+              <div class="stat-value {% if net_cash_flow >= 0 %}text-success{% else %}text-danger{% endif %}">UGX {{ net_cash_flow|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Net Flow -->
+        <div class="table-card section-space">
+          <div class="table-title"><i class="fa fa-line-chart"></i> Daily Net Flow</div>
+            {% if daily_flow %}
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                  <tr>
+                    <th>Date</th>
+                    <th>Net (UGX)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in daily_flow %}
+                  <tr>
+                    <td><small>{{ row.date|date:"Y-m-d" }}</small></td>
+                    <td>UGX {{ row.net|floatformat:0|intcomma }}</td>
+                    <td>
+                      {% if row.net >= 0 %}
+                        <span class="badge badge-success">Positive</span>
+                      {% else %}
+                        <span class="badge badge-danger">Negative</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+              <div class="alert alert-info">No daily flow data available for the selected period.</div>
+            {% endif %}
+        </div>
+
+        <!-- Detailed Transactions -->
+        <div class="row section-space">
+          <div class="col-md-6">
+            <div class="table-card">
+              <div class="table-title"><i class="fa fa-arrow-down"></i> Inflows (Income)</div>
+            {% if income_tx %}
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Amount (UGX)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for t in income_tx %}
+                  <tr>
+                    <td><small>{{ t.date|date:"Y-m-d" }}</small></td>
+                    <td><small>{{ t.description }}</small></td>
+                    <td><span class="badge badge-success">UGX {{ t.amount|floatformat:0|intcomma }}</span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+              <div class="alert alert-info">No inflow transactions found.</div>
+            {% endif %}
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="table-card">
+              <div class="table-title"><i class="fa fa-arrow-up"></i> Outflows (Expenses)</div>
+            {% if expense_tx %}
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Amount (UGX)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for t in expense_tx %}
+                  <tr>
+                    <td><small>{{ t.date|date:"Y-m-d" }}</small></td>
+                    <td><small>{{ t.description }}</small></td>
+                    <td><span class="badge badge-danger">UGX {{ t.amount|floatformat:0|intcomma }}</span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+              <div class="alert alert-info">No outflow transactions found.</div>
+            {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .comm-header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+  .comm-title{display:flex;gap:12px;align-items:center;}
+  .comm-title h2{margin:0;font-weight:700;}
+  .comm-title p{margin:4px 0 0;}
+  .comm-icon{width:44px;height:44px;border-radius:12px;background:#e0e7ff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .comm-actions .btn{margin-left:8px;}
+
+  .filter-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:16px;}
+  .filter-card .form-inline{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+  .filter-card .form-group{display:flex;align-items:center;gap:8px;}
+
+  .range-alert{border-radius:10px;margin-bottom:16px;}
+
+  .section-space{margin-top:18px;}
+  .mini-card{border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#fff;}
+  .mini-title{font-weight:600;color:#334155;margin-bottom:8px;}
+  .mini-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
+  .mini-item{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#f8fafc;border-radius:10px;padding:6px 10px;}
+  .mini-date{font-weight:600;color:#475569;}
+  .mini-text{flex:1;color:#1f2937;}
+  .mini-amount{font-weight:600;}
+
+  .stat-card{border:1px solid #e2e8f0;border-radius:12px;padding:16px;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,0.04);}
+  .stat-label{color:#64748b;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+  .stat-value{font-size:20px;font-weight:700;margin-top:6px;}
+  .stat-success{border-left:4px solid #22c55e;}
+  .stat-danger{border-left:4px solid #ef4444;}
+  .stat-primary{border-left:4px solid #2563eb;}
+
+  .table-card{border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#fff;}
+  .table-title{font-weight:700;color:#1f2937;margin-bottom:10px;}
+  .badge{padding:4px 10px;border-radius:999px;}
+</style>
+{% endblock %}

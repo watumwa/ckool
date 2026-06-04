@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CBC Term Report PDF</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1.1cm;
+    }
+
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      color: #0f172a;
+      line-height: 1.35;
+    }
+
+    h1, h2, h3, h4, p {
+      margin: 0;
+      padding: 0;
+    }
+
+    .section {
+      margin-top: 10px;
+      border: 1px solid #dbe3ef;
+      background: #ffffff;
+      padding: 8px;
+    }
+
+    .title {
+      font-size: 15px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .subtitle {
+      margin-top: 3px;
+      color: #64748b;
+      text-align: center;
+      font-size: 9px;
+    }
+
+    .muted {
+      color: #64748b;
+    }
+
+    .small {
+      font-size: 8px;
+    }
+
+    .header-table,
+    .summary-table,
+    .report-table,
+    .compact-table,
+    .two-col,
+    .sign-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .header-table td {
+      vertical-align: top;
+    }
+
+    .logo {
+      width: 58px;
+      height: 58px;
+      object-fit: cover;
+      border: 1px solid #dbe3ef;
+    }
+
+    .student-photo {
+      width: 56px;
+      height: 56px;
+      object-fit: cover;
+      border: 1px solid #dbe3ef;
+    }
+
+    .summary-table td {
+      border: 1px solid #dbe3ef;
+      padding: 6px;
+      width: 20%;
+      vertical-align: top;
+      background: #f8fbff;
+    }
+
+    .summary-label {
+      font-size: 8px;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    .summary-value {
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 3px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border: 1px solid #cbd5e1;
+      background: #f1f5f9;
+      font-size: 8px;
+      font-weight: bold;
+    }
+
+    .badge.beginning { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+    .badge.developing { background: #ffedd5; border-color: #fed7aa; color: #b45309; }
+    .badge.proficient { background: #dcfce7; border-color: #bbf7d0; color: #15803d; }
+    .badge.advanced { background: #dbeafe; border-color: #bfdbfe; color: #1e40af; }
+
+    .section-title {
+      font-weight: bold;
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .report-table th,
+    .report-table td,
+    .compact-table th,
+    .compact-table td,
+    .two-col td,
+    .sign-table td {
+      border: 1px solid #dbe3ef;
+      padding: 4px;
+      vertical-align: top;
+    }
+
+    .report-table th,
+    .compact-table th {
+      background: #e9eef8;
+      font-size: 9px;
+      text-align: left;
+    }
+
+    .subject-name {
+      font-weight: bold;
+    }
+
+    .note-box {
+      min-height: 50px;
+      border: 1px solid #dbe3ef;
+      padding: 5px;
+      background: #f8fafc;
+    }
+
+    .right { text-align: right; }
+    .center { text-align: center; }
+
+    .progress-wrap {
+      margin-top: 2px;
+      border: 1px solid #dbe3ef;
+      height: 8px;
+      background: #e2e8f0;
+    }
+
+    .progress-fill {
+      background: #2563eb;
+      height: 8px;
+    }
+
+    .promo.full { border-left: 3px solid #16a34a; }
+    .promo.conditional { border-left: 3px solid #d97706; }
+    .promo.repeat { border-left: 3px solid #dc2626; }
+    .promo.graduating { border-left: 3px solid #2563eb; }
+    .promo.pending { border-left: 3px solid #64748b; }
+
+    .sig-img {
+      max-height: 30px;
+      margin-top: 4px;
+    }
+
+    .footer-meta {
+      margin-top: 10px;
+      font-size: 8px;
+      color: #64748b;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="section">
+    <table class="header-table">
+      <tr>
+        <td style="width: 36%;">
+          <table style="width:100%; border-collapse:collapse;">
+            <tr>
+              <td style="width:64px; border:none;">
+                {% if school_logo_uri %}
+                <img src="{{ school_logo_uri }}" alt="School logo" class="logo">
+                {% endif %}
+              </td>
+              <td style="border:none;">
+                <div style="font-size: 12px; font-weight: bold;">{{ school.school_name }}</div>
+                <div class="muted small">{{ school.address }}</div>
+                <div class="muted small">{{ school.email }}{% if school.mobile %} | {{ school.mobile }}{% endif %}</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+
+        <td style="width: 30%;">
+          <div class="title">Lower Secondary Term Report</div>
+          <div class="subtitle">Academic Year {{ selected_academic_class.academic_year.academic_year }} · Term {{ selected_academic_class.term.term }}</div>
+        </td>
+
+        <td style="width: 34%;">
+          <table style="width:100%; border-collapse:collapse;">
+            <tr>
+              <td style="width:64px; border:none;">
+                {% if student_photo_uri %}
+                <img src="{{ student_photo_uri }}" alt="Student" class="student-photo">
+                {% endif %}
+              </td>
+              <td style="border:none;">
+                <div><strong>{{ selected_student.student_name }}</strong></div>
+                <div class="muted small">Adm No: {{ selected_student.reg_no }}</div>
+                <div class="muted small">Class: {{ selected_academic_class.Class.code }}{% if selected_student.stream %} · Stream {{ selected_student.stream.stream }}{% endif %}</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <table class="summary-table">
+      <tr>
+        <td>
+          <div class="summary-label">Overall Competency</div>
+          <div class="summary-value">{{ summary.overall_level.short_label|default:'-' }}</div>
+          <div class="small">{{ summary.overall_level.label|default:'No evidence' }}</div>
+        </td>
+        <td>
+          <div class="summary-label">Mean Score</div>
+          <div class="summary-value">{% if summary.mean_score is not None %}{{ summary.mean_score|floatformat:1 }}%{% else %}-{% endif %}</div>
+        </td>
+        <td>
+          <div class="summary-label">Attendance</div>
+          <div class="summary-value">{{ summary.attendance_percent|floatformat:1 }}%</div>
+        </td>
+        <td>
+          <div class="summary-label">Position</div>
+          <div class="summary-value" style="font-size: 10px;">{{ summary.position_label }}</div>
+        </td>
+        <td>
+          <div class="summary-label">Recommendation</div>
+          <div class="summary-value" style="font-size: 10px;">{{ promotion_decision.title }}</div>
+          <div class="small muted">Class size: {{ summary.class_size }}</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Subject Performance (CA {{ ca_weight_label|floatformat:0 }}% · EOT {{ exam_weight_label|floatformat:0 }}%)</div>
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th style="width: 19%;">Learning Area</th>
+          <th style="width: 8%;">CA</th>
+          <th style="width: 8%;">EOT</th>
+          <th style="width: 8%;">Total</th>
+          <th style="width: 12%;">Level</th>
+          <th style="width: 20%;">Teacher Comment</th>
+          <th style="width: 25%;">Strands / Task Evidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in subject_rows %}
+        <tr>
+          <td class="subject-name">{{ row.subject_name }}</td>
+          <td>{% if row.ca_score is not None %}{{ row.ca_score|floatformat:1 }}{% else %}-{% endif %}</td>
+          <td>{% if row.eot_score is not None %}{{ row.eot_score|floatformat:1 }}{% else %}-{% endif %}</td>
+          <td>{% if row.total_score is not None %}{{ row.total_score|floatformat:1 }}{% else %}-{% endif %}</td>
+          <td>
+            <span class="badge {{ row.level.tone|default:'default' }}">{{ row.level.short_label }}</span>
+          </td>
+          <td>{{ row.teacher_comment|default:'-' }}</td>
+          <td>
+            {% if row.details %}
+              {% for detail in row.details %}
+              <div class="small" style="margin-bottom: 4px;">
+                <strong>{{ detail.task_title }}</strong> ({{ detail.task_type }})<br>
+                {{ detail.score|floatformat:1 }}/{{ detail.max_score|floatformat:1 }} · {{ detail.normalized_score|floatformat:1 }}%
+                {% if detail.competency_name %}<br>{{ detail.competency_name }}{% endif %}
+              </div>
+              {% endfor %}
+            {% else %}
+            <span class="muted small">No evidence</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="center muted">No subject performance data found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Competency Breakdown</div>
+    <table class="compact-table">
+      <thead>
+        <tr>
+          <th style="width: 26%;">Competency</th>
+          <th style="width: 16%;">Level</th>
+          <th style="width: 16%;">Score</th>
+          <th style="width: 42%;">Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in competency_rows %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.level.short_label }}</td>
+          <td>{% if item.score_percent is not None %}{{ item.score_percent|floatformat:1 }}%{% else %}-{% endif %}</td>
+          <td>
+            <div class="progress-wrap">
+              <div class="progress-fill" style="width: {{ item.progress_percent|floatformat:0 }}%;"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <table class="two-col">
+      <tr>
+        <td style="width: 58%;">
+          <div class="section-title">Projects & Practical Work</div>
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th style="width: 26%;">Project / Task</th>
+                <th style="width: 18%;">Subject</th>
+                <th style="width: 12%;">Level</th>
+                <th style="width: 24%;">Teacher Remark</th>
+                <th style="width: 20%;">Evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in project_rows %}
+              <tr>
+                <td>{{ item.title }} <span class="small muted">({{ item.task_type }})</span></td>
+                <td>{{ item.subject_name }}</td>
+                <td>{{ item.level.short_label }}</td>
+                <td>{{ item.teacher_comment|default:'-' }}</td>
+                <td>
+                  {% if item.evidence_reference %}
+                  <span class="small">{{ item.evidence_reference|truncatechars:45 }}</span>
+                  {% else %}
+                  -
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="center muted">No project/practical entries.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </td>
+
+        <td style="width: 42%;" class="promo {{ promotion_decision.tone|default:'pending' }}">
+          <div class="section-title">Attendance, Behavior & Promotion</div>
+          <table class="compact-table">
+            <tbody>
+              <tr>
+                <td style="width: 40%;"><strong>Attendance</strong></td>
+                <td>{{ attendance_snapshot.attendance_percent|floatformat:1 }}%</td>
+              </tr>
+              <tr>
+                <td><strong>Participation</strong></td>
+                <td>{{ attendance_snapshot.participation_level }}</td>
+              </tr>
+              <tr>
+                <td><strong>Marked Sessions</strong></td>
+                <td>{{ attendance_snapshot.total_records }}</td>
+              </tr>
+              <tr>
+                <td><strong>Discipline Remarks</strong></td>
+                <td>{{ attendance_snapshot.discipline_remarks|default:'No discipline remarks recorded.' }}</td>
+              </tr>
+              <tr>
+                <td><strong>Promoted To</strong></td>
+                <td>{{ promotion_decision.target_label|default:'-' }}</td>
+              </tr>
+              <tr>
+                <td><strong>Condition</strong></td>
+                <td>{{ promotion_decision.title|default:'Pending' }}<br><span class="small muted">{{ promotion_decision.condition|default:'' }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Teacher General Comment</div>
+    <table class="two-col">
+      <tr>
+        <td style="width: 50%;">
+          <div class="small muted">Class Teacher Remark</div>
+          <div class="note-box">{{ class_teacher_remark|default:'No class teacher remark entered yet.' }}</div>
+        </td>
+        <td style="width: 50%;">
+          <div class="small muted">Head Teacher Remark</div>
+          <div class="note-box">{{ head_teacher_remark|default:'No head teacher remark entered yet.' }}</div>
+        </td>
+      </tr>
+    </table>
+
+    <table class="sign-table" style="margin-top: 8px;">
+      <tr>
+        <td style="width: 50%;">
+          <strong>Class Teacher</strong><br>
+          <span class="small muted">{{ class_teacher_name|default:'Not assigned' }}</span>
+          {% if class_teacher_signature_uri %}
+          <br><img src="{{ class_teacher_signature_uri }}" alt="Class teacher signature" class="sig-img">
+          {% endif %}
+        </td>
+        <td style="width: 50%;">
+          <strong>Head Teacher</strong><br>
+          <span class="small muted">School Authorized Signature</span>
+          {% if head_teacher_signature_uri %}
+          <br><img src="{{ head_teacher_signature_uri }}" alt="Head teacher signature" class="sig-img">
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="footer-meta">Generated: {{ generated_at|date:"Y-m-d H:i" }}</div>
+</body>
+</html>

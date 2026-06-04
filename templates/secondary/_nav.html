@@ -1,0 +1,21 @@
+<div class="x_panel">
+  <div class="x_content">
+    <a class="btn btn-sm btn-primary" href="{% url 'secondary:dashboard' %}">Dashboard</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:policy_list' %}">Policies</a>
+    {% if is_secondary_upper_mode %}
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:alevel_scales' %}">A-Level Scales</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:alevel_component_weights' %}">Component Weights</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:alevel_modules' %}">Modules</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:alevel_assessments' %}">Assessments</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:alevel_report_preview' %}">A-Level Preview</a>
+    {% else %}
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:competency_list' %}">Competencies</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:subject_competency_list' %}">Subject Competencies</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:ca_task_list' %}">CA Tasks</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:moderation_queue' %}">Moderation</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:uneb_batch_list' %}">UNEB Batches</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:cbc_term_report' %}">CBC Term Report</a>
+    <a class="btn btn-sm btn-default" href="{% url 'secondary:report_preview' %}">Report Preview</a>
+    {% endif %}
+  </div>
+</div>

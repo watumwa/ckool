@@ -1,0 +1,124 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
+  <title>{% block title %}School MIS{% endblock %}</title>
+  {% if school_settings and school_settings.school_logo %}
+  <link rel="icon" href="{{ school_settings.school_logo.url }}" type="image/x-icon" />
+  {% else %}
+  <link rel="icon" href="{% static 'admindek/images/favicon.svg' %}" type="image/svg+xml" />
+  {% endif %}
+  <!-- Phosphor Icons -->
+  <link rel="stylesheet" href="{% static 'admindek/css/plugins/phosphor-icons.css' %}" />
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="{% static 'admindek/css/plugins/tabler-icons.min.css' %}" />
+  <!-- Font Awesome (used by existing page templates) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+  <!-- DataTables Bootstrap 5 CSS -->
+  <link rel="stylesheet" href="{% static 'admindek/css/plugins/dataTables.bootstrap5.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'admindek/css/plugins/buttons.bootstrap5.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'admindek/css/plugins/responsive.bootstrap5.min.css' %}" />
+  <!-- Admindek Main CSS -->
+  <link rel="stylesheet" href="{% static 'admindek/css/style.css' %}" id="main-style-link" />
+  <link rel="stylesheet" href="{% static 'admindek/css/style-preset.css' %}" />
+  <!-- Gentelella → Bootstrap 5 compatibility layer -->
+  <link rel="stylesheet" href="{% static 'css/compat.css' %}" />
+  <!-- Project custom styles -->
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/custom_overrides.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/senior_ui.css' %}" />
+  {% block extra_css %}{% endblock %}
+</head>
+<body data-pc-preset="preset-1" data-pc-sidebar-caption="true" data-pc-direction="ltr" data-pc-theme="light">
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- [ Pre-loader ] start -->
+<div class="loader-bg">
+  <div class="loader-track">
+    <div class="loader-fill"></div>
+  </div>
+</div>
+<!-- [ Pre-loader ] End -->
+
+{% include 'includes/sidebar.html' %}
+
+{% include 'includes/top_nav.html' %}
+
+<!-- [ Main Content ] start -->
+<div class="pc-container">
+  <main class="pc-content" id="main-content" tabindex="-1">
+
+    <!-- [ breadcrumb ] start -->
+    <div class="page-header">
+      <div class="page-block">
+        <div class="row align-items-center">
+          <div class="col-md-12">
+            <div class="page-header-title">
+              <h5 class="m-b-10">{% block page_title %}{% endblock %}</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- [ breadcrumb ] end -->
+
+    {% include 'includes/messages.html' %}
+
+    {% block content %}{% endblock %}
+
+  </main>
+</div>
+<!-- [ Main Content ] end -->
+
+{% include 'includes/footer.html' %}
+
+{% include 'includes/scripts.html' %}
+<script src="{% static 'js/senior_ui.js' %}"></script>
+
+{% if request.user.is_authenticated %}
+<!-- Switch Role Modal -->
+<div class="modal fade" id="switchRoleModal" tabindex="-1" aria-labelledby="switchRoleLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="switchRoleLabel"><i class="ph ph-user-switch me-2"></i>Switch Role</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{% url 'switch_role' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted mb-1">Current role</p>
+          <div class="fw-bold mb-3">{{ active_role|default:user.staff_account.role.name }}</div>
+          <p class="text-muted mb-2">Select a role to activate</p>
+          {% for role in user.staff_account.staff.roles.all %}
+          <label class="d-block mb-2">
+            <input type="radio" name="role" class="d-none role-radio" value="{{ role.id }}" {% if active_role == role.name %}checked{% endif %}>
+            <div class="d-flex align-items-center justify-content-between p-3 border rounded role-card {% if active_role == role.name %}border-success{% endif %}" style="cursor:pointer;">
+              <div class="d-flex align-items-center gap-2">
+                <i class="ph ph-identification-badge fs-5"></i>
+                <span class="fw-semibold">{{ role.name }}</span>
+              </div>
+              <span class="badge {% if active_role == role.name %}bg-success{% else %}bg-secondary{% endif %}">
+                {% if active_role == role.name %}Active{% else %}Available{% endif %}
+              </span>
+            </div>
+          </label>
+          {% empty %}
+          <div class="alert alert-warning">No roles assigned. Contact an administrator.</div>
+          {% endfor %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Switch Role</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

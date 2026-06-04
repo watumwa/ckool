@@ -1,0 +1,492 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load verification_tags %}
+
+{% block title %}School Results Dashboard{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div class="page-title">
+  <div class="title_left">
+    <h3><i class=""></i> Results Dashboard</h3>
+  </div>
+</div>
+
+<div class="clearfix"></div>
+
+<style>
+  :root{
+    --primary:#1f4ed8;
+    --accent:#0ea5e9;
+    --muted:#64748b;
+    --bg:#ffffff;
+    --border:#e2e8f0;
+    --shadow:0 8px 24px rgba(15,23,42,.08);
+  }
+  .dash-card{background:var(--bg);border-radius:12px;box-shadow:var(--shadow);padding:16px;border:1px solid var(--border);}
+  .grid{display:grid;gap:16px;}
+  .grid.kpi{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));}
+  .kpi .item{text-align:center;padding:14px;border-radius:12px;border:1px solid var(--border);background:#f8fafc;}
+  .kpi .title{font-size:.9rem;color:var(--muted);margin:4px 0;}
+  .kpi .value{font-size:1.6rem;font-weight:700;color:#0f172a;}
+  .toolbar{display:flex;gap:6px;}
+  .toolbar .btn-xs{padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:#f8fafc;color:#1f2937;}
+  .section-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .section-h h4{color:var(--primary);}
+  canvas{width:100%!important;height:240px!important;}
+  @media(max-width:768px){.grid.two{grid-template-columns:1fr;}}
+  .heatmap-cell { padding: 8px 10px; text-align: center; color: #fff; border-radius: 6px; font-weight: 600; }
+  .heatmap-high { background-color: #16a34a; }   /* High = green */
+  .heatmap-medium { background-color: #f59e0b; } /* Medium = orange */
+  .heatmap-low { background-color: #ef4444; }    /* Low = red */
+</style>
+
+<div class="dash-card" style="margin-bottom:16px;">
+  <h3 style="margin:0 0 10px;color:var(--primary);">Filters</h3>
+  <form method="get" id="filter-form" class="row g-2">
+    <div class="col-md-3">
+      <select name="academic_year_id" id="academic_year_id" class="form-control" required>
+        <option value="">-- Academic Year --</option>
+        {% for year in academic_years %}
+        <option value="{{ year.id }}" {% if year.id|stringformat:"s" == selected_academic_year %}selected{% endif %}>{{ year.academic_year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="term_id" id="term_id" class="form-control">
+        <option value="">-- Term --</option>
+        {% for term in terms %}
+        <option value="{{ term.id }}" {% if term.id|stringformat:"s" == selected_term %}selected{% endif %}>{{ term.term }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="class_id" id="class_id" class="form-control">
+        <option value="">-- Class --</option>
+        {% for c in classes %}
+        <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_class %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 text-end">
+      <button type="submit" class="btn btn-primary">Apply</button>
+    </div>
+  </form>
+</div>
+
+{% pending_verification_count as pending_count %}
+
+<div class="grid kpi" style="margin-bottom:16px;">
+  <div class="item">
+    <div class="title">Total Students</div>
+    <div class="value">{{ kpi.total_students|default:0 }}</div>
+  </div>
+  <div class="item">
+    <div class="title">Average Score</div>
+    <div class="value">{{ kpi.average_score_school|floatformat:1|default:"0.0" }}%</div>
+  </div>
+  <div class="item">
+    <div class="title">Pass Rate (>=70%)</div>
+    <div class="value">{{ kpi.pass_rate_school|floatformat:0|default:"0" }}%</div>
+  </div>
+  <div class="item">
+    <div class="title">Assessments</div>
+    <div class="value">{{ kpi.total_assessments|default:0 }}</div>
+  </div>
+  <div class="item">
+    <div class="title">Pending Verifications</div>
+    <div class="value">{{ pending_count|default:0 }}</div>
+    <div style="margin-top:6px;">
+      <a class="btn btn-xs btn-danger" href="{% url 'verification_overview' %}">
+        Open Queue
+      </a>
+    </div>
+  </div>
+  <div class="item">
+    <div class="title">Classes</div>
+    <div class="value">{{ kpi.total_classes|default:0 }}</div>
+  </div>
+  <div class="item">
+    <div class="title">Subjects</div>
+    <div class="value">{{ kpi.total_subjects|default:0 }}</div>
+  </div>
+  <div class="item">
+    <div class="title">Latest Assessment</div>
+    <div class="value">{% if kpi.latest_assessment_date %}{{ kpi.latest_assessment_date|date:"Y-m-d" }}{% else %}-{% endif %}</div>
+  </div>
+</div>
+
+<div class="grid two" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px;">
+  <div class="dash-card">
+    <div class="section-h">
+      <h4 style="margin:0;color:var(--primary);">Performance Trends</h4>
+      <div class="toolbar">
+        <button type="button" class="btn-xs" data-action="download" data-target="trendChart"><i class="fa fa-download"></i></button>
+        <button type="button" class="btn-xs" data-action="toggle-dl" data-target="trendChart"><i class="fa fa-tags"></i></button>
+      </div>
+    </div>
+    <canvas id="trendChart" aria-label="Performance trends"></canvas>
+  </div>
+  <div class="dash-card">
+    <div class="section-h">
+      <h4 style="margin:0;color:var(--primary);">Assessment Type Mix</h4>
+      <div class="toolbar">
+        <button type="button" class="btn-xs" data-action="download" data-target="atypeChart"><i class="fa fa-download"></i></button>
+        <button type="button" class="btn-xs" data-action="toggle-dl" data-target="atypeChart"><i class="fa fa-tags"></i></button>
+      </div>
+    </div>
+    <canvas id="atypeChart" aria-label="Assessment type mix"></canvas>
+  </div>
+</div>
+
+<div class="grid two" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px;">
+  <div class="dash-card">
+    <div class="section-h">
+      <h4 style="margin:0;color:var(--primary);">Subject Performance</h4>
+      <div class="toolbar">
+        <button type="button" class="btn-xs" data-action="download" data-target="subjectChart"><i class="fa fa-download"></i></button>
+        <button type="button" class="btn-xs" data-action="toggle-dl" data-target="subjectChart"><i class="fa fa-tags"></i></button>
+      </div>
+    </div>
+    <canvas id="subjectChart" aria-label="Subject performance"></canvas>
+  </div>
+  <div class="dash-card">
+    <div class="section-h">
+      <h4 style="margin:0;color:var(--primary);">Class League (Average)</h4>
+      <div class="toolbar">
+        <button type="button" class="btn-xs" data-action="download" data-target="classChart"><i class="fa fa-download"></i></button>
+        <button type="button" class="btn-xs" data-action="toggle-dl" data-target="classChart"><i class="fa fa-tags"></i></button>
+      </div>
+    </div>
+    <canvas id="classChart" aria-label="Class league"></canvas>
+  </div>
+</div>
+
+<div class="grid two" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px;">
+  <div class="dash-card">
+    <div class="section-h">
+      <h4 style="margin:0;color:var(--primary);">Stream Comparison</h4>
+      <div class="toolbar">
+        <button type="button" class="btn-xs" data-action="download" data-target="streamChart"><i class="fa fa-download"></i></button>
+        <button type="button" class="btn-xs" data-action="toggle-dl" data-target="streamChart"><i class="fa fa-tags"></i></button>
+      </div>
+    </div>
+    <canvas id="streamChart" aria-label="Stream comparison"></canvas>
+  </div>
+  <div class="dash-card">
+    <div class="section-h">
+      <h4 style="margin:0;color:var(--primary);">Gender Performance</h4>
+      <div class="toolbar">
+        <button type="button" class="btn-xs" data-action="download" data-target="genderChart"><i class="fa fa-download"></i></button>
+        <button type="button" class="btn-xs" data-action="toggle-dl" data-target="genderChart"><i class="fa fa-tags"></i></button>
+      </div>
+    </div>
+    <canvas id="genderChart" aria-label="Gender performance"></canvas>
+  </div>
+</div>
+
+<div class="dash-card" style="margin-bottom:16px;">
+  <div class="section-h">
+    <h4 style="margin:0;color:var(--primary);">Subject Difficulty Heatmap</h4>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead>
+        <tr><th>Subject</th><th>Average</th><th>Performance</th></tr>
+      </thead>
+      <tbody>
+        {% for subject, avg in subject_heatmap.items %}
+        <tr>
+          <td>{{ subject }}</td>
+          <td>{{ avg|floatformat:1 }}%</td>
+          <td class="heatmap-cell {% if avg >= 80 %}heatmap-high{% elif avg >= 60 %}heatmap-medium{% else %}heatmap-low{% endif %}">
+            {% if avg >= 80 %}High{% elif avg >= 60 %}Medium{% else %}Low{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Top Performer per Class -->
+<div class="dash-card" style="margin-bottom:16px;">
+  <div class="section-h">
+    <h4 style="margin:0;color:var(--primary);">Top Performer per Class</h4>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr><th>Class</th><th>Student</th><th>Average</th></tr>
+      </thead>
+      <tbody>
+        {% for row in class_top_performers %}
+        <tr>
+          <td>{{ row.class }}</td>
+          <td>{{ row.student }}</td>
+          <td>{{ row.average|floatformat:2 }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid two" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px;">
+  <div class="dash-card">
+    <div class="section-h"><h4 style="margin:0;color:var(--primary);">Top 10 Students</h4></div>
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead><tr><th>Name</th><th>Class</th><th>Average</th></tr></thead>
+        <tbody>
+          {% for s in top_students %}
+          <tr><td>{{ s.student__student_name }}</td><td>{{ s.student__current_class__name }}</td><td>{{ s.average|floatformat:2 }}%</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="dash-card">
+    <div class="section-h"><h4 style="margin:0;color:var(--primary);">Bottom 10 Students</h4></div>
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead><tr><th>Name</th><th>Class</th><th>Average</th></tr></thead>
+        <tbody>
+          {% for s in bottom_students %}
+          <tr><td>{{ s.student__student_name }}</td><td>{{ s.student__current_class__name }}</td><td>{{ s.average|floatformat:2 }}%</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Data payloads -->
+{{ performance_trends|json_script:"trend-data" }}
+{{ assessment_type_mix|json_script:"atype-data" }}
+{{ subject_performance|json_script:"subject-perf-data" }}
+{{ class_league|json_script:"class-league-data" }}
+{{ stream_comparison|json_script:"stream-data" }}
+{{ gender_comparison|json_script:"gender-data" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
+<script>
+(function(){
+  function qs(id){ return document.getElementById(id); }
+  function parseJSON(id, fallback){
+    try { var el = qs(id); return el ? JSON.parse(el.textContent) : fallback; }
+    catch(e){ return fallback; }
+  }
+  if (window.ChartDataLabels) { Chart.register(ChartDataLabels); }
+  Chart.defaults.color = '#334155';
+  Chart.defaults.font.family = "'Inter','system-ui','-apple-system','Segoe UI','Roboto','Ubuntu','Cantarell','Noto Sans','Helvetica Neue','Arial',sans-serif";
+
+  var ok = ['#0072B2','#E69F00','#56B4E9','#009E73','#D55E00','#CC79A7','#F0E442','#999999'];
+
+  function hexToRgba(hex, alpha){
+    if (!hex) return 'rgba(0,0,0,' + (alpha || 1) + ')';
+    var h = hex.replace('#','');
+    if (h.length === 3) {
+      var r = h.charAt(0), g = h.charAt(1), b = h.charAt(2);
+      h = r+r+g+g+b+b;
+    }
+    var rDec = parseInt(h.substr(0,2),16);
+    var gDec = parseInt(h.substr(2,2),16);
+    var bDec = parseInt(h.substr(4,2),16);
+    var a = (alpha == null ? 1 : alpha);
+    return 'rgba(' + rDec + ',' + gDec + ',' + bDec + ',' + a + ')';
+  }
+
+  function yPct(){
+    return {
+      beginAtZero: true,
+      max: 100,
+      grid: { color: '#e7e7e7' },
+      ticks: { callback: function(v){ return v + '%'; } }
+    };
+  }
+  function axis(){ return { grid: { color: '#e7e7e7' } }; }
+
+  function toolbar(){
+    var buttons = document.querySelectorAll('.toolbar .btn-xs');
+    for (var i=0;i<buttons.length;i++){
+      (function(b){
+        b.addEventListener('click', function(){
+          var id = b.getAttribute('data-target');
+          var action = b.getAttribute('data-action');
+          var c = window.__charts[id];
+          if (!c) return;
+          if (action === 'download') {
+            var a = document.createElement('a');
+            a.href = c.toBase64Image();
+            a.download = id + '.png';
+            a.click();
+          } else if (action === 'toggle-dl') {
+            c.options.plugins = c.options.plugins || {};
+            c.options.plugins.datalabels = c.options.plugins.datalabels || {};
+            var current = !!c.options.plugins.datalabels.display;
+            c.options.plugins.datalabels.display = !current;
+            c.update();
+          }
+        });
+      })(buttons[i]);
+    }
+  }
+
+  window.__charts = {};
+
+  // Trends
+  var tdata = parseJSON('trend-data', []);
+  if (tdata && tdata.length){
+    var tLabels = [], tValues = [];
+    for (var i=0;i<tdata.length;i++){
+      tLabels.push(String(tdata[i].term || ''));
+      tValues.push(Number(tdata[i].average || 0));
+    }
+    window.__charts['trendChart'] = new Chart(qs('trendChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: tLabels,
+        datasets: [{
+          label: 'Average',
+          data: tValues,
+          borderColor: '#26B99A',
+          backgroundColor: 'rgba(38,185,154,.2)',
+          tension: 0.35,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { datalabels: { display: false } },
+        scales: { y: yPct(), x: axis() }
+      }
+    });
+  }
+
+  // Assessment type
+  var at = parseJSON('atype-data', []);
+  if (at && at.length){
+    var L = [], D = [], bg = [], bd = [];
+    for (var i=0;i<at.length;i++){
+      L.push(String(at[i]['assessment__assessment_type__name'] || ''));
+      D.push(Number(at[i].avg || 0));
+      var col = ok[(i+2)%ok.length];
+      bg.push(hexToRgba(col, 0.8));
+      bd.push(col);
+    }
+    window.__charts['atypeChart'] = new Chart(qs('atypeChart').getContext('2d'), {
+      type: 'bar',
+      data: { labels: L, datasets: [{ label: 'Average', data: D, backgroundColor: bg, borderColor: bd }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { datalabels: { display: false } },
+        scales: { y: yPct(), x: axis() }
+      }
+    });
+  }
+
+  // Subject performance
+  var sp = parseJSON('subject-perf-data', []);
+  if (sp && sp.length){
+    var sL = [], sD = [], sbg = [], sbd = [];
+    for (var i=0;i<sp.length;i++){
+      sL.push(String(sp[i]['assessment__subject__name'] || ''));
+      sD.push(Number(sp[i].avg || 0));
+      var col = ok[i%ok.length];
+      sbg.push(hexToRgba(col, 0.8));
+      sbd.push(col);
+    }
+    window.__charts['subjectChart'] = new Chart(qs('subjectChart').getContext('2d'), {
+      type: 'bar',
+      data: { labels: sL, datasets: [{ label: 'Average', data: sD, backgroundColor: sbg, borderColor: sbd }] },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { datalabels: { display: false } },
+        scales: { x: yPct(), y: axis() }
+      }
+    });
+  }
+
+  // Class league
+  var cl = parseJSON('class-league-data', []);
+  if (cl && cl.length){
+    var cL = [], cD = [], cbg = [], cbd = [];
+    for (var i=0;i<cl.length;i++){
+      cL.push(String(cl[i]['assessment__academic_class__Class__name'] || ''));
+      cD.push(Number(cl[i].avg || 0));
+      var col = ok[(i+3)%ok.length];
+      cbg.push(hexToRgba(col, 0.8));
+      cbd.push(col);
+    }
+    window.__charts['classChart'] = new Chart(qs('classChart').getContext('2d'), {
+      type: 'bar',
+      data: { labels: cL, datasets: [{ label: 'Average', data: cD, backgroundColor: cbg, borderColor: cbd }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { datalabels: { display: false } },
+        scales: { y: yPct(), x: axis() }
+      }
+    });
+  }
+
+  // Stream comparison
+  var st = parseJSON('stream-data', {});
+  var sKeys = []; var sVals = [];
+  if (st){
+    for (var k in st){ if (Object.prototype.hasOwnProperty.call(st,k)){ sKeys.push(k || 'No Stream'); sVals.push(Number(st[k] || 0)); } }
+  }
+  if (sKeys.length){
+    var sbgc = [], sbdc = [];
+    for (var i=0;i<sKeys.length;i++){
+      var col = ok[(i+4)%ok.length];
+      sbgc.push(hexToRgba(col, 0.8));
+      sbdc.push(col);
+    }
+    window.__charts['streamChart'] = new Chart(qs('streamChart').getContext('2d'), {
+      type: 'bar',
+      data: { labels: sKeys, datasets: [{ label: 'Students', data: sVals, backgroundColor: sbgc, borderColor: sbdc }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { datalabels: { display: false } },
+        scales: { y: { beginAtZero: true, grid: { color: '#e7e7e7' } }, x: axis() }
+      }
+    });
+  }
+
+  // Gender
+  var g = parseJSON('gender-data', {});
+  var gMale = (g && g.Male && g.Male.average) ? Number(g.Male.average) : 0;
+  var gFemale = (g && g.Female && g.Female.average) ? Number(g.Female.average) : 0;
+  window.__charts['genderChart'] = new Chart(qs('genderChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['Male','Female'],
+      datasets: [{
+        label: 'Average',
+        data: [gMale, gFemale],
+        backgroundColor: ['rgba(52,152,219,.85)','rgba(233,30,99,.85)'],
+        borderColor: ['#3498DB','#E91E63']
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { datalabels: { display: false } },
+      scales: { y: yPct(), x: axis() }
+    }
+  });
+
+  toolbar();
+})();
+</script>
+
+{% endblock %}

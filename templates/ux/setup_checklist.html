@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block page_title %}Setup Checklist{% endblock %}
+
+{% block content %}
+<div class="ux-hero">
+  <h1><i class="fa fa-check-square-o"></i> School Setup Checklist</h1>
+  <p>{{ complete_count }} of {{ total_checks }} setup areas complete · {{ percentage }}% ready for daily use.</p>
+</div>
+
+<div class="row">
+  <div class="col-md-4 col-sm-6">
+    <div class="ux-kpi info"><small>Current academic year</small><strong>{{ current_year|default:"Not set" }}</strong></div>
+  </div>
+  <div class="col-md-4 col-sm-6">
+    <div class="ux-kpi info"><small>Current term</small><strong>{% if current_term %}Term {{ current_term.term }}{% else %}Not set{% endif %}</strong></div>
+  </div>
+  <div class="col-md-4 col-sm-12">
+    <div class="ux-kpi success"><small>Readiness</small><strong>{{ percentage }}%</strong></div>
+  </div>
+</div>
+
+<div class="ux-checklist">
+  {% for check in checks %}
+  <div class="ux-check-row {% if check.done %}done{% endif %}">
+    <div class="ux-check-icon"><i class="fa {% if check.done %}fa-check{% else %}fa-exclamation{% endif %}"></i></div>
+    <div class="ux-check-body">
+      <h4>{{ check.title }}</h4>
+      <p>{{ check.description }}</p>
+    </div>
+    <a href="{{ check.url }}" class="btn btn-sm {% if check.done %}btn-default{% else %}btn-primary{% endif %}">
+      {% if check.done %}Review{% else %}Set up{% endif %}
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

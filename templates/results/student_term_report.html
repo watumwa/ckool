@@ -1,0 +1,397 @@
+{% load static report_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Term Report - {{ student.student_name }} | {{ school.school_name }}</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        :root {
+            --primary-color: #9D00FF;
+            --secondary-color: #e6e6fa;
+            --border-color: #9D00FF;
+            --text-color: #000000;
+            --font-family: Arial, sans-serif;
+            --font-size-base: 9pt;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: #ffffff;
+            color: var(--text-color);
+            font-size: var(--font-size-base);
+            margin: 0;
+            padding: 0;
+        }
+
+        .content-wrapper {
+            padding: 1cm;
+            margin: auto;
+            max-width: 18cm;
+            box-sizing: border-box;
+            border: 3px solid var(--border-color);
+            border-radius: 15px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1cm;
+            border: 1px dashed var(--border-color);
+            padding: 8px;
+        }
+
+        .header img {
+            width: 100px;
+            height: 100px;
+            margin-right: 15px;
+        }
+
+        .header .school-details {
+            flex: 1;
+            text-align: center;
+            font-size: 12pt;
+        }
+
+        .header .school-details p {
+            margin: 2px 0;
+            font-size: 11pt;
+        }
+
+        .school-name {
+            font-size: 30px !important;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: bold;
+            color: red;
+            margin: 0.5cm 0;
+        }
+
+        .info {
+            display: flex;
+            margin-bottom: 0.75cm;
+            padding: 8px;
+            font-size: 9pt;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .info-photo {
+            flex: 0 0 120px;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .info-photo img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+        }
+
+        .info-no-photo {
+            width: 120px;
+            height: 120px;
+            background: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8pt;
+            color: #666;
+            border-radius: 6px;
+        }
+
+        .info-details {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .info-details span {
+            display: block;
+        }
+
+        .term-filter-form {
+            text-align: right;
+            margin-bottom: 1cm;
+        }
+        .term-filter-form form {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .print-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 9pt;
+            margin-bottom: 0.75cm;
+        }
+
+        table {
+            width: 100%;
+            max-width: 16.5cm;
+            border-collapse: collapse;
+            margin: 1cm auto;
+            box-sizing: border-box;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            text-align: center;
+            font-size: 9pt;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--secondary-color);
+        }
+
+        .conduct-section {
+            font-size: 9pt;
+            margin-top: 1cm;
+        }
+
+        .conduct-section table {
+            width: 100%;
+            border: none;
+            margin-top: 0.5cm;
+        }
+
+        .conduct-section td {
+            padding: 6px;
+            border: none;
+            border-bottom: 1px solid #000;
+            vertical-align: top;
+        }
+
+        .conduct-section .label {
+            font-weight: bold;
+            width: 22%;
+            white-space: nowrap;
+        }
+
+        [contenteditable="true"] {
+            outline: none;
+        }
+
+        .next-term {
+            text-align: right;
+            margin-bottom: 0.5cm;
+            font-size: 9pt;
+            font-weight: bold;
+            color: #4a4a4a;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .term-filter-form,
+            .print-btn {
+                display: none;
+            }
+            .content-wrapper {
+                border: 3px solid var(--border-color);
+                padding: 1cm;
+                margin: 0;
+                max-width: 18cm;
+            }
+            th {
+                background-color: var(--primary-color) !important;
+                color: white !important;
+            }
+            tr:nth-child(even) {
+                background-color: var(--secondary-color) !important;
+            }
+            table {
+                width: 95%;
+                max-width: 16.5cm;
+                margin: 1cm auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+        <div class="header">
+            <img src="{{ school.school_logo.url }}" alt="School Logo" />
+            <div class="school-details">
+               <p class="school-name"><strong>{{ school.school_name }}</strong></p>
+                <p>{{ school.address }}</p>
+                <p>Email:{{ school.email }}</p>
+                <p>Mobile:{{school.mobile}} / {{ school.office_phone_number1 }} / {{ school.office_phone_number2 }}</p>
+                <p>Web:{{ school.website }}</p>
+            </div>
+        </div>
+        <div class="title">END OF TERM {{ term|default:"-" }} REPORT CARD - {{ academic_year|default:"-" }}</div>
+        {% if not is_bulk_report %}
+        <div class="term-filter-form">
+            <form method="get">
+                <label for="term_id"><strong>Select Term:</strong></label>
+                <select name="term_id" id="term_id" onchange="this.form.submit()">
+                    {% for term in terms %}
+                    <option value="{{ term.id }}" {% if term.id|stringformat:"s" == selected_term_id %}selected{% endif %}>
+                        {{ term.term }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <label for="report_format"><strong>Report Format:</strong></label>
+                <select name="report_format" id="report_format" onchange="this.form.submit()">
+                    <option value="standard" {% if selected_report_format == "standard" %}selected{% endif %}>Standard</option>
+                    <option value="tahfiz" {% if selected_report_format == "tahfiz" %}selected{% endif %}>Tahfiz</option>
+                </select>
+            </form>
+        </div>
+        {% endif %}
+        <div class="info">
+            <div class="info-photo">
+                {% if student.photo %}
+                <img src="{{ student.photo.url }}" alt="{{ student.student_name }}" />
+                {% else %}
+                <div class="info-no-photo">No Photo</div>
+                {% endif %}
+            </div>
+            <div class="info-details">
+                <span><strong>NAME:</strong> {{ student.student_name|default:'N/A' }}</span>
+                <span><strong>CLASS:</strong> {{ student.current_class.name|default:'N/A' }}</span>
+                <span><strong>SCHOOL PAY CODE:</strong> {{ student.admission_number|default:'N/A' }}</span>
+                <span><strong>TERM:</strong> {{ term|default:"-" }}</span>
+            </div>
+        </div>
+        
+        {% if not is_bulk_report %}
+        <button onclick="window.print()" class="print-btn">Print Report</button>
+        {% endif %}
+        {% if not report_data %}
+        <p style="color: red;">No report data available.</p>
+        {% endif %}
+        <table>
+            <tr>
+                <th rowspan="2">SUBJECT</th>
+                {% for at in assessment_types %}
+                <th colspan="2">{{ at.name|upper }}</th>
+                {% endfor %}
+                <th rowspan="2">REMARKS</th>
+            </tr>
+            <tr>
+                {% for at in assessment_types %}
+                <th>MARKS</th>
+                <th>AGG</th>
+                {% endfor %}
+            </tr>
+            {% for item in report_data %}
+            <tr>
+                <td>{{ item.subject }}</td>
+                {% for at in assessment_types %}
+                {% with item.assessments|get_item:at.name as data %}
+                <td>{{ data.score|floatformat:0|default:"-" }}</td>
+                <td>{{ data.points|floatformat:0|default:"-" }}</td>
+                {% endwith %}
+                {% endfor %}
+                <td>
+                    {% if item.average <= 49 %}Improve
+                    {% elif item.average <= 59 %}Promising
+                    {% elif item.average <= 69 %}Fair
+                    {% elif item.average <= 79 %}Good
+                    {% elif item.average <= 89 %}Well Done
+                    {% elif item.average <= 99 %}Bravo
+                    {% else %}-{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <td><strong>TOTAL</strong></td>
+                {% for at in assessment_types %}
+                <td>{{ assessment_totals|get_item:at.name|get_item:"marks"|floatformat:0|default:"-" }}</td>
+                <td>{{ assessment_totals|get_item:at.name|get_item:"points"|floatformat:0|default:"-" }}</td>
+                {% endfor %}
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>DIVISION</strong></td>
+                {% for at in assessment_types %}
+                <td colspan="2">{{ assessment_divisions|get_item:at.name }}</td>
+                {% endfor %}
+                <td></td>
+            </tr>
+        </table>
+
+        <!-- report_template.html -->
+<div class="conduct-section">
+    <table style="width:100%; border-collapse:collapse;">
+        <!-- Header row for "Signature" -->
+        <tr>
+            <td colspan="2"></td>
+            <td style="text-align:center; font-weight:bold;">Signature</td>
+        </tr>
+
+        <tr>
+            <!-- Class Teacher Remarks -->
+            <td class="label" style="width:20%;">Class Teacher's Remarks:</td>
+            <td contenteditable="true" style="width:40%; border-bottom: 1px solid #000;"></td>
+
+            <!-- Class Teacher Signature -->
+            <td style="width:40%; text-align:right; border-bottom: 1px solid #000;">
+                {% if class_teacher_signature %}
+                    <img src="{{ class_teacher_signature.url }}" 
+                         alt="Class Teacher Signature" 
+                         style="height:30px; object-fit:contain;" />
+                {% else %}
+            
+                {% endif %}
+            </td>
+        </tr>
+
+        <tr>
+            <!-- Head Teacher Remarks -->
+            <td class="label">Head Teacher's Remarks:</td>
+            <td contenteditable="true" style="border-bottom: 1px solid #000;"></td>
+
+            <!-- Head Teacher Signature -->
+            <td style="text-align:right; border-bottom: 1px solid #000;">
+                {% if head_teacher_signature and head_teacher_signature.signature %}
+
+                     <img src="{{ head_teacher_signature.signature.url }}" 
+                         alt="Head Teacher Signature" 
+                         style="height:30px; object-fit:contain;" />
+                {% else %}
+                    .
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+</div>
+
+
+
+        <div class="next-term">
+            Next Term Begins On: {{ next_term_start_date|date:"jS F Y" }}
+        </div>
+    </div>
+</body>
+</html>

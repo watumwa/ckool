@@ -1,0 +1,46 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Edit Subject Allocation{% endblock page_title %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-edit"></i> Edit Allocation <small>{{ allocation.academic_class_stream }}</small></h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+          <li><a class="close-link"><i class="fa fa-close"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <form method="POST">
+          {% csrf_token %}
+          <div class="row">
+            <div class="col-md-8 col-sm-10 col-xs-12">
+              {{ form|crispy }}
+              <div class="btn-group" style="margin-top:12px;">
+                <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Save Changes</button>
+                <a href="{% url 'subject_allocation_page' %}" class="btn btn-default"><i class="fa fa-arrow-left"></i> Back</a>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-2 hidden-xs">
+              <div class="well" style="margin-top:0;">
+                <h4 style="margin-top:0;"><i class="fa fa-info-circle"></i> Tips</h4>
+                <ul class="list-unstyled" style="margin:0;">
+                  <li style="margin-bottom:8px;">Update the subject or teacher assignment.</li>
+                  <li>Click Save Changes to apply updates.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

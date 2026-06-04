@@ -1,0 +1,272 @@
+{% load crispy_forms_tags %}
+
+<div class="p-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-1"><i class="fa fa-signature text-primary"></i> School Signatures</h3>
+            <p class="text-muted mb-0">Manage official signatures for reports and documents</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addSignatureModal">
+            <i class="fa fa-plus mr-2"></i>Add New Signature
+        </button>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fa fa-search"></i></span>
+                </div>
+                <input type="text" class="form-control" id="signatureSearch" placeholder="Search signatures by position...">
+            </div>
+        </div>
+    </div>
+
+    {% if signatures %}
+        <!-- Signatures Grid -->
+        <div class="row" id="signaturesGrid">
+            {% for signature in signatures %}
+            <div class="col-lg-6 col-md-6 mb-4 signature-item">
+                <div class="card h-100 shadow-sm border-0 hover-card">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="flex-grow-1">
+                                <h5 class="card-title mb-1">
+                                    <i class="fa fa-user-tie text-primary mr-2"></i>{{ signature.get_position_display }}
+                                </h5>
+                                <small class="text-muted">Signature #{{ signature.id }}</small>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+                                    <i class="fa fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a href="{% url 'edit_signature' signature.id %}" class="dropdown-item">
+                                        <i class="fa fa-edit mr-2"></i>Edit
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a href="{% url 'delete_signature' signature.id %}" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to delete this signature?')">
+                                        <i class="fa fa-trash mr-2"></i>Delete
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Signature Preview -->
+                        <div class="text-center mb-3">
+                            {% if signature.signature %}
+                                <div class="signature-preview border rounded p-3 bg-light">
+                                    <img src="{{ signature.signature.url }}" alt="Signature" class="img-fluid signature-image" style="max-height: 100px; max-width: 200px;">
+                                </div>
+                                <small class="text-muted mt-1 d-block">
+                                    <i class="fa fa-image mr-1"></i>Signature Image
+                                </small>
+                            {% else %}
+                                <div class="signature-preview border rounded p-4 bg-light text-center">
+                                    <i class="fa fa-signature fa-3x text-muted"></i>
+                                    <p class="text-muted mt-2 mb-0">No signature uploaded</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mt-auto">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fa fa-calendar mr-1"></i>Created {{ signature.created_at|default:"Recently"|date:"M d, Y" }}
+                                </small>
+                                <span class="badge badge-success">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination (if needed) -->
+        {% if signatures|length > 8 %}
+        <nav aria-label="Signatures pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">Previous</a>
+                </li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="#">Next</a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+    {% else %}
+        <!-- Empty State -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fa fa-signature fa-4x text-muted"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Signatures Yet</h4>
+                <p class="text-muted mb-4">Add official signatures for your school documents and reports.</p>
+                <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addSignatureModal">
+                    <i class="fa fa-plus mr-2"></i>Add First Signature
+                </button>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Enhanced Add Signature Modal -->
+<div class="modal fade" id="addSignatureModal" tabindex="-1" role="dialog" aria-labelledby="addSignatureModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="addSignatureModalLabel">Add Signature</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <form method="POST" action="{% url 'add_signature_page' %}" enctype="multipart/form-data" id="addSignatureForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_position" class="font-weight-bold">
+                                    <i class="fa fa-user-tie mr-1"></i>Position
+                                </label>
+                                {{ signature_form.position|as_crispy_field }}
+                                <small class="form-text text-muted">Select the position this signature represents</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_signature" class="font-weight-bold">
+                                    <i class="fa fa-upload mr-1"></i>Signature Image
+                                </label>
+                                {{ signature_form.signature|as_crispy_field }}
+                                <small class="form-text text-muted">Upload a clear signature image (PNG, JPG, max 5MB)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div id="imagePreview" class="d-none">
+                                <label class="font-weight-bold">
+                                    <i class="fa fa-eye mr-1"></i>Preview
+                                </label>
+                                <div class="border rounded p-3 bg-light text-center">
+                                    <img id="previewImg" src="#" alt="Signature Preview" class="img-fluid" style="max-height: 150px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="formErrors" class="alert alert-danger d-none mt-3">
+                        <i class="fa fa-exclamation-triangle mr-2"></i>
+                        <span id="errorText"></span>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times mr-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fa fa-save mr-1"></i>Save Signature
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles and Scripts -->
+<style>
+.hover-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef !important;
+}
+.hover-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+.signature-preview {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.signature-image {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+.card-title {
+    color: #495057;
+}
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.modal-content {
+    border-radius: 10px;
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    // Search functionality
+    $('#signatureSearch').on('keyup', function() {
+        var value = $(this).val().toLowerCase();
+        $('.signature-item').filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+
+    // Image preview
+    $('#id_signature').on('change', function() {
+        var file = this.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                $('#previewImg').attr('src', e.target.result);
+                $('#imagePreview').removeClass('d-none');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            $('#imagePreview').addClass('d-none');
+        }
+    });
+
+    // Form validation
+    $('#addSignatureForm').on('submit', function(e) {
+        var position = $('#id_position').val();
+        var signature = $('#id_signature').val();
+
+        if (!position) {
+            e.preventDefault();
+            $('#formErrors').removeClass('d-none');
+            $('#errorText').text('Please select a position.');
+            return false;
+        }
+
+        if (!signature) {
+            e.preventDefault();
+            $('#formErrors').removeClass('d-none');
+            $('#errorText').text('Please upload a signature image.');
+            return false;
+        }
+
+        $('#submitBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i>Saving...');
+    });
+
+    // Reset form on modal close
+    $('#addSignatureModal').on('hidden.bs.modal', function() {
+        $('#addSignatureForm')[0].reset();
+        $('#formErrors').addClass('d-none');
+        $('#imagePreview').addClass('d-none');
+        $('#submitBtn').prop('disabled', false).html('<i class="fa fa-save mr-1"></i>Save Signature');
+    });
+});
+</script>

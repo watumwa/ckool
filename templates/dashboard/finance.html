@@ -1,0 +1,275 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load humanize %}
+
+{% block dashboard_section_content %}
+<div class="row">
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel control-kpi-card">
+      <div class="x_content">
+        <h4 style="margin-top: 0;">Expected Fees</h4>
+        <h3>UGX {{ finance_total_expected|floatformat:0|intcomma }}</h3>
+        {% widthratio finance_total_collected finance_total_expected 100 as expected_progress %}
+        <div class="kpi-mini-chart">
+          <div class="kpi-mini-track">
+            <span class="kpi-mini-fill" style="width: {{ expected_progress }}%;"></span>
+          </div>
+          <div class="kpi-mini-caption">Collected against expected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel control-kpi-card">
+      <div class="x_content">
+        <h4 style="margin-top: 0;">Collected Fees</h4>
+        <h3>UGX {{ finance_total_collected|floatformat:0|intcomma }}</h3>
+        <div class="kpi-mini-chart">
+          <div class="kpi-mini-track">
+            <span class="kpi-mini-fill success" style="width: {{ finance_collection_rate|floatformat:0 }}%;"></span>
+          </div>
+          <div class="kpi-mini-caption">Collection rate: {{ finance_collection_rate|floatformat:1 }}%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel control-kpi-card">
+      <div class="x_content">
+        <h4 style="margin-top: 0;">Outstanding</h4>
+        <h3>UGX {{ finance_outstanding_total|floatformat:0|intcomma }}</h3>
+        {% widthratio finance_outstanding_total finance_total_expected 100 as finance_outstanding_rate %}
+        <div class="kpi-mini-chart">
+          <div class="kpi-mini-track">
+            <span class="kpi-mini-fill danger" style="width: {{ finance_outstanding_rate }}%;"></span>
+          </div>
+          <div class="kpi-mini-caption">Outstanding share: {{ finance_outstanding_rate }}%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel control-kpi-card">
+      <div class="x_content">
+        <h4 style="margin-top: 0;">Collection Rate</h4>
+        <h3>{{ finance_collection_rate|floatformat:1 }}%</h3>
+        <p class="text-muted" style="margin-bottom: 0;">Today: UGX {{ finance_fees_collected_today|floatformat:0|intcomma }}</p>
+        {% widthratio finance_fees_collected_today finance_total_collected 100 as finance_today_share %}
+        <div class="kpi-mini-chart">
+          <div class="kpi-mini-track">
+            <span class="kpi-mini-fill warn" style="width: {{ finance_today_share }}%;"></span>
+          </div>
+          <div class="kpi-mini-caption">Today as share of collected: {{ finance_today_share }}%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-7">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-table"></i> Outstanding Balances by Class</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Class</th>
+                <th>Total Billed</th>
+                <th>Total Paid</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in finance_class_outstanding_rows %}
+              <tr>
+                <td>{{ row.class_name }}</td>
+                <td>UGX {{ row.total_billed|floatformat:0|intcomma }}</td>
+                <td>UGX {{ row.total_paid|floatformat:0|intcomma }}</td>
+                <td><strong>UGX {{ row.balance|floatformat:0|intcomma }}</strong></td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">No class billing data for this scope.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-user-times"></i> Top Debtors</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-condensed table-hover">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Class</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in finance_top_debtors %}
+              <tr>
+                <td>{{ row.student_name }}<br><small class="text-muted">{{ row.reg_no }}</small></td>
+                <td>{{ row.class_name }}</td>
+                <td>UGX {{ row.balance|floatformat:0|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center text-muted">No debtors in this scope.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-credit-card"></i> Recent Payments</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Student</th>
+              <th>Amount</th>
+              <th>Method</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for payment in finance_recent_payments %}
+            <tr>
+              <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+              <td>{{ payment.bill.student.student_name }}</td>
+              <td>UGX {{ payment.amount|floatformat:0|intcomma }}</td>
+              <td>{{ payment.payment_method }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">No recent payments.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-shopping-cart"></i> Recent Expenditures</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <p class="text-muted">Total expenses in scope: <strong>UGX {{ finance_expenses_total|floatformat:0|intcomma }}</strong></p>
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for expenditure in finance_recent_expenditures %}
+            <tr>
+              <td>{{ expenditure.date_incurred|date:"M d, Y" }}</td>
+              <td>{{ expenditure.description|truncatechars:45 }}</td>
+              <td>{{ expenditure.payment_status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="text-center text-muted">No recent expenditures.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-calendar"></i> Daily Collections (7 days)</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Date</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in finance_daily_collection_rows %}
+            <tr>
+              <td>{{ row.label }}</td>
+              <td>{{ row.date|date:"M d, Y" }}</td>
+              <td>UGX {{ row.amount|floatformat:0|intcomma }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="text-center text-muted">No collection data available.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-pie-chart"></i> Payment Method Breakdown</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in finance_payment_method_breakdown %}
+            <tr>
+              <td>{{ row.payment_method }}</td>
+              <td>UGX {{ row.total|floatformat:0|intcomma }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" class="text-center text-muted">No payment method data.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

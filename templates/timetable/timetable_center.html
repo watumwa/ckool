@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+{% load get_item %}
+
+{% block page_title %}Timetable Management{% endblock page_title %}
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-calendar"></i> Timetable Management</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <form method="get" id="timetableFilterForm" class="row">
+          <div class="col-md-3 col-sm-6 col-xs-12">
+            <label>Academic Year</label>
+            <select name="academic_year" id="yearFilter" class="form-control tt-filter">
+              <option value="">Select year</option>
+              {% for year in academic_years %}
+              <option value="{{ year.id }}" {% if selected_year_id == year.id|stringformat:"s" %}selected{% endif %}>{{ year.academic_year }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2 col-sm-6 col-xs-12">
+            <label>Term</label>
+            <select name="term" id="termFilter" class="form-control tt-filter">
+              <option value="">Select term</option>
+              {% for term in terms %}
+              <option value="{{ term.id }}" {% if selected_term_id == term.id|stringformat:"s" %}selected{% endif %}>Term {{ term.term }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3 col-sm-6 col-xs-12">
+            <label>Class Stream</label>
+            <select name="class_stream_id" id="streamFilter" class="form-control tt-filter">
+              <option value="">Select class stream</option>
+              {% for class_stream in class_streams %}
+              <option value="{{ class_stream.id }}" {% if selected_class_id == class_stream.id|stringformat:"s" %}selected{% endif %}>
+                {{ class_stream.academic_class.Class.code }}{{ class_stream.stream.stream }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4 col-sm-6 col-xs-12" style="margin-top:24px;">
+            {% if can_edit_timetable %}
+            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#addPeriodModal">
+              <i class="fa fa-plus"></i> Add Period
+            </button>
+            {% endif %}
+
+            {% if selected_class %}
+            <button type="submit" class="btn btn-default">
+              <i class="fa fa-filter"></i> Apply Filters
+            </button>
+            {% endif %}
+          </div>
+        </form>
+
+        {% if selected_class %}
+        <div style="margin-top:12px;">
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="academic_year" value="{{ selected_year_id }}">
+            <input type="hidden" name="term" value="{{ selected_term_id }}">
+            <input type="hidden" name="class_stream_id" value="{{ selected_class.id }}">
+            <input type="hidden" name="action" value="auto_generate">
+            <button type="submit" class="btn btn-warning" {% if not can_edit_timetable or is_timetable_locked %}disabled{% endif %}>
+              <i class="fa fa-cogs"></i> Auto Generate
+            </button>
+          </form>
+
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="academic_year" value="{{ selected_year_id }}">
+            <input type="hidden" name="term" value="{{ selected_term_id }}">
+            <input type="hidden" name="class_stream_id" value="{{ selected_class.id }}">
+            <input type="hidden" name="action" value="print_pdf">
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-print"></i> Print
+            </button>
+          </form>
+
+          {% if can_lock_timetable %}
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="academic_year" value="{{ selected_year_id }}">
+            <input type="hidden" name="term" value="{{ selected_term_id }}">
+            <input type="hidden" name="class_stream_id" value="{{ selected_class.id }}">
+            <input type="hidden" name="action" value="toggle_lock">
+            <input type="hidden" name="lock" value="{% if is_timetable_locked %}0{% else %}1{% endif %}">
+            <button
+              type="submit"
+              class="btn {% if is_timetable_locked %}btn-danger{% else %}btn-default{% endif %}"
+              onclick="return confirm('{% if is_timetable_locked %}Unlock this timetable?{% else %}Lock this timetable? It will become read-only.{% endif %}')"
+            >
+              <i class="fa {% if is_timetable_locked %}fa-unlock{% else %}fa-lock{% endif %}"></i>
+              {% if is_timetable_locked %}Unlock Timetable{% else %}Lock Timetable{% endif %}
+            </button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if selected_class %}
+<div class="row">
+  <div class="col-md-9 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2>
+          {{ selected_class.academic_class.Class.code }}{{ selected_class.stream.stream }}
+          <small>{{ selected_class.academic_class.academic_year.academic_year }} - Term {{ selected_class.academic_class.term.term }}</small>
+        </h2>
+        {% if is_timetable_locked %}
+        <span class="label label-danger pull-right" style="margin-top:8px;">
+          <i class="fa fa-lock"></i> Locked
+        </span>
+        {% endif %}
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        {% if is_timetable_locked %}
+        <div class="alert alert-info">
+          <strong>Timetable is locked.</strong> The grid is read-only until unlocked by Admin.
+        </div>
+        {% endif %}
+
+        <div class="table-responsive hidden-xs hidden-sm">
+          <form method="post" id="timetableForm">
+            {% csrf_token %}
+            <input type="hidden" name="academic_year" value="{{ selected_year_id }}">
+            <input type="hidden" name="term" value="{{ selected_term_id }}">
+            <input type="hidden" name="class_stream_id" value="{{ selected_class.id }}">
+            <input type="hidden" name="action" value="save_timetable">
+            <input type="hidden" name="timetable_json" id="timetable_json">
+
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th style="width:12%;">Time</th>
+                  {% for weekday, label in weekdays %}
+                  <th>{{ label }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for slot in time_slots %}
+                <tr>
+                  <td><strong>{{ slot }}</strong></td>
+                  {% for weekday, label in weekdays %}
+                  {% with break_key=weekday|stringformat:"s"|add:"_"|add:slot.id|stringformat:"s" %}
+                  {% with break_item=break_map|get_item:break_key %}
+                  {% with break_fallback=break_any_slots|get_item:slot.id %}
+                  {% with cell=timetable_data|get_item:weekday|get_item:slot.id %}
+                  <td class="tt-cell" data-weekday="{{ weekday }}" data-timeslot="{{ slot.id }}">
+                    {% if break_item or break_fallback %}
+                    <div class="label label-warning">BREAK</div>
+                    {% elif cell %}
+                    <div class="tt-cell-display">
+                      <div class="tt-subject-badge" data-subject-id="{{ cell.subject_id }}">{{ cell.subject.name }}</div>
+                      <div class="text-muted">{{ cell.teacher|default:"-" }}</div>
+                      <div class="text-muted">Room: {{ cell.classroom|default:"-" }}</div>
+                    </div>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+
+                    {% if can_edit_timetable and not is_timetable_locked and not break_item and not break_fallback %}
+                    <div class="tt-editor">
+                      <select
+                        class="form-control input-sm tt-subject"
+                        name="{{ weekday }}_{{ slot.id }}_subject"
+                        data-weekday="{{ weekday }}"
+                        data-timeslot="{{ slot.id }}"
+                      >
+                        <option value="">-- Subject --</option>
+                        {% if cell and cell.subject_id not in allocation_subject_ids %}
+                        <option
+                          value="{{ cell.subject_id }}"
+                          data-teacher-id="{{ cell.teacher_id|default:'' }}"
+                          data-teacher-name="{{ cell.teacher|default:'' }}"
+                          selected
+                        >
+                          {{ cell.subject.name }} (Not Allocated)
+                        </option>
+                        {% endif %}
+                        {% for allocation in allocation_subjects %}
+                        <option
+                          value="{{ allocation.subject_id }}"
+                          data-teacher-id="{{ allocation.subject_teacher_id|default:'' }}"
+                          data-teacher-name="{{ allocation.subject_teacher|default:'' }}"
+                          {% if cell and cell.subject_id == allocation.subject_id %}selected{% endif %}
+                        >
+                          {{ allocation.subject.name }}
+                        </option>
+                        {% endfor %}
+                      </select>
+                      <input
+                        type="hidden"
+                        class="tt-teacher"
+                        name="{{ weekday }}_{{ slot.id }}_teacher"
+                        data-weekday="{{ weekday }}"
+                        data-timeslot="{{ slot.id }}"
+                        value="{{ cell.teacher_id|default:'' }}"
+                      >
+                      <small class="text-muted tt-teacher-label">Teacher: {{ cell.teacher|default:"-" }}</small>
+                      <select
+                        class="form-control input-sm tt-room"
+                        name="{{ weekday }}_{{ slot.id }}_classroom"
+                        data-weekday="{{ weekday }}"
+                        data-timeslot="{{ slot.id }}"
+                      >
+                        <option value="">-- Room (optional) --</option>
+                        {% for room in classrooms %}
+                        <option value="{{ room.id }}" {% if cell and cell.classroom_id == room.id %}selected{% endif %}>{{ room.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    {% endif %}
+                  </td>
+                  {% endwith %}
+                  {% endwith %}
+                  {% endwith %}
+                  {% endwith %}
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </form>
+        </div>
+
+        <div class="visible-xs visible-sm">
+          <div class="panel-group" id="mobileTimetableAccordion">
+            {% for weekday, label in weekdays %}
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title">
+                  <a data-toggle="collapse" data-parent="#mobileTimetableAccordion" href="#day{{ weekday }}">{{ label }}</a>
+                </h4>
+              </div>
+              <div id="day{{ weekday }}" class="panel-collapse collapse {% if forloop.first %}in{% endif %}">
+                <div class="panel-body">
+                  {% for slot in time_slots %}
+                  {% with break_key=weekday|stringformat:"s"|add:"_"|add:slot.id|stringformat:"s" %}
+                  {% with break_item=break_map|get_item:break_key %}
+                  {% with break_fallback=break_any_slots|get_item:slot.id %}
+                  {% with cell=timetable_data|get_item:weekday|get_item:slot.id %}
+                  <div style="padding:8px 0;border-bottom:1px solid #eef2f7;">
+                    <div><strong>{{ slot }}</strong></div>
+                    {% if break_item or break_fallback %}
+                    <div class="label label-warning">BREAK</div>
+                    {% elif cell %}
+                    <div>{{ cell.subject.name }} ({{ cell.teacher|default:"-" }})</div>
+                    {% else %}
+                    <div class="text-muted">No lesson</div>
+                    {% endif %}
+                  </div>
+                  {% endwith %}
+                  {% endwith %}
+                  {% endwith %}
+                  {% endwith %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        {% if can_edit_timetable and not is_timetable_locked %}
+        <div class="text-center" style="margin-top:12px;">
+          <button type="button" class="btn btn-primary" id="saveTimetableBtn">
+            <i class="fa fa-save"></i> Save Timetable
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2>Class Info</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <p><strong>Class:</strong> {{ selected_class.academic_class.Class.code }}{{ selected_class.stream.stream }}</p>
+        <p><strong>Class Teacher:</strong> {{ selected_class.class_teacher }}</p>
+        <p><strong>Subjects Allocated:</strong> {{ subjects_allocated_count }}</p>
+        <p><strong>Total Students:</strong> {{ total_students }}</p>
+      </div>
+    </div>
+
+    <div class="x_panel">
+      <div class="x_title">
+        <h2>Teacher Conflict Alerts</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        {% if conflict_alerts %}
+        <ul class="list-unstyled">
+          {% for conflict in conflict_alerts %}
+          <li style="margin-bottom:10px;">
+            <span class="text-warning"><i class="fa fa-warning"></i></span>
+            {{ conflict.message }}
+            <div><a href="{{ conflict.link }}">View conflicts</a></div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted" style="margin:0;">No teacher clashes detected.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="alert alert-info">
+      Select Academic Year, Term, and Class Stream to view and build timetable.
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if can_edit_timetable %}
+<div class="modal fade" id="addPeriodModal" tabindex="-1" role="dialog" aria-labelledby="addPeriodModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="academic_year" value="{{ selected_year_id }}">
+        <input type="hidden" name="term" value="{{ selected_term_id }}">
+        <input type="hidden" name="class_stream_id" value="{{ selected_class_id }}">
+        <input type="hidden" name="action" value="add_time_slot">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+          <h4 class="modal-title" id="addPeriodModalLabel">Add Period</h4>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Start Time</label>
+            {{ time_slot_form.start_time }}
+          </div>
+          <div class="form-group">
+            <label>End Time</label>
+            {{ time_slot_form.end_time }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">
+            <i class="fa fa-plus"></i> Add Period
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{{ allocation_teacher_map|json_script:"allocation-teacher-map" }}
+
+<script>
+  (function () {
+    var filterForm = document.getElementById("timetableFilterForm");
+    var allocationTeacherMapEl = document.getElementById("allocation-teacher-map");
+    var teacherMap = allocationTeacherMapEl ? JSON.parse(allocationTeacherMapEl.textContent || "{}") : {};
+
+    document.querySelectorAll(".tt-filter").forEach(function (el) {
+      el.addEventListener("change", function () {
+        filterForm.submit();
+      });
+    });
+
+    function subjectColor(subjectId) {
+      if (!subjectId) return "#95a5a6";
+      var hash = 0;
+      var str = String(subjectId);
+      for (var i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      var hue = Math.abs(hash) % 360;
+      return "hsl(" + hue + ", 58%, 58%)";
+    }
+
+    document.querySelectorAll(".tt-subject-badge").forEach(function (badge) {
+      var subjectId = badge.getAttribute("data-subject-id");
+      badge.style.backgroundColor = subjectColor(subjectId);
+      badge.style.color = "#fff";
+      badge.style.padding = "3px 8px";
+      badge.style.borderRadius = "12px";
+      badge.style.display = "inline-block";
+      badge.style.fontWeight = "600";
+      badge.style.marginBottom = "4px";
+    });
+
+    function syncTeacherForCell(subjectSelect) {
+      var cell = subjectSelect.closest(".tt-cell");
+      if (!cell) return;
+      var teacherInput = cell.querySelector(".tt-teacher");
+      var teacherLabel = cell.querySelector(".tt-teacher-label");
+      var subjectId = subjectSelect.value || "";
+      var meta = teacherMap[subjectId] || {};
+      var teacherId = meta.teacher_id || "";
+      var teacherName = meta.teacher_name || "-";
+      if (teacherInput) {
+        teacherInput.value = teacherId;
+      }
+      if (teacherLabel) {
+        teacherLabel.textContent = "Teacher: " + teacherName;
+      }
+    }
+
+    document.querySelectorAll(".tt-subject").forEach(function (subjectSelect) {
+      syncTeacherForCell(subjectSelect);
+      subjectSelect.addEventListener("change", function () {
+        syncTeacherForCell(subjectSelect);
+      });
+    });
+
+    var saveBtn = document.getElementById("saveTimetableBtn");
+    if (saveBtn) {
+      saveBtn.addEventListener("click", function () {
+        var payload = {};
+        document.querySelectorAll(".tt-subject").forEach(function (subjectEl) {
+          var weekday = subjectEl.getAttribute("data-weekday");
+          var slot = subjectEl.getAttribute("data-timeslot");
+          if (!payload[weekday]) payload[weekday] = {};
+          if (!payload[weekday][slot]) payload[weekday][slot] = {};
+
+          var cell = subjectEl.closest(".tt-cell");
+          var teacherEl = cell ? cell.querySelector(".tt-teacher") : null;
+          var roomEl = cell ? cell.querySelector(".tt-room") : null;
+
+          payload[weekday][slot].subject = subjectEl.value || null;
+          payload[weekday][slot].teacher = teacherEl ? (teacherEl.value || null) : null;
+          payload[weekday][slot].classroom = roomEl ? (roomEl.value || null) : null;
+        });
+
+        var jsonField = document.getElementById("timetable_json");
+        if (jsonField) {
+          jsonField.value = JSON.stringify(payload);
+        }
+        var form = document.getElementById("timetableForm");
+        if (form) {
+          form.submit();
+        }
+      });
+    }
+  })();
+</script>
+{% endblock %}

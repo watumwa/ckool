@@ -1,0 +1,12 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="admindekGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1565c0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00328d;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+    <circle cx="32" cy="32" r="32" fill="url(#admindekGrad)"/>
+    <path d="M24 24 L40 24 L40 40 L24 40 Z" fill="#FFFFFF" opacity="0.8" rx="3"/>
+    <circle cx="32" cy="32" r="4" fill="#1565c0"/>
+</svg>

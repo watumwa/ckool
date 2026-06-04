@@ -1,0 +1,991 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Student Management{% endblock page_title %}
+
+{% block content %}
+{% with role_name=active_role|default:user.staff_account.role.name %}
+<div class="student-register-page">
+    <div class="register-header">
+        <div>
+            <h1><i class="fa fa-graduation-cap"></i> Students</h1>
+            <p>Find, review, and maintain learner records.</p>
+        </div>
+        {% if can_manage_students %}
+        <div class="register-actions">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".add-student-modal">
+                <i class="fa fa-plus"></i> Add Student
+            </button>
+            <button type="button" class="btn btn-default" data-toggle="modal" data-target=".bulk-upload-modal">
+                <i class="fa fa-upload"></i> Bulk Upload
+            </button>
+            <a class="btn btn-default" href="{% url 'download_student_template' %}">
+                <i class="fa fa-download"></i> Template
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="register-kpis">
+        <a class="register-kpi {% if status == 'active' %}is-active{% endif %}" href="?status=active&per_page={{ per_page }}">
+            <span>Active</span>
+            <strong>{{ total_active|intcomma }}</strong>
+        </a>
+        <a class="register-kpi {% if status == 'inactive' %}is-active{% endif %}" href="?status=inactive&per_page={{ per_page }}">
+            <span>Inactive</span>
+            <strong>{{ total_inactive|intcomma }}</strong>
+        </a>
+        <a class="register-kpi {% if status == 'all' %}is-active{% endif %}" href="?status=all&per_page={{ per_page }}">
+            <span>Filtered Total</span>
+            <strong>{{ total_all|intcomma }}</strong>
+        </a>
+        <div class="register-kpi muted">
+            <span>This Page</span>
+            <strong>{{ students|length|intcomma }}</strong>
+        </div>
+    </div>
+
+    <div class="x_panel register-filter-panel">
+        <div class="x_content">
+            <form method="get" class="register-filters">
+                <input type="hidden" name="page" value="1">
+                <div class="filter-search">
+                    <label>Search</label>
+                    <div class="input-group">
+                        <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                        <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Name, Student ID, phone">
+                    </div>
+                </div>
+                <div>
+                    <label>Class</label>
+                    <select class="form-control" name="class_id">
+                        <option value="">All classes</option>
+                        {% for class_obj in class_filter_options %}
+                        <option value="{{ class_obj.id }}" {% if selected_class_id == class_obj.id|stringformat:"s" %}selected{% endif %}>{{ class_obj.code|default:class_obj.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Stream</label>
+                    <select class="form-control" name="stream_id">
+                        <option value="">All streams</option>
+                        {% for stream_obj in stream_filter_options %}
+                        <option value="{{ stream_obj.id }}" {% if selected_stream_id == stream_obj.id|stringformat:"s" %}selected{% endif %}>{{ stream_obj.stream }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Gender</label>
+                    <select class="form-control" name="gender">
+                        <option value="">All</option>
+                        <option value="M" {% if selected_gender == "M" %}selected{% endif %}>Male</option>
+                        <option value="F" {% if selected_gender == "F" %}selected{% endif %}>Female</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Status</label>
+                    <select class="form-control" name="status">
+                        <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Inactive</option>
+                        <option value="all" {% if status == "all" %}selected{% endif %}>All</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Rows</label>
+                    <select class="form-control" name="per_page">
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <div class="filter-buttons">
+                    <button class="btn btn-primary" type="submit"><i class="fa fa-filter"></i> Apply</button>
+                    <a class="btn btn-default" href="{% url 'student_page' %}">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if can_manage_students %}
+    <div class="bulk-strip" id="bulkActions" style="display:none;">
+        <strong id="selectedCount">0</strong> selected
+        <button class="btn btn-xs btn-default" id="bulkExport" type="button"><i class="fa fa-download"></i> Export IDs</button>
+        <button class="btn btn-xs btn-danger" id="bulkDelete" type="button">
+            {% if status == "inactive" %}<i class="fa fa-user-check"></i> Reactivate{% else %}<i class="fa fa-user-times"></i> Deactivate{% endif %}
+        </button>
+    </div>
+    {% endif %}
+
+    <div class="x_panel register-table-panel">
+        <div class="x_title">
+            <h2><i class="fa fa-list"></i> Student Register <small>{{ students.paginator.count|intcomma }} result{{ students.paginator.count|pluralize }}</small></h2>
+            <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+            <div class="table-responsive students-table-wrap">
+                <table class="table register-table" id="studentsTable">
+                    <thead>
+                        <tr>
+                            {% if can_manage_students %}
+                            <th class="select-col"><input type="checkbox" id="selectAll"></th>
+                            {% endif %}
+                            <th>Student</th>
+                            <th>Student ID</th>
+                            <th>Class</th>
+                            <th>Stream</th>
+                            <th>Guardian Contact</th>
+                            <th>Gender</th>
+                            <th>Status</th>
+                            <th class="action-col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            {% if can_manage_students %}
+                            <td class="select-col"><input type="checkbox" class="student-checkbox" value="{{ student.id }}"></td>
+                            {% endif %}
+                            <td class="student-cell">
+                                <div class="student-identity">
+                                    <div class="student-avatar-wrap">
+                                        {% if student.photo %}
+                                        <img src="{{ student.photo.url }}" class="student-avatar" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                        <div class="avatar-fallback" style="display:none;">{{ student.student_name|slice:":1"|upper }}</div>
+                                        {% else %}
+                                        <div class="avatar-fallback">{{ student.student_name|slice:":1"|upper }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <strong>{{ student.student_name }}</strong>
+                                        <small>{{ student.reg_no }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="id-pill">{{ student.display_student_id }}</span></td>
+                            <td>{{ student.current_class.code|default:student.current_class.name }}</td>
+                            <td>{{ student.stream.stream }}</td>
+                            <td>{{ student.contact|default:"-" }}</td>
+                            <td>{% if student.gender == "M" %}Male{% else %}Female{% endif %}</td>
+                            <td>
+                                {% if student.is_active %}
+                                <span class="status-pill active">Active</span>
+                                {% else %}
+                                <span class="status-pill inactive">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="action-col">
+                                <div class="row-actions">
+                                    <a href="{% url 'student_details_page' student.id %}" class="btn btn-xs btn-default" title="View"><i class="fa fa-eye"></i></a>
+                                    {% if can_manage_students %}
+                                    <button type="button" class="btn btn-xs btn-default open-edit-student-modal" data-url="{% url 'edit_student_page' student.id %}" title="Edit"><i class="fa fa-edit"></i></button>
+                                    <form method="post" action="{% url 'delete_student_page' student.id %}">
+                                        {% csrf_token %}
+                                        {% if student.is_active %}
+                                        <button type="submit" class="btn btn-xs btn-default text-danger" title="Deactivate" onclick="return confirm('Deactivate this student?')"><i class="fa fa-user-times"></i></button>
+                                        {% else %}
+                                        <input type="hidden" name="action" value="reactivate">
+                                        <button type="submit" class="btn btn-xs btn-default text-success" title="Reactivate" onclick="return confirm('Reactivate this student?')"><i class="fa fa-user-check"></i></button>
+                                        {% endif %}
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{% if can_manage_students %}9{% else %}8{% endif %}">
+                                <div class="empty-register">
+                                    <i class="fa fa-search"></i>
+                                    <h4>No students found</h4>
+                                    <p>Adjust the filters or add a learner record.</p>
+                                    {% if can_manage_students %}
+                                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".add-student-modal"><i class="fa fa-plus"></i> Add Student</button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="register-footer">
+                <div class="text-muted">
+                    Showing {{ students.start_index }}-{{ students.end_index }} of {{ students.paginator.count|intcomma }}
+                </div>
+                <ul class="pagination pagination-sm">
+                    {% if students.has_previous %}
+                    <li><a href="?page=1&status={{ status }}&per_page={{ per_page }}&q={{ query|urlencode }}&class_id={{ selected_class_id }}&stream_id={{ selected_stream_id }}&gender={{ selected_gender }}">&laquo;</a></li>
+                    <li><a href="?page={{ students.previous_page_number }}&status={{ status }}&per_page={{ per_page }}&q={{ query|urlencode }}&class_id={{ selected_class_id }}&stream_id={{ selected_stream_id }}&gender={{ selected_gender }}">Previous</a></li>
+                    {% else %}
+                    <li class="disabled"><span>&laquo;</span></li>
+                    <li class="disabled"><span>Previous</span></li>
+                    {% endif %}
+                    {% for num in students.paginator.page_range %}
+                        {% if students.number == num %}
+                        <li class="active"><span>{{ num }}</span></li>
+                        {% elif num > students.number|add:'-3' and num < students.number|add:'3' %}
+                        <li><a href="?page={{ num }}&status={{ status }}&per_page={{ per_page }}&q={{ query|urlencode }}&class_id={{ selected_class_id }}&stream_id={{ selected_stream_id }}&gender={{ selected_gender }}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if students.has_next %}
+                    <li><a href="?page={{ students.next_page_number }}&status={{ status }}&per_page={{ per_page }}&q={{ query|urlencode }}&class_id={{ selected_class_id }}&stream_id={{ selected_stream_id }}&gender={{ selected_gender }}">Next</a></li>
+                    <li><a href="?page={{ students.paginator.num_pages }}&status={{ status }}&per_page={{ per_page }}&q={{ query|urlencode }}&class_id={{ selected_class_id }}&stream_id={{ selected_stream_id }}&gender={{ selected_gender }}">&raquo;</a></li>
+                    {% else %}
+                    <li class="disabled"><span>Next</span></li>
+                    <li class="disabled"><span>&raquo;</span></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endwith %}
+
+<!-- Add Student Modal -->
+<div class="modal fade add-student-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h4 class="modal-title">
+                    <i class="fa fa-user-plus me-2"></i>Add New Student
+                </h4>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'add_student' %}" enctype="multipart/form-data" id="addStudentForm">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-12">
+                            {{ student_form.student_name|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            {{ student_form.gender|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ student_form.birthdate|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ student_form.nationality|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ student_form.religion|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ student_form.photo|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            {{ student_form.address|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            {{ student_form.guardian|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ student_form.relationship|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ student_form.contact|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            {{ student_form.academic_year|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ student_form.current_class|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ student_form.stream|as_crispy_field }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ student_form.term|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ student_form.is_active|as_crispy_field }}
+                        </div>
+                    </div>
+                </form>
+
+                <div class="card border-info mt-3">
+                    <div class="card-header bg-light">
+                        <strong><i class="fa fa-bolt me-1 text-info"></i>Quick Setup (Use only if setup is missing)</strong>
+                        <div class="small text-muted">
+                            Current Context:
+                            Year: <strong>{{ current_academic_year|default:"Not Set" }}</strong>,
+                            Term: <strong>{{ current_term|default:"Not Set" }}</strong>,
+                            Class: <strong id="quick_selected_class_text">Not selected</strong>,
+                            Stream: <strong id="quick_selected_stream_text">Not selected</strong>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Create Missing Academic Class</h6>
+                                <form method="POST" action="{% url 'quick_create_academic_class' %}" class="quick-setup-form" id="quickAcademicClassForm">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="quick_selected_class_id" id="quick_selected_class_id">
+                                    <div class="form-group mb-2">
+                                        <label>Section</label>
+                                        <select name="quick_section_id" class="form-control" required>
+                                            <option value="">Select section</option>
+                                            {% for sec in quick_sections %}
+                                            <option value="{{ sec.id }}">{{ sec.section_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-2">
+                                        <label>Fees Amount</label>
+                                        <input type="number" min="0" name="quick_fees_amount" class="form-control" placeholder="e.g. 150000" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-info">
+                                        <i class="fa fa-plus-circle me-1"></i>Create Academic Class
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Create Missing Class Stream</h6>
+                                <form method="POST" action="{% url 'quick_create_class_stream' %}" class="quick-setup-form" id="quickClassStreamForm">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="quick_selected_class_id" id="quick_stream_selected_class_id">
+                                    <input type="hidden" name="quick_selected_stream_id" id="quick_selected_stream_id">
+                                    <div class="form-group mb-2">
+                                        <label>Class Teacher</label>
+                                        <select name="quick_teacher_id" class="form-control" required>
+                                            <option value="">Select teacher</option>
+                                            {% for t in quick_teachers %}
+                                            <option value="{{ t.id }}">{{ t.first_name }} {{ t.last_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-info">
+                                        <i class="fa fa-plus-circle me-1"></i>Create Class Stream
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fa fa-times me-1"></i>Cancel
+                </button>
+                <button type="submit" form="addStudentForm" class="btn btn-primary">
+                    <i class="fa fa-save me-1"></i>Add Student
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Upload Modal -->
+<div class="modal fade bulk-upload-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h4 class="modal-title">
+                    <i class="fa fa-upload me-2"></i>Bulk Student Upload
+                </h4>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle me-2"></i>
+                    <strong>Instructions:</strong> Upload a CSV file with student data. 
+                    <a href="{% url 'download_student_template' %}" class="alert-link">Download template</a> for the correct format.
+                </div>
+                <form method="POST" action="{% url 'bulk_student_registration' %}" enctype="multipart/form-data" id="bulkUploadForm">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="{{ csv_form.file_name.id_for_label }}" class="form-label">
+                            <i class="fa fa-file-csv me-1"></i>CSV File
+                        </label>
+                        {{ csv_form.file_name }}
+                        <small class="form-text text-muted">
+                            Supported format: .csv. Maximum file size: 10MB
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fa fa-times me-1"></i>Cancel
+                </button>
+                <button type="submit" form="bulkUploadForm" class="btn btn-success">
+                    <i class="fa fa-upload me-1"></i>Upload Students
+                </button>
+            </div>
+        </div>
+    </div>
+</div> 
+
+<!-- Edit Student Modal -->
+<div class="modal fade edit-student-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h4 class="modal-title">
+                    <i class="fa fa-edit me-2"></i>Edit Student
+                </h4>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="editStudentModalBody">
+                <div class="text-center py-4 text-muted">
+                    <i class="fa fa-spinner fa-spin me-2"></i>Loading form...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom CSS -->
+<style>
+:root {
+    --student-primary: #2563eb;
+    --student-border: #e2e8f0;
+    --student-text: #1f2a44;
+    --student-muted: #64748b;
+    --student-bg: #f8fafc;
+}
+
+.student-register-page {
+    color: var(--student-text);
+}
+
+.register-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.register-header h1 {
+    margin: 0 0 4px;
+    font-size: 26px;
+    font-weight: 800;
+}
+
+.register-header p {
+    margin: 0;
+    color: var(--student-muted);
+}
+
+.register-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.register-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.register-kpi {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--student-border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--student-text);
+    text-decoration: none !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.register-kpi:hover,
+.register-kpi.is-active {
+    border-color: var(--student-primary);
+    color: var(--student-text);
+}
+
+.register-kpi span {
+    display: block;
+    color: var(--student-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .04em;
+}
+
+.register-kpi strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.register-kpi.muted {
+    background: var(--student-bg);
+}
+
+.register-filter-panel,
+.register-table-panel {
+    border-radius: 8px;
+}
+
+.register-filters {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.7fr) repeat(5, minmax(120px, 1fr)) auto;
+    gap: 10px;
+    align-items: end;
+}
+
+.register-filters label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--student-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.bulk-strip {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+}
+
+.students-table-wrap {
+    max-height: 66vh;
+    overflow: auto;
+}
+
+.register-table {
+    margin-bottom: 0;
+    table-layout: auto;
+}
+
+.register-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--student-border);
+    color: #334155;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    white-space: nowrap;
+}
+
+.register-table td {
+    vertical-align: middle !important;
+    white-space: nowrap;
+}
+
+.student-cell {
+    min-width: 260px;
+    white-space: normal !important;
+}
+
+.student-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.student-identity strong,
+.student-identity small {
+    display: block;
+}
+
+.student-identity small {
+    color: var(--student-muted);
+}
+
+.student-avatar-wrap,
+.student-avatar,
+.avatar-fallback {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex: 0 0 36px;
+}
+
+.student-avatar {
+    object-fit: cover;
+}
+
+.avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e0ecff;
+    color: var(--student-primary);
+    font-weight: 800;
+}
+
+.id-pill,
+.status-pill {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.id-pill {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.status-pill.active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-pill.inactive {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.select-col {
+    width: 34px;
+    text-align: center;
+}
+
+.action-col {
+    width: 112px;
+    text-align: right;
+}
+
+.row-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+}
+
+.row-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.empty-register {
+    padding: 34px 20px;
+    text-align: center;
+    color: var(--student-muted);
+}
+
+.empty-register i {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.register-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-top: 12px;
+}
+
+.register-footer .pagination {
+    margin: 0;
+}
+
+.text-danger { color: #dc2626 !important; }
+.text-success { color: #16a34a !important; }
+
+@media (max-width: 1100px) {
+    .register-filters {
+        grid-template-columns: repeat(3, minmax(160px, 1fr));
+    }
+    .filter-search {
+        grid-column: span 3;
+    }
+}
+
+@media (max-width: 767px) {
+    .register-header,
+    .register-footer {
+        display: block;
+    }
+    .register-actions {
+        justify-content: flex-start;
+        margin-top: 12px;
+    }
+    .register-kpis,
+    .register-filters {
+        grid-template-columns: 1fr;
+    }
+    .filter-search {
+        grid-column: auto;
+    }
+    .filter-buttons {
+        display: block;
+    }
+    .filter-buttons .btn {
+        width: 100%;
+        margin-bottom: 6px;
+    }
+}
+</style>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit student modal (load + submit via AJAX)
+    const editStudentModalBody = document.getElementById('editStudentModalBody');
+    function openEditModal(url) {
+        editStudentModalBody.innerHTML = '<div class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin me-2"></i>Loading form...</div>';
+        $('.edit-student-modal').modal('show');
+        fetch(url + '?modal=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.text())
+            .then(html => { editStudentModalBody.innerHTML = html; })
+            .catch(() => {
+                editStudentModalBody.innerHTML = '<div class="alert alert-danger">Failed to load edit form.</div>';
+            });
+    }
+
+    document.querySelectorAll('.open-edit-student-modal').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const url = this.getAttribute('data-url');
+            if (url) openEditModal(url);
+        });
+    });
+
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (form && form.id === 'editStudentFormModal') {
+            e.preventDefault();
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(async (r) => {
+                const data = await r.json();
+                if (r.ok && data.ok) {
+                    const container = document.querySelector('.student-register-page');
+                    if (container) {
+                        const flash = document.createElement('div');
+                        flash.className = 'alert alert-success alert-dismissible fade show';
+                        flash.setAttribute('role', 'alert');
+                        flash.innerHTML = `
+                            <i class="fa fa-check-circle me-1"></i>${data.message || 'Changes saved successfully.'}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        `;
+                        container.prepend(flash);
+                    }
+                    $('.edit-student-modal').modal('hide');
+                    window.location.reload();
+                    return;
+                }
+                if (data.html) {
+                    editStudentModalBody.innerHTML = data.html;
+                } else {
+                    editStudentModalBody.innerHTML = '<div class="alert alert-danger">Failed to save changes.</div>';
+                }
+            })
+            .catch(() => {
+                editStudentModalBody.innerHTML = '<div class="alert alert-danger">Network error while saving changes.</div>';
+            });
+        }
+    });
+
+    // Prefill quick setup selectors from Add Student selections
+    const addClassSelect = document.getElementById('id_current_class');
+    const addStreamSelect = document.getElementById('id_stream');
+    const quickSelectedClass = document.getElementById('quick_selected_class_id');
+    const quickStreamSelectedClass = document.getElementById('quick_stream_selected_class_id');
+    const quickSelectedStream = document.getElementById('quick_selected_stream_id');
+    const quickClassText = document.getElementById('quick_selected_class_text');
+    const quickStreamText = document.getElementById('quick_selected_stream_text');
+    const quickAcademicClassForm = document.getElementById('quickAcademicClassForm');
+    const quickClassStreamForm = document.getElementById('quickClassStreamForm');
+
+    function selectedLabel(selectEl) {
+        if (!selectEl || !selectEl.value) return 'Not selected';
+        const option = selectEl.options[selectEl.selectedIndex];
+        return option ? option.text.trim() : 'Not selected';
+    }
+
+    function syncQuickSetupFields() {
+        const classValue = (addClassSelect && addClassSelect.value) ? addClassSelect.value : '';
+        const streamValue = (addStreamSelect && addStreamSelect.value) ? addStreamSelect.value : '';
+
+        if (quickSelectedClass) quickSelectedClass.value = classValue;
+        if (quickStreamSelectedClass) quickStreamSelectedClass.value = classValue;
+        if (quickSelectedStream) quickSelectedStream.value = streamValue;
+        if (quickClassText) quickClassText.textContent = selectedLabel(addClassSelect);
+        if (quickStreamText) quickStreamText.textContent = selectedLabel(addStreamSelect);
+    }
+
+    function validateQuickSetupSelection(needsStream) {
+        const hasClass = addClassSelect && addClassSelect.value;
+        const hasStream = addStreamSelect && addStreamSelect.value;
+        if (!hasClass || (needsStream && !hasStream)) {
+            alert(needsStream
+                ? 'Please select Class and Stream in the student form first.'
+                : 'Please select Class in the student form first.');
+            return false;
+        }
+        return true;
+    }
+
+    if (addClassSelect) addClassSelect.addEventListener('change', syncQuickSetupFields);
+    if (addStreamSelect) addStreamSelect.addEventListener('change', syncQuickSetupFields);
+    if (quickAcademicClassForm) {
+        quickAcademicClassForm.addEventListener('submit', function(e) {
+            if (!validateQuickSetupSelection(false)) e.preventDefault();
+        });
+    }
+    if (quickClassStreamForm) {
+        quickClassStreamForm.addEventListener('submit', function(e) {
+            if (!validateQuickSetupSelection(true)) e.preventDefault();
+        });
+    }
+    syncQuickSetupFields();
+
+    // Bulk selection functionality
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            studentCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateBulkActions();
+        });
+    }
+
+    studentCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+
+    function updateBulkActions() {
+        const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+        const count = checkedBoxes.length;
+        
+        selectedCount.textContent = count;
+        bulkActions.style.display = count > 0 ? 'block' : 'none';
+        
+        // Update select all checkbox state
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = count === studentCheckboxes.length;
+            selectAllCheckbox.indeterminate = count > 0 && count < studentCheckboxes.length;
+        }
+    }
+
+    const bulkDelete = document.getElementById('bulkDelete');
+    if (bulkDelete) {
+        bulkDelete.addEventListener('click', function() {
+            const selectedIds = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+            const bulkAction = '{{ status }}' === 'inactive' ? 'reactivate' : 'deactivate';
+            const actionLabel = bulkAction === 'reactivate' ? 'reactivate' : 'deactivate';
+            if (selectedIds.length > 0) {
+                if (confirm(`Are you sure you want to ${actionLabel} ${selectedIds.length} students?`)) {
+                    const form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = "{% url 'students_bulk_action' %}";
+
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = '{{ csrf_token }}';
+                    form.appendChild(csrfInput);
+
+                    const actionInput = document.createElement('input');
+                    actionInput.type = 'hidden';
+                    actionInput.name = 'action';
+                    actionInput.value = bulkAction;
+                    form.appendChild(actionInput);
+
+                    selectedIds.forEach(id => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'selected_ids';
+                        input.value = id;
+                        form.appendChild(input);
+                    });
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            }
+        });
+    }
+
+    const bulkExport = document.getElementById('bulkExport');
+    if (bulkExport) {
+        bulkExport.addEventListener('click', function() {
+            const selectedIds = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+            if (selectedIds.length > 0) {
+                navigator.clipboard?.writeText(selectedIds.join(', '));
+                alert(`${selectedIds.length} student ID(s): ${selectedIds.join(', ')}`);
+            }
+        });
+    }
+
+    // Form validation
+    const addStudentForm = document.getElementById('addStudentForm');
+    const bulkUploadForm = document.getElementById('bulkUploadForm');
+
+    if (addStudentForm) {
+        addStudentForm.addEventListener('submit', function(e) {
+            const requiredFields = this.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields.');
+            }
+        });
+    }
+
+    if (bulkUploadForm) {
+        bulkUploadForm.addEventListener('submit', function(e) {
+            const fileInput = this.querySelector('input[type="file"]');
+            if (!fileInput.files.length) {
+                e.preventDefault();
+                alert('Please select a file to upload.');
+            }
+        });
+    }
+});
+</script>
+{% endblock content %}

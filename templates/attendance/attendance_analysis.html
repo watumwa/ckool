@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block page_title %}Attendance Analytics{% endblock page_title %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bar-chart"></i> Class Attendance Analytics</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+
+        <form method="get" class="form-inline" style="margin-bottom: 12px;">
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.class_stream.label_tag }} {{ filter_form.class_stream }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.subject.label_tag }} {{ filter_form.subject }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.academic_year.label_tag }} {{ filter_form.academic_year }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.term.label_tag }} {{ filter_form.term }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.date_from.label_tag }} {{ filter_form.date_from }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.date_to.label_tag }} {{ filter_form.date_to }}
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-bottom:8px;"><i class="fa fa-search"></i> Analyze</button>
+        </form>
+
+        <div class="row" style="margin-bottom: 14px;">
+          <div class="col-md-4 col-sm-6 col-xs-12">
+            <div class="tile-stats" style="border-top:3px solid #26b99a;">
+              <div class="icon"><i class="fa fa-line-chart"></i></div>
+              <div class="count">{{ average_rate }}%</div>
+              <h3>Average Attendance Rate</h3>
+            </div>
+          </div>
+          <div class="col-md-4 col-sm-6 col-xs-12">
+            <div class="tile-stats" style="border-top:3px solid #d9534f;">
+              <div class="icon"><i class="fa fa-exclamation-circle"></i></div>
+              <div class="count">{{ students_below_threshold }}</div>
+              <h3>Students Below {{ minimum_threshold }}%</h3>
+            </div>
+          </div>
+          <div class="col-md-4 col-sm-6 col-xs-12">
+            <div class="tile-stats" style="border-top:3px solid #337ab7;">
+              <div class="icon"><i class="fa fa-calendar"></i></div>
+              <div class="count">{{ total_lessons }}</div>
+              <h3>Total Lessons Conducted</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-7">
+            <div class="x_panel">
+              <div class="x_title"><h2>Daily Attendance Trend</h2><div class="clearfix"></div></div>
+              <div class="x_content"><canvas id="trendChart" height="120"></canvas></div>
+            </div>
+          </div>
+          <div class="col-md-5">
+            <div class="x_panel">
+              <div class="x_title"><h2>Attendance Distribution</h2><div class="clearfix"></div></div>
+              <div class="x_content"><canvas id="distributionChart" height="120"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12">
+            <div class="x_panel">
+              <div class="x_title"><h2>Term Attendance Percentage</h2><div class="clearfix"></div></div>
+              <div class="x_content"><canvas id="termLineChart" height="90"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function () {
+  var trendCtx = document.getElementById('trendChart');
+  var distCtx = document.getElementById('distributionChart');
+  var termCtx = document.getElementById('termLineChart');
+  if (!trendCtx || !distCtx || !termCtx) return;
+
+  var trendLabels = {{ trend_labels_json|safe }};
+  var trendValues = {{ trend_values_json|safe }};
+  var distLabels = {{ distribution_labels_json|safe }};
+  var distValues = {{ distribution_values_json|safe }};
+  var termLabels = {{ term_labels_json|safe }};
+  var termValues = {{ term_values_json|safe }};
+
+  new Chart(trendCtx, {
+    type: 'bar',
+    data: {
+      labels: trendLabels,
+      datasets: [{
+        label: 'Attendance %',
+        data: trendValues,
+        backgroundColor: '#26b99a'
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      }
+    }
+  });
+
+  new Chart(distCtx, {
+    type: 'pie',
+    data: {
+      labels: distLabels,
+      datasets: [{
+        data: distValues,
+        backgroundColor: ['#26b99a', '#d9534f', '#f0ad4e', '#337ab7']
+      }]
+    },
+    options: { responsive: true }
+  });
+
+  new Chart(termCtx, {
+    type: 'line',
+    data: {
+      labels: termLabels,
+      datasets: [{
+        label: 'Attendance %',
+        data: termValues,
+        borderColor: '#1f77b4',
+        backgroundColor: 'rgba(31, 119, 180, 0.14)',
+        fill: true,
+        tension: 0.25
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      }
+    }
+  });
+})();
+</script>
+{% endblock content %}

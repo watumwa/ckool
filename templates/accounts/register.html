@@ -1,0 +1,16 @@
+
+
+<form method="post">
+    {% csrf_token %}
+    <label for="role">Role:</label>
+    <select id="role" name="role">
+        <option value="admin">Admin</option>
+        <option value="teacher">Teacher</option>
+        <option value="bursar">Bursar</option>
+        <option value="director of studies">Director of Studies</option>
+        <option value="head master">Head Master</option>
+        <option value="class teacher">Class Teacher</option>
+    </select>
+    {{ form.as_p }}
+    <button type="submit">Register</button>
+</form>

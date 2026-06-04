@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-calendar"></i> My Teaching Timetable</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <form method="get" id="filter-form" class="tt-filter">
+          <div class="row">
+            <div class="col-md-3 col-sm-6 col-xs-12">
+              <label class="control-label">Day</label>
+              <select name="weekday" class="form-control" onchange="document.getElementById('filter-form').submit();">
+                <option value="">All Days</option>
+                {% for code, name in weekdays %}
+                  <option value="{{ code }}" {% if code == selected_weekday %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 col-sm-6 col-xs-12">
+              <label class="control-label">Subject</label>
+              <select name="subject" class="form-control" onchange="document.getElementById('filter-form').submit();">
+                <option value="">All Subjects</option>
+                {% for subject in subjects %}
+                  <option value="{{ subject.id }}" {% if subject.id|stringformat:"s" == selected_subject %}selected{% endif %}>{{ subject.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 col-sm-6 col-xs-12">
+              <label class="control-label">Class Stream</label>
+              <select name="stream" class="form-control" onchange="document.getElementById('filter-form').submit();">
+                <option value="">All Streams</option>
+                {% for stream in class_streams %}
+                  <option value="{{ stream.id }}" {% if stream.id|stringformat:"s" == selected_stream %}selected{% endif %}>{{ stream }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </form>
+
+        <div class="table-responsive" style="margin-top:12px;">
+          <table class="table table-striped table-bordered tt-table">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Day/Time</th>
+                {% for slot in time_slots %}
+                  <th class="text-center">{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for weekday_code, weekday_name in weekdays %}
+                <tr>
+                  <td class="tt-day">{{ weekday_name }}</td>
+                  {% for slot in time_slots %}
+                    <td>
+                      {% for entry in timetable_data|dict_key:weekday_code|dict_key:slot.id %}
+                        <div class="tt-item">
+                          <div class="tt-item-head">
+                            <span class="tt-subject">{{ entry.subject.name }}</span>
+                            <span class="tt-stream">{{ entry.class_stream }}</span>
+                          </div>
+                          <div class="tt-meta">
+                            <i class="fa fa-building"></i> {{ entry.classroom.name|default:"TBD" }}
+                          </div>
+                          {% with row=attendance_map|dict_key:entry.id %}
+                          {% if row %}
+                          <div class="tt-meta" style="margin-top:6px;">
+                            <span class="label {{ row.status_css }}">{{ row.status_icon }} {{ row.status_label }}</span>
+                          </div>
+                          <div style="margin-top:6px;">
+                            <a href="{{ row.action_url }}" class="btn btn-xs {{ row.action_css }}">{{ row.action_label }}</a>
+                          </div>
+                          {% endif %}
+                          {% endwith %}
+                        </div>
+                      {% empty %}
+                        <span class="tt-empty">Free</span>
+                      {% endfor %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="tt-footnote">
+          <i class="fa fa-info-circle"></i> Updates automatically as new classes are scheduled.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tt-filter{background:#f8fafc;border:1px solid #e6edf5;border-radius:8px;padding:12px;margin-bottom:8px;}
+  .tt-table th{background:#f0f4f9;}
+  .tt-day{font-weight:700;color:#1f2a44;}
+  .tt-item{background:#f8fafc;border:1px solid #e6edf5;border-radius:8px;padding:6px 8px;margin-bottom:6px;}
+  .tt-item-head{display:flex;justify-content:space-between;gap:8px;align-items:center;}
+  .tt-subject{font-weight:700;color:#1f2a44;}
+  .tt-stream{font-size:11px;color:#64748b;}
+  .tt-meta{font-size:11px;color:#475569;margin-top:4px;}
+  .tt-empty{color:#94a3b8;font-style:italic;}
+  .tt-footnote{margin-top:8px;color:#64748b;font-size:12px;}
+</style>
+{% endblock %}

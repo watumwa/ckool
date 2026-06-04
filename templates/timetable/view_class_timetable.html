@@ -1,0 +1,28 @@
+
+<h2>Timetable for {{ class_stream }}</h2>
+<table border="1">
+  <thead>
+    <tr>
+      <th>Weekday</th>
+      <th>Time Slot</th>
+      <th>Subject</th>
+      <th>Teacher</th>
+      <th>Classroom</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for code, day in weekdays %}
+      {% for item in days.get(code, []) %}
+        <tr>
+          <td>{{ code }}</td>
+          <td>{{ item.time_slot }}</td>
+          <td>{{ item.subject }}</td>
+          <td>{{ item.teacher }}</td>
+          <td>{{ item.classroom }}</td>
+        </tr>
+      {% empty %}
+        <tr><td>{{ code }}</td><td colspan="4">No lessons scheduled</td></tr>
+      {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>

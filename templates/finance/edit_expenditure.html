@@ -1,0 +1,18 @@
+{% extends "../base.html" %}
+   {% block content %}
+   {% load crispy_forms_tags %}
+
+   <h2>Edit - {{expenditure_item.item_name}}</h2>
+    
+        <form method="POST">
+             {% csrf_token %}
+             {{form|crispy}}
+
+            <input type ="submit" class="btn btn-primary">
+           
+
+        </form>
+
+    
+
+{% endblock content %}

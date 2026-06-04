@@ -1,0 +1,53 @@
+<form id="ajaxPaymentForm" method="post" action="/ajax-payment-form/{{ bill.id }}/">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label">Bill</label>
+        <input type="text" class="form-control" value="{{ bill }}" readonly>
+        <input type="hidden" name="bill" value="{{ bill.id }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Outstanding</label>
+        <input type="text" class="form-control" value="UGX {{ bill.balance|floatformat:0 }}" readonly>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Payment Date</label>
+        <input type="date" name="payment_date" class="form-control" value="{{ today }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Category</label>
+        <select name="fee_category" class="form-control">
+            <option value="">Auto-detect</option>
+            <option value="Tuition">Tuition</option>
+            <option value="Transport">Transport</option>
+            <option value="Uniform">Uniform</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Amount</label>
+        <input type="number" name="amount" class="form-control" placeholder="Enter amount" required min="1" max="{{ bill.balance|floatformat:2 }}" step="0.01">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Payment Method</label>
+        <select name="payment_method" class="form-control" required>
+            <option value="">Select method</option>
+            <option value="Cash">Cash</option>
+            <option value="SchoolPay">SchoolPay</option>
+            <option value="Bank">Bank</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Reference No</label>
+        <input type="text" name="reference_no" class="form-control" placeholder="Auto-generated if left blank">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Notes</label>
+        <textarea name="notes" class="form-control" rows="3" placeholder="Optional remarks"></textarea>
+    </div>
+    <input type="hidden" name="recorded_by" value="{{ request.user.username }}">
+    <div class="text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-success">Record Payment</button>
+    </div>
+</form>

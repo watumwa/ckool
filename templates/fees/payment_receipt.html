@@ -1,0 +1,240 @@
+{% load humanize %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receipt {{ payment.reference_no }} - {{ student.student_name }}</title>
+  <style>
+    :root{
+      --navy:#0f172a;
+      --blue:#1d4ed8;
+      --soft-blue:#eff6ff;
+      --cyan:#0891b2;
+      --ink:#111827;
+      --muted:#64748b;
+      --line:#dbe4ef;
+      --paper:#ffffff;
+      --bg:#f4f7fb;
+      --success:#047857;
+      --warning:#b45309;
+      --danger:#b91c1c;
+    }
+    *{box-sizing:border-box;}
+    html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink);font-size:13px;line-height:1.45;}
+    .no-print{max-width:900px;margin:20px auto 12px;display:flex;justify-content:space-between;gap:10px;align-items:center;padding:0 12px;}
+    .toolbar-title{font-weight:800;color:var(--navy);}
+    .toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
+    .btn{border:0;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+    .btn-primary{background:var(--blue);color:#fff;}
+    .btn-light{background:#fff;color:var(--navy);border:1px solid var(--line);}
+    .receipt-shell{max-width:900px;margin:0 auto 24px;padding:12px;}
+    .receipt{background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 45px rgba(15,23,42,.10);overflow:hidden;position:relative;}
+    .receipt::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 12%,rgba(29,78,216,.10),transparent 30%),radial-gradient(circle at 10% 90%,rgba(8,145,178,.08),transparent 25%);pointer-events:none;}
+    .receipt-inner{position:relative;z-index:1;padding:28px;}
+    .top-strip{height:8px;background:linear-gradient(90deg,var(--navy),var(--blue),var(--cyan));}
+    .receipt-header{display:grid;grid-template-columns:1.4fr .8fr;gap:18px;align-items:start;border-bottom:1px solid var(--line);padding-bottom:18px;}
+    .brand{display:flex;gap:14px;align-items:center;}
+    .logo-box{width:66px;height:66px;border-radius:16px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;color:var(--blue);font-size:28px;font-weight:900;}
+    .logo-box img{max-width:100%;max-height:100%;object-fit:contain;}
+    .school-name{font-size:22px;line-height:1.15;font-weight:900;color:var(--navy);letter-spacing:-.02em;margin:0 0 3px;}
+    .school-meta{color:var(--muted);font-size:12px;}
+    .receipt-meta{text-align:right;}
+    .receipt-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);font-weight:900;}
+    .receipt-no{font-size:18px;font-weight:900;color:var(--navy);margin:2px 0 8px;word-break:break-word;}
+    .status-pill{display:inline-flex;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);}
+    .status-pill.paid{background:#ecfdf5;color:var(--success);border-color:#bbf7d0;}
+    .status-pill.partial{background:#fffbeb;color:var(--warning);border-color:#fde68a;}
+    .status-pill.credit{background:#eff6ff;color:var(--blue);border-color:#bfdbfe;}
+    .title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin:22px 0;}
+    .title-row h1{font-size:25px;margin:0;color:var(--navy);letter-spacing:-.03em;}
+    .title-row p{margin:4px 0 0;color:var(--muted);}
+    .amount-card{background:linear-gradient(135deg,var(--navy),#1e3a8a);color:#fff;border-radius:18px;padding:16px 18px;text-align:right;min-width:260px;box-shadow:0 14px 30px rgba(15,23,42,.20);}
+    .amount-card small{display:block;text-transform:uppercase;letter-spacing:.12em;opacity:.78;font-weight:900;font-size:10px;}
+    .amount-card strong{display:block;font-size:24px;line-height:1.15;margin-top:4px;}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+    .info-box{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.86);}
+    .info-box h3{font-size:12px;text-transform:uppercase;letter-spacing:.10em;color:var(--blue);margin:0 0 10px;font-weight:900;}
+    .kv{display:grid;grid-template-columns:145px 1fr;gap:6px 10px;margin:4px 0;}
+    .kv span:first-child{color:var(--muted);font-weight:700;}
+    .kv span:last-child{font-weight:800;color:var(--ink);}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin:16px 0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;}
+    thead th{background:var(--navy);color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.08em;text-align:left;padding:11px 12px;}
+    tbody td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;}
+    tbody tr:last-child td{border-bottom:0;}
+    .amount{text-align:right;white-space:nowrap;font-weight:900;}
+    .muted{color:var(--muted);}
+    .summary-grid{display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start;margin-top:18px;}
+    .note-box{background:var(--soft-blue);border:1px solid #bfdbfe;border-radius:14px;padding:13px 15px;color:#1e3a8a;}
+    .note-box strong{display:block;margin-bottom:4px;color:var(--navy);}
+    .summary{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;}
+    .summary-row{display:flex;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);}
+    .summary-row span:first-child{color:var(--muted);font-weight:700;}
+    .summary-row span:last-child{font-weight:900;text-align:right;}
+    .summary-row:last-child{border-bottom:0;background:#f8fafc;}
+    .summary-row.total{background:#ecfdf5;color:var(--success);font-size:15px;}
+    .summary-row.due{background:#fff7ed;color:var(--warning);font-size:15px;}
+    .signature-row{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:34px;}
+    .signature{border-top:1px solid var(--navy);padding-top:8px;color:var(--muted);font-size:12px;}
+    .receipt-footer{margin-top:22px;padding-top:14px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:11px;}
+    .watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:72px;font-weight:900;color:rgba(15,23,42,.035);transform:rotate(-18deg);pointer-events:none;text-align:center;}
+    @page{size:A4;margin:12mm;}
+    @media(max-width:760px){
+      .receipt-header,.info-grid,.summary-grid,.signature-row{grid-template-columns:1fr;}
+      .receipt-meta{text-align:left;}
+      .title-row{display:block;}
+      .amount-card{text-align:left;min-width:0;margin-top:12px;}
+      .kv{grid-template-columns:1fr;gap:0;}
+      .receipt-inner{padding:18px;}
+      .receipt-footer{display:block;}
+    }
+    @media print{
+      html,body{background:#fff;font-size:12px;}
+      .no-print{display:none!important;}
+      .receipt-shell{margin:0;padding:0;max-width:none;}
+      .receipt{box-shadow:none;border-radius:0;border:0;}
+      .receipt-inner{padding:0 2mm 0;}
+      .top-strip{height:6px;margin-bottom:10px;}
+      .amount-card{box-shadow:none;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      thead th,.top-strip,.summary-row.total,.summary-row.due{color-adjust:exact;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .watermark{color:rgba(15,23,42,.025);}
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <div>
+      <div class="toolbar-title">Official payment receipt</div>
+      <div class="muted">Use this for the parent/student copy. The bill page remains the account statement.</div>
+    </div>
+    <div class="toolbar-actions">
+      <a href="{% url 'student_bill_details_page' bill.id %}" class="btn btn-light">← Back to bill</a>
+      <button type="button" class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
+    </div>
+  </div>
+
+  <div class="receipt-shell">
+    <article class="receipt">
+      <div class="top-strip"></div>
+      <div class="watermark">{{ receipt_status }}</div>
+      <div class="receipt-inner">
+        <header class="receipt-header">
+          <div class="brand">
+            <div class="logo-box">
+              {% if school_settings and school_settings.school_logo %}
+                <img src="{{ school_settings.school_logo.url }}" alt="School logo">
+              {% else %}
+                {{ school_settings.school_name|default:"S"|slice:":1" }}
+              {% endif %}
+            </div>
+            <div>
+              <h2 class="school-name">{{ school_settings.school_name|default:"School Name" }}</h2>
+              <div class="school-meta">
+                {{ school_settings.school_motto|default:"" }}<br>
+                {{ school_settings.address|default:"" }}{% if school_settings.city %}, {{ school_settings.city }}{% endif %}
+                {% if school_settings.mobile %} · Tel: {{ school_settings.mobile }}{% endif %}
+                {% if school_settings.email %} · {{ school_settings.email }}{% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="receipt-meta">
+            <div class="receipt-kicker">Receipt No.</div>
+            <div class="receipt-no">{{ payment.reference_no }}</div>
+            <span class="status-pill {{ status_class }}">{{ receipt_status }}</span>
+          </div>
+        </header>
+
+        <section class="title-row">
+          <div>
+            <h1>Official Fees Receipt</h1>
+            <p>Issued for one payment transaction only.</p>
+          </div>
+          <div class="amount-card">
+            <small>Amount received</small>
+            <strong>UGX {{ payment_amount|floatformat:0|intcomma }}</strong>
+          </div>
+        </section>
+
+        <section class="info-grid">
+          <div class="info-box">
+            <h3>Student</h3>
+            <div class="kv"><span>Name</span><span>{{ student.student_name }}</span></div>
+            <div class="kv"><span>Student ID</span><span>{{ student.display_student_id }}</span></div>
+            <div class="kv"><span>Class</span><span>{{ student.current_class.code|default:student.current_class.name|default:"N/A" }}</span></div>
+            <div class="kv"><span>Guardian</span><span>{{ student.guardian|default:"N/A" }}</span></div>
+          </div>
+          <div class="info-box">
+            <h3>Payment</h3>
+            <div class="kv"><span>Payment date</span><span>{{ payment.payment_date|date:"d M Y" }}</span></div>
+            <div class="kv"><span>Printed on</span><span>{{ printed_at|date:"d M Y, H:i" }}</span></div>
+            <div class="kv"><span>Method</span><span>{{ payment.payment_method }}</span></div>
+            <div class="kv"><span>Recorded by</span><span>{{ payment.recorded_by|default:"System user" }}</span></div>
+          </div>
+        </section>
+
+        <section class="info-grid">
+          <div class="info-box">
+            <h3>Bill context</h3>
+            <div class="kv"><span>Bill No.</span><span>#{{ bill.id }}</span></div>
+            <div class="kv"><span>Academic year</span><span>{{ bill.academic_class.academic_year.academic_year|default:bill.academic_class.academic_year }}</span></div>
+            <div class="kv"><span>Term</span><span>{{ bill.academic_class.term|default:"N/A" }}</span></div>
+            <div class="kv"><span>Fee category</span><span>{{ payment.fee_category|default:"General fees" }}</span></div>
+          </div>
+          <div class="info-box">
+            <h3>Reference</h3>
+            <div class="kv"><span>External ref.</span><span>{{ payment.reference_no }}</span></div>
+            <div class="kv"><span>Notes</span><span>{{ payment.notes|default:"No notes recorded." }}</span></div>
+          </div>
+        </section>
+
+        <table aria-label="Billed fee items">
+          <thead>
+            <tr>
+              <th style="width:52px;">No.</th>
+              <th>Fee item</th>
+              <th>Category</th>
+              <th class="amount">Bill amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in bill.items.all %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td><strong>{{ item.bill_item.item_name }}</strong><br><span class="muted">{{ item.description }}</span></td>
+              <td>{{ item.fee_category|default:item.bill_item.get_category_display }}</td>
+              <td class="amount">UGX {{ item.amount|floatformat:0|intcomma }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="muted">No bill items found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <section class="summary-grid">
+          <div class="note-box">
+            <strong>Professional receipt rule</strong>
+            This receipt confirms money received. It does not replace the student's full account statement. Previous-term arrears should appear as a separate “Balance Brought Forward” bill item on the bill/statement.
+          </div>
+          <div class="summary">
+            <div class="summary-row"><span>Total bill</span><span>UGX {{ bill_total|floatformat:0|intcomma }}</span></div>
+            <div class="summary-row"><span>Paid before this receipt</span><span>UGX {{ amount_paid_before|floatformat:0|intcomma }}</span></div>
+            <div class="summary-row total"><span>This payment</span><span>UGX {{ payment_amount|floatformat:0|intcomma }}</span></div>
+            <div class="summary-row"><span>Total paid after receipt</span><span>UGX {{ amount_paid_after|floatformat:0|intcomma }}</span></div>
+            <div class="summary-row {% if balance_after > 0 %}due{% endif %}"><span>{{ balance_label }}</span><span>UGX {{ balance_display|floatformat:0|intcomma }}</span></div>
+          </div>
+        </section>
+
+        <section class="signature-row">
+          <div class="signature">Received by / Bursar signature</div>
+          <div class="signature">Parent / Student acknowledgement</div>
+        </section>
+
+        <footer class="receipt-footer">
+          <div>This is a system-generated receipt. Verify receipt number before accepting photocopies.</div>
+          <div>Printed by {{ request.user.get_username|default:"System" }}</div>
+        </footer>
+      </div>
+    </article>
+  </div>
+</body>
+</html>

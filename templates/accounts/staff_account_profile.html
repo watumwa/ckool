@@ -1,0 +1,69 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}  
+
+{% block page_title %}Staff Account Profile{% endblock page_title %}
+{% block content %}
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Profile of {{ user.first_name }} {{ user.last_name }}</h2>
+                    <ul class="nav navbar-right panel_toolbox">
+                        <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+                    </ul>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <h3>User Details</h3>
+                    <ul>
+                        <li><strong>ID:</strong> {{ user.id }}</li>
+                        <li><strong>Username:</strong> {{ user.username }}</li>
+                        <li><strong>First Name:</strong> {{ user.first_name }}</li>
+                        <li><strong>Last Name:</strong> {{ user.last_name }}</li>
+                        <li>
+                            <strong>Profile Picture:</strong>
+                            {% if staff.staff_photo %}
+                                <img src="{{ staff.staff_photo.url }}" alt="{{ user.username }}'s Profile Picture" style="width: 100px; height: auto;">
+                            {% else %}
+                                <span>No profile picture available.</span>
+                            {% endif %}
+                        </li>
+                    </ul>
+
+                    <h3>Assigned Roles</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Role Name</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for account in staff_accounts %}
+                                    <tr>
+                                        <td>{{ account.role.name }}</td>
+                                        <td>
+                                            <a href="#" class="btn btn-warning btn-sm">Edit</a>
+                                            <a href="#" class="btn btn-danger btn-sm">Remove</a>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="2">No roles assigned.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="modal-footer">
+                        <a href="{% url 'create_staff_account' %}" class="btn btn-secondary">Back to Accounts</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

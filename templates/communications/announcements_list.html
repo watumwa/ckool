@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Announcements{% endblock page_title %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bullhorn"></i> Announcements</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="comm-header">
+          <div class="comm-intro">
+            <div class="comm-title">Keep staff informed with targeted updates.</div>
+            <div class="announcement-counts">
+              <span class="announcement-pill"><i class="fa fa-list"></i> Total <span class="count">{{ announcement_total|default:0 }}</span></span>
+              <span class="announcement-pill"><i class="fa fa-check-circle"></i> Active <span class="count">{{ announcement_active|default:0 }}</span></span>
+              <span class="announcement-pill"><i class="fa fa-exclamation"></i> High <span class="count">{{ announcement_high|default:0 }}</span></span>
+            </div>
+          </div>
+          <div class="comm-actions">
+            <div class="input-group announcement-search">
+              <input type="text" class="form-control" placeholder="Search announcements..." id="announcementSearch">
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button"><i class="fa fa-search"></i></button>
+              </span>
+            </div>
+            {% if can_manage %}
+            <a href="#" class="btn btn-success" data-toggle="modal" data-target="#announcementModal"><i class="fa fa-plus"></i> New Announcement</a>
+            {% endif %}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-8 col-sm-12">
+            {% if announcements %}
+            <div id="announcementCards">
+              {% for item in announcements %}
+              <div class="announcement-card {% if item.priority == 'high' %}priority-high{% elif item.priority == 'low' %}priority-low{% else %}priority-normal{% endif %}" style="border:1px solid #eef1f6;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 6px 16px rgba(0,0,0,0.04);">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                  <div>
+                <div style="font-weight:700;font-size:15px;">{{ item.title }}</div>
+                <div class="text-muted" style="font-size:12px;margin-top:4px;">
+                  <span class="announcement-badge"><i class="fa fa-users"></i> {{ item.get_audience_display }}</span>
+                  <span class="announcement-badge"><i class="fa fa-clock-o"></i> {{ item.starts_at|date:"M d, Y H:i" }}</span>
+                </div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    {% if item.priority == 'high' %}
+                    <span class="label label-danger">High</span>
+                    {% elif item.priority == 'low' %}
+                    <span class="label label-default">Low</span>
+                    {% else %}
+                    <span class="label label-info">Normal</span>
+                    {% endif %}
+                    {% if item.is_active %}
+                    <span class="label label-success">Active</span>
+                    {% else %}
+                    <span class="label label-default">Inactive</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:6px;">
+                  {% if can_manage or item.created_by == user %}
+                  <a href="{% url 'announcement_edit' item.id %}" class="btn btn-info btn-xs"><i class="fa fa-edit"></i> Edit</a>
+                  <a href="{% url 'announcement_delete' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this announcement?')"><i class="fa fa-trash"></i> Delete</a>
+                  {% else %}
+                  <span class="text-muted">-</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center">
+              <i class="fa fa-inbox fa-3x text-muted" style="margin-bottom:8px;"></i>
+              <h5 class="text-muted">No announcements yet</h5>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 col-sm-12">
+            <div class="x_panel pinned-panel">
+              <div class="x_title">
+                <h2 style="margin:0;"><i class="fa fa-thumbtack"></i> Pinned Announcements</h2>
+                <div class="clearfix"></div>
+              </div>
+              <div class="x_content">
+                {% if pinned_announcements %}
+                <ul class="list-unstyled dashboard-list">
+                  {% for item in pinned_announcements %}
+                  <li>
+                    <span class="name">{{ item.title }}</span>
+                    <span class="value">{{ item.starts_at|date:"M d" }}</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-muted">No pinned announcements.</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="announcementModal" tabindex="-1" role="dialog" aria-labelledby="announcementModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="announcementModalLabel"><i class="fa fa-bullhorn"></i> New Announcement</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'announcement_create' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          {% if not can_target_head %}
+          <div class="alert alert-info" role="alert">
+            Teachers cannot target the Head Teacher. The audience option is limited.
+          </div>
+          {% endif %}
+          {{ form|crispy }}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<style>
+.announcement-card{
+  border-left:4px solid #17a2b8;
+  background:#ffffff;
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.announcement-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 24px rgba(0,0,0,0.08);
+  border-color:#dfe6f1;
+}
+.announcement-card.priority-high{border-left-color:#e74c3c;}
+.announcement-card.priority-low{border-left-color:#95a5a6;}
+.announcement-card.priority-normal{border-left-color:#17a2b8;}
+
+.announcement-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:#f5f7fb;
+  color:#5b6b82;
+}
+
+.announcement-header{
+  background:linear-gradient(135deg,#ffffff 0%,#f6f9ff 100%);
+  border-radius:12px;
+  padding:12px 14px;
+  border:1px solid #eef1f6;
+}
+
+.comm-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  background:#f8fafc;
+  border:1px solid #e6edf5;
+  border-radius:12px;
+  padding:14px 16px;
+  margin-bottom:14px;
+}
+.comm-title{font-weight:600;color:#334155;margin-bottom:8px;}
+.comm-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+
+.announcement-search .form-control{
+  border-radius:999px 0 0 999px;
+}
+.announcement-search .btn{
+  border-radius:0 999px 999px 0;
+}
+
+.pinned-panel{
+  background:#ffffff;
+  border:1px solid #eef1f6;
+  border-radius:12px;
+  box-shadow:0 6px 16px rgba(0,0,0,0.04);
+}
+.pinned-panel .x_title h2{
+  font-weight:700;
+}
+
+.announcement-counts{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+.announcement-pill{
+  background:#f5f7fb;
+  border:1px solid #e9edf5;
+  border-radius:999px;
+  padding:6px 10px;
+  font-size:12px;
+  color:#5b6b82;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.announcement-pill .count{
+  font-weight:700;
+  color:#1f2a44;
+}
+</style>
+<script>
+  $(document).ready(function() {
+    $('#announcementSearch').on('keyup', function() {
+      var value = $(this).val().toLowerCase();
+      $('#announcementCards .announcement-card').filter(function() {
+        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+      });
+    });
+  });
+</script>
+<script>
+  (function() {
+    try {
+      document.cookie = 'comm_seen_at=' + new Date().toISOString() + '; path=/';
+    } catch (e) {
+      // no-op
+    }
+  })();
+</script>
+{% endblock content %}

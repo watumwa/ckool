@@ -1,0 +1,990 @@
+{% extends "../base.html" %}
+{% load humanize %}
+
+{% block page_title %}Enter Results{% endblock page_title %}
+
+{% block content %}
+<div class="container-fluid results-entry-page">
+  <div class="x_panel context-summary-panel">
+    <div class="x_title">
+      <h2><i class="fa fa-edit"></i> Enter Results</h2>
+      <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+      <div class="row">
+        <div class="col-md-9 col-sm-12">
+          <div class="context-grid row">
+            <div class="col-md-4 col-sm-6 context-item">
+              <span class="context-label"><i class="fa fa-book"></i> Subject</span>
+              <span class="context-value">{{ assessment.subject.name|default:assessment.subject }}</span>
+            </div>
+            <div class="col-md-4 col-sm-6 context-item">
+              <span class="context-label"><i class="fa fa-university"></i> Class</span>
+              <span class="context-value">{{ assessment.academic_class.Class.code|default:assessment.academic_class.Class.name }}</span>
+            </div>
+            <div class="col-md-4 col-sm-6 context-item">
+              <span class="context-label"><i class="fa fa-calendar"></i> Term</span>
+              <span class="context-value">Term {{ assessment.academic_class.term.term }}</span>
+            </div>
+            <div class="col-md-4 col-sm-6 context-item">
+              <span class="context-label"><i class="fa fa-clock-o"></i> Academic Year</span>
+              <span class="context-value">{{ assessment.academic_class.academic_year.academic_year }}</span>
+            </div>
+            <div class="col-md-4 col-sm-6 context-item">
+              <span class="context-label"><i class="fa fa-sliders"></i> Assessment Mode</span>
+              <span class="context-value">{{ current_mode|title }}</span>
+            </div>
+            <div class="col-md-4 col-sm-6 context-item">
+              <span class="context-label"><i class="fa fa-calendar-check-o"></i> Entry Date</span>
+              <span class="context-value">{{ entry_date|date:"d M Y" }}</span>
+            </div>
+            <div class="col-md-4 col-sm-6 context-item">
+              <span class="context-label"><i class="fa fa-user"></i> Teacher</span>
+              <span class="context-value">{{ teacher_label }}</span>
+            </div>
+            <div class="col-md-4 col-sm-6 context-item">
+              <span class="context-label"><i class="fa fa-tasks"></i> Out Of</span>
+              <span class="context-value">{{ assessment.out_of }}</span>
+            </div>
+            <div class="col-md-4 col-sm-6 context-item">
+              <span class="context-label"><i class="fa fa-flask"></i> Assessment</span>
+              <span class="context-value">{{ assessment.assessment_type.name }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-12">
+          <div class="batch-status-box">
+            <p class="batch-title">Batch Status</p>
+            {% if batch.status == "DRAFT" %}
+            <span class="label label-warning badge-status">Draft</span>
+            {% elif batch.status == "PENDING" %}
+            <span class="label label-primary badge-status">Submitted</span>
+            {% elif batch.status == "VERIFIED" %}
+            <span class="label label-success badge-status">Approved</span>
+            {% elif batch.status == "FLAGGED" %}
+            <span class="label label-danger badge-status">Rejected</span>
+            {% else %}
+            <span class="label label-default badge-status">{{ batch.status }}</span>
+            {% endif %}
+            <p class="batch-meta">
+              {% if batch.submitted_by %}
+              Submitted by {{ batch.submitted_by.username }}
+              {% else %}
+              Not submitted yet
+              {% endif %}
+            </p>
+            {% if batch.submitted_at %}
+            <p class="batch-meta">{{ batch.submitted_at|date:"d M Y, H:i" }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% if batch.status == "FLAGGED" and batch.rejection_reason %}
+      <div class="alert alert-danger" style="margin-top: 14px;">
+        <i class="fa fa-exclamation-triangle"></i>
+        Rejected during verification: {{ batch.rejection_reason }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8 col-sm-12">
+      <div class="x_panel">
+        <div class="x_title">
+          <h2><i class="fa fa-search"></i> Search & Entry Progress</h2>
+          <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+          <div class="row">
+            <div class="col-md-8 col-sm-12" style="margin-bottom: 10px;">
+              <div class="input-group">
+                <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                <input type="text" id="studentSearch" class="form-control" placeholder="Search by student name or admission number">
+                <span class="input-group-btn">
+                  <button class="btn btn-default" type="button" id="clearSearchBtn"><i class="fa fa-times"></i></button>
+                </span>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-12 text-right">
+              <span id="visibleCountBadge" class="label label-default" style="font-size: 12px;">Showing {{ total_students }} / {{ total_students }}</span>
+            </div>
+          </div>
+          <div class="entry-progress-wrap">
+            <div class="progress" style="height: 10px; margin-bottom: 8px;">
+              <div id="entryProgressBar" class="progress-bar progress-bar-info" role="progressbar" style="width:0%;"></div>
+            </div>
+            <p id="autosaveIndicator" class="text-muted autosave-indicator">
+              <i class="fa fa-cloud"></i> Autosave ready
+            </p>
+          </div>
+          <p class="text-muted small" style="margin-bottom: 0;">
+            Keyboard: <strong>Tab</strong> next field, <strong>Enter</strong> next student, <strong>Ctrl + S</strong> save draft, <strong>Ctrl + F</strong> search.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 col-sm-12">
+      <div class="x_panel performance-panel">
+        <div class="x_title">
+          <h2><i class="fa fa-line-chart"></i> Live Performance</h2>
+          <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+          <ul class="list-unstyled live-stats-list">
+            <li><span>Students</span><strong id="statTotal">{{ total_students }}</strong></li>
+            <li><span>Entered</span><strong id="statEntered">{{ results_count }}</strong></li>
+            <li><span>Missing</span><strong id="statMissing">{{ missing_results_count }}</strong></li>
+            <li><span>Class Average</span><strong id="statAverage">-</strong></li>
+            <li><span>Highest</span><strong id="statHighest">-</strong></li>
+            <li><span>Lowest</span><strong id="statLowest">-</strong></li>
+            <li><span>Pass Rate</span><strong id="statPassRate">-</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="entryAlertArea"></div>
+
+  {% if entry_rows %}
+  <form method="post" id="resultsEntryForm" novalidate>
+    {% csrf_token %}
+    <div class="x_panel results-grid-panel">
+      <div class="x_title">
+        <h2><i class="fa fa-table"></i> Results Entry Grid</h2>
+        <div class="pull-right">
+          <a href="{% url 'bulk_result_entry' assessment.id %}" class="btn btn-xs btn-default">
+            <i class="fa fa-upload"></i> Bulk Upload CSV
+          </a>
+        </div>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover results-entry-table" id="resultsTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Adm No</th>
+                <th>Student Name</th>
+                <th>Gender</th>
+                <th>Score / {{ assessment.out_of }}</th>
+                <th>Grade</th>
+                <th>Remarks</th>
+                <th>Status</th>
+                <th>Audit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in entry_rows %}
+              <tr
+                class="result-row{% if not is_editable_batch %} row-locked{% endif %}"
+                data-student-id="{{ row.student.id }}"
+                data-student-name="{{ row.student.student_name|lower }}"
+                data-student-reg="{{ row.student.reg_no|lower }}"
+                data-existing="{% if row.result %}1{% else %}0{% endif %}"
+              >
+                <td>{{ row.index }}</td>
+                <td><code>{{ row.student.reg_no }}</code></td>
+                <td>{{ row.student.student_name }}</td>
+                <td>{{ row.student.gender|default:"-" }}</td>
+                <td class="score-cell">
+                  <input
+                    type="number"
+                    name="score_{{ row.student.id }}"
+                    value="{{ row.score }}"
+                    class="form-control input-sm score-input"
+                    min="0"
+                    max="{{ assessment.out_of }}"
+                    step="0.01"
+                    {% if not is_editable_batch %}disabled{% endif %}
+                    autocomplete="off"
+                  >
+                  <small class="text-danger score-error"></small>
+                </td>
+                <td>
+                  <span class="grade-value">{{ row.grade }}</span>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    name="remark_{{ row.student.id }}"
+                    class="form-control input-sm remark-input"
+                    placeholder="Optional note"
+                    {% if not is_editable_batch %}disabled{% endif %}
+                    autocomplete="off"
+                  >
+                </td>
+                <td>
+                  <span class="status-badge label
+                    {% if row.status == 'DRAFT' %}label-warning{% elif row.status == 'PENDING' %}label-primary{% elif row.status == 'VERIFIED' %}label-success{% elif row.status == 'FLAGGED' %}label-danger{% else %}label-default{% endif %}">
+                    {% if row.status == "DRAFT" %}Draft{% elif row.status == "PENDING" %}Submitted{% elif row.status == "VERIFIED" %}Approved{% elif row.status == "FLAGGED" %}Rejected{% else %}Missing{% endif %}
+                  </span>
+                </td>
+                <td>
+                  <span class="audit-cell">{{ row.audit }}</span>
+                  {% if row.result and row.result.batch and row.result.batch.submitted_at %}
+                  <small class="text-muted d-block">{{ row.result.batch.submitted_at|date:"d M H:i" }}</small>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="emptyStatePanel" style="display:none;">
+          <i class="fa fa-file-text-o fa-2x text-muted"></i>
+          <h4>No marks entered yet</h4>
+          <p class="text-muted">Start entering scores below. Results will auto-save locally as draft notes.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-action-bar" id="resultsActionBar">
+      <div class="action-left">
+        {% if is_editable_batch %}
+        <button type="submit" class="btn btn-primary" name="save_draft" id="saveDraftBtn">
+          <i class="fa fa-save"></i> Save Draft
+        </button>
+        <button type="button" class="btn btn-info" id="openSubmitModalBtn">
+          <i class="fa fa-paper-plane"></i> Submit for Approval
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-primary disabled" disabled>
+          <i class="fa fa-lock"></i> Entry Locked
+        </button>
+        {% endif %}
+
+        {% if batch.status == "VERIFIED" %}
+        <button type="button" class="btn btn-dark btn-lock-status" disabled>
+          <i class="fa fa-lock"></i> Results Locked
+        </button>
+        {% elif batch.status == "PENDING" %}
+        <button type="button" class="btn btn-default" disabled>
+          <i class="fa fa-hourglass-half"></i> Awaiting Approval
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-default" disabled>
+          <i class="fa fa-lock"></i> Lock After Approval
+        </button>
+        {% endif %}
+
+        {% if can_unlock_batch and batch.status == "VERIFIED" %}
+        <button type="submit" class="btn btn-warning" name="unlock_batch" id="unlockBatchBtn">
+          <i class="fa fa-unlock"></i> Reopen Draft
+        </button>
+        {% endif %}
+      </div>
+      <div class="action-right text-muted small">
+        Draft flow: Save Draft -> Submit -> Approve -> Lock.
+      </div>
+    </div>
+
+    <button type="submit" name="submit_batch" id="submitBatchHiddenBtn" style="display:none;"></button>
+  </form>
+  {% else %}
+  <div class="x_panel">
+    <div class="x_content text-center" style="padding: 34px 10px;">
+      <i class="fa fa-file-text-o fa-3x text-muted" style="margin-bottom: 10px;"></i>
+      <h4>No marks entered yet</h4>
+      <p class="text-muted">No student registrations were found for this assessment class stream.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="modal fade" id="confirmSubmitModal" tabindex="-1" role="dialog" aria-labelledby="confirmSubmitLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="confirmSubmitLabel"><i class="fa fa-check-circle"></i> Submit for Approval</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        You are about to submit this batch for verification and approval. You will not be able to edit marks unless the batch is rejected or reopened.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmSubmitBtn">Confirm Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ grading_bands|json_script:"grading-bands-data" }}
+
+<style>
+.results-entry-page {
+  padding-bottom: 80px;
+}
+
+.context-summary-panel .x_content {
+  padding-top: 14px;
+}
+
+.context-item {
+  margin-bottom: 10px;
+}
+
+.context-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #73879c;
+  font-weight: 700;
+}
+
+.context-value {
+  display: block;
+  font-size: 15px;
+  color: #2a3f54;
+  font-weight: 700;
+}
+
+.batch-status-box {
+  border: 1px solid #e7edf5;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fbfdff;
+}
+
+.batch-title {
+  margin: 0 0 6px;
+  color: #5c738f;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.badge-status {
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.batch-meta {
+  margin: 8px 0 0;
+  color: #758ba3;
+  font-size: 12px;
+}
+
+.entry-progress-wrap {
+  margin-top: 8px;
+}
+
+.autosave-indicator {
+  margin: 0;
+}
+
+.live-stats-list {
+  margin: 0;
+}
+
+.live-stats-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #edf2f7;
+  padding: 7px 0;
+  font-size: 13px;
+}
+
+.live-stats-list li:last-child {
+  border-bottom: 0;
+}
+
+.live-stats-list strong {
+  color: #2a3f54;
+  font-size: 14px;
+}
+
+.results-grid-panel .x_content {
+  padding-top: 12px;
+}
+
+.results-entry-table th {
+  background: #f7f9fc;
+  color: #3c4f65;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 11px;
+}
+
+.results-entry-table td {
+  vertical-align: middle;
+}
+
+.results-entry-table .score-input,
+.results-entry-table .remark-input {
+  min-width: 105px;
+}
+
+.results-entry-table .score-input.is-invalid {
+  border-color: #d9534f;
+  box-shadow: 0 0 0 1px rgba(217, 83, 79, 0.2);
+}
+
+.results-entry-table .score-input.is-valid {
+  border-color: #1abb9c;
+  box-shadow: 0 0 0 1px rgba(26, 187, 156, 0.2);
+}
+
+.results-entry-table .status-badge {
+  min-width: 72px;
+  display: inline-block;
+  text-align: center;
+}
+
+.results-entry-table .grade-value {
+  font-weight: 700;
+  color: #2a3f54;
+}
+
+.results-entry-table .audit-cell {
+  font-size: 12px;
+  color: #5f738a;
+}
+
+.result-row.row-locked {
+  background: #f9fbfd;
+}
+
+.empty-state {
+  border: 1px dashed #d7e2ef;
+  border-radius: 10px;
+  text-align: center;
+  padding: 22px 12px;
+}
+
+.results-action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  background: #ffffff;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  box-shadow: 0 -5px 16px rgba(25, 46, 77, 0.08);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.results-action-bar .action-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-lock-status {
+  background: #2f3e4d;
+  border-color: #2f3e4d;
+  color: #fff;
+}
+
+.score-error {
+  display: block;
+  min-height: 16px;
+}
+
+@media (max-width: 991px) {
+  .results-action-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .results-action-bar .action-right {
+    width: 100%;
+  }
+}
+</style>
+
+<script>
+(function () {
+  var gradingDataEl = document.getElementById("grading-bands-data");
+  var gradingBands = [];
+  try {
+    gradingBands = gradingDataEl ? JSON.parse(gradingDataEl.textContent || "[]") : [];
+  } catch (err) {
+    gradingBands = [];
+  }
+
+  var maxScore = parseFloat("{{ assessment.out_of }}") || 100;
+  var batchStatus = "{{ batch.status }}";
+  var isEditableBatch = {{ is_editable_batch|yesno:"true,false" }};
+  var storageKey = "results_entry_draft_{{ assessment.id }}";
+
+  var tableRows = Array.prototype.slice.call(document.querySelectorAll("#resultsTable tbody .result-row"));
+  var scoreInputs = Array.prototype.slice.call(document.querySelectorAll(".score-input"));
+  var remarkInputs = Array.prototype.slice.call(document.querySelectorAll(".remark-input"));
+
+  function getBandForScore(score) {
+    for (var i = 0; i < gradingBands.length; i += 1) {
+      var band = gradingBands[i];
+      var min = Number(band.min_score || 0);
+      var max = Number(band.max_score || 0);
+      if (score >= min && score <= max) {
+        return band;
+      }
+    }
+    return null;
+  }
+
+  function sanitizeNumber(value) {
+    if (value === null || value === undefined || value === "") return null;
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function validateScoreInput(input) {
+    var errorEl = input.closest(".score-cell").querySelector(".score-error");
+    var val = input.value.trim();
+
+    input.classList.remove("is-valid", "is-invalid");
+    errorEl.textContent = "";
+
+    if (!val) {
+      return { valid: true, empty: true, score: null };
+    }
+
+    var score = sanitizeNumber(val);
+    if (score === null) {
+      input.classList.add("is-invalid");
+      errorEl.textContent = "Invalid number";
+      return { valid: false, empty: false, score: null };
+    }
+
+    if (score < 0 || score > maxScore) {
+      input.classList.add("is-invalid");
+      errorEl.textContent = "Score must be 0 - " + maxScore;
+      return { valid: false, empty: false, score: score };
+    }
+
+    input.classList.add("is-valid");
+    return { valid: true, empty: false, score: score };
+  }
+
+  function getDisplayStatus(hasScore, isInvalid) {
+    if (isInvalid) {
+      return { text: "Invalid", cls: "label-danger" };
+    }
+
+    if (batchStatus === "VERIFIED") {
+      if (!hasScore) return { text: "Missing", cls: "label-default" };
+      return { text: "Locked", cls: "label-default" };
+    }
+    if (batchStatus === "PENDING") {
+      if (!hasScore) return { text: "Missing", cls: "label-default" };
+      return { text: "Submitted", cls: "label-primary" };
+    }
+    if (batchStatus === "FLAGGED") {
+      if (hasScore) return { text: "Rejected", cls: "label-danger" };
+      return { text: "Missing", cls: "label-default" };
+    }
+    if (batchStatus === "DRAFT") {
+      if (hasScore) return { text: "Draft", cls: "label-warning" };
+      return { text: "Missing", cls: "label-default" };
+    }
+
+    if (hasScore) return { text: "Draft", cls: "label-warning" };
+    return { text: "Missing", cls: "label-default" };
+  }
+
+  function updateRowComputedValues(row) {
+    var input = row.querySelector(".score-input");
+    var gradeEl = row.querySelector(".grade-value");
+    var statusEl = row.querySelector(".status-badge");
+    var result = validateScoreInput(input);
+
+    if (result.valid && !result.empty) {
+      var band = getBandForScore(result.score);
+      gradeEl.textContent = band ? band.grade : "N/A";
+    } else if (result.empty) {
+      gradeEl.textContent = "-";
+    } else {
+      gradeEl.textContent = "Invalid";
+    }
+
+    var status = getDisplayStatus(!result.empty, !result.valid);
+    statusEl.className = "status-badge label " + status.cls;
+    statusEl.textContent = status.text;
+
+    return result;
+  }
+
+  function formatPercent(value) {
+    if (!Number.isFinite(value)) return "-";
+    return value.toFixed(1) + "%";
+  }
+
+  function computeLiveStats() {
+    var total = tableRows.length;
+    var entered = 0;
+    var validScores = [];
+
+    tableRows.forEach(function (row) {
+      var input = row.querySelector(".score-input");
+      var result = validateScoreInput(input);
+      if (!result.empty) {
+        entered += 1;
+      }
+      if (result.valid && !result.empty && result.score !== null) {
+        validScores.push(result.score);
+      }
+    });
+
+    var missing = total - entered;
+    var average = "-";
+    var highest = "-";
+    var lowest = "-";
+    var passRate = "-";
+
+    if (validScores.length) {
+      var sum = validScores.reduce(function (acc, score) { return acc + score; }, 0);
+      var avgVal = sum / validScores.length;
+      var highVal = Math.max.apply(null, validScores);
+      var lowVal = Math.min.apply(null, validScores);
+      var passThreshold = maxScore * 0.5;
+      var passCount = validScores.filter(function (score) { return score >= passThreshold; }).length;
+
+      average = formatPercent((avgVal / maxScore) * 100);
+      highest = formatPercent((highVal / maxScore) * 100);
+      lowest = formatPercent((lowVal / maxScore) * 100);
+      passRate = formatPercent((passCount / validScores.length) * 100);
+    }
+
+    var progress = total ? (entered / total) * 100 : 0;
+
+    document.getElementById("statTotal").textContent = total;
+    document.getElementById("statEntered").textContent = entered;
+    document.getElementById("statMissing").textContent = missing;
+    document.getElementById("statAverage").textContent = average;
+    document.getElementById("statHighest").textContent = highest;
+    document.getElementById("statLowest").textContent = lowest;
+    document.getElementById("statPassRate").textContent = passRate;
+
+    var progressBar = document.getElementById("entryProgressBar");
+    if (progressBar) {
+      progressBar.style.width = progress.toFixed(0) + "%";
+      progressBar.textContent = "";
+    }
+
+    return {
+      total: total,
+      entered: entered,
+      missing: missing,
+      hasInvalid: tableRows.some(function (row) {
+        var input = row.querySelector(".score-input");
+        return input.classList.contains("is-invalid");
+      }),
+    };
+  }
+
+  function renderEntryAlert(type, text) {
+    var area = document.getElementById("entryAlertArea");
+    if (!area) return;
+    var cls = "alert-info";
+    if (type === "error") cls = "alert-danger";
+    if (type === "warning") cls = "alert-warning";
+    if (type === "success") cls = "alert-success";
+
+    area.innerHTML = '<div class="alert ' + cls + '"><i class="fa fa-info-circle"></i> ' + text + "</div>";
+
+    window.setTimeout(function () {
+      if (area) {
+        area.innerHTML = "";
+      }
+    }, 4500);
+  }
+
+  function saveLocalDraft(showMessage) {
+    if (!isEditableBatch) return;
+    var draft = { scores: {}, remarks: {}, saved_at: new Date().toISOString() };
+
+    scoreInputs.forEach(function (input) {
+      if (input.value.trim()) {
+        draft.scores[input.name] = input.value.trim();
+      }
+    });
+
+    remarkInputs.forEach(function (input) {
+      if (input.value.trim()) {
+        draft.remarks[input.name] = input.value.trim();
+      }
+    });
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(draft));
+      var statusEl = document.getElementById("autosaveIndicator");
+      if (statusEl) {
+        var now = new Date();
+        statusEl.innerHTML = '<i class="fa fa-check-circle text-success"></i> Autosaved locally at ' + now.toLocaleTimeString();
+      }
+      if (showMessage) {
+        renderEntryAlert("success", "Draft autosaved locally.");
+      }
+    } catch (err) {
+      renderEntryAlert("error", "Autosave failed in browser storage.");
+    }
+  }
+
+  function loadLocalDraft() {
+    if (!isEditableBatch) return;
+    try {
+      var raw = localStorage.getItem(storageKey);
+      if (!raw) return;
+      var draft = JSON.parse(raw);
+      if (!draft || typeof draft !== "object") return;
+
+      Object.keys(draft.scores || {}).forEach(function (key) {
+        var input = document.querySelector('[name="' + key + '"]');
+        if (input && !input.disabled) {
+          input.value = draft.scores[key];
+        }
+      });
+
+      Object.keys(draft.remarks || {}).forEach(function (key) {
+        var input = document.querySelector('[name="' + key + '"]');
+        if (input && !input.disabled) {
+          input.value = draft.remarks[key];
+        }
+      });
+
+      var statusEl = document.getElementById("autosaveIndicator");
+      if (statusEl && draft.saved_at) {
+        statusEl.innerHTML = '<i class="fa fa-history"></i> Loaded local draft from ' + new Date(draft.saved_at).toLocaleString();
+      }
+    } catch (err) {
+      // ignore malformed draft
+    }
+  }
+
+  function filterRows() {
+    var searchInput = document.getElementById("studentSearch");
+    var term = (searchInput ? searchInput.value : "").toLowerCase().trim();
+    var visible = 0;
+
+    tableRows.forEach(function (row) {
+      var studentName = row.getAttribute("data-student-name") || "";
+      var studentReg = row.getAttribute("data-student-reg") || "";
+      var matches = !term || studentName.indexOf(term) > -1 || studentReg.indexOf(term) > -1;
+      row.style.display = matches ? "" : "none";
+      if (matches) visible += 1;
+    });
+
+    var countBadge = document.getElementById("visibleCountBadge");
+    if (countBadge) {
+      countBadge.textContent = "Showing " + visible + " / " + tableRows.length;
+    }
+  }
+
+  function moveToInput(currentInput, step) {
+    var editable = scoreInputs.filter(function (input) {
+      return !input.disabled && input.closest("tr").style.display !== "none";
+    });
+    var index = editable.indexOf(currentInput);
+    if (index === -1) return;
+    var next = editable[index + step];
+    if (next) {
+      next.focus();
+      next.select();
+    }
+  }
+
+  function handleScorePaste(event) {
+    var text = (event.clipboardData || window.clipboardData).getData("text");
+    if (!text || (text.indexOf("\n") === -1 && text.indexOf("\t") === -1)) {
+      return;
+    }
+
+    event.preventDefault();
+    var values = text
+      .split(/\r?\n/)
+      .map(function (line) { return line.split("\t")[0]; })
+      .filter(function (line) { return line !== ""; });
+
+    if (!values.length) return;
+
+    var editable = scoreInputs.filter(function (input) { return !input.disabled; });
+    var startIndex = editable.indexOf(event.target);
+    if (startIndex === -1) return;
+
+    for (var i = 0; i < values.length; i += 1) {
+      var target = editable[startIndex + i];
+      if (!target) break;
+      target.value = values[i].trim();
+      updateRowComputedValues(target.closest("tr"));
+    }
+
+    computeLiveStats();
+    saveLocalDraft(false);
+  }
+
+  function validateBeforeDraftSave() {
+    var invalidRows = [];
+    tableRows.forEach(function (row) {
+      var result = updateRowComputedValues(row);
+      if (!result.valid) {
+        invalidRows.push(row.getAttribute("data-student-reg") || "student");
+      }
+    });
+
+    if (invalidRows.length) {
+      renderEntryAlert("error", "Fix invalid scores before saving draft.");
+      return false;
+    }
+    return true;
+  }
+
+  function validateBeforeSubmit() {
+    if (!validateBeforeDraftSave()) {
+      return false;
+    }
+
+    var stats = computeLiveStats();
+    if (stats.missing > 0) {
+      renderEntryAlert("warning", "Cannot submit. " + stats.missing + " student(s) still have no marks.");
+      return false;
+    }
+
+    return true;
+  }
+
+  function initializeRowComputations() {
+    tableRows.forEach(function (row) {
+      updateRowComputedValues(row);
+    });
+    var stats = computeLiveStats();
+    var emptyPanel = document.getElementById("emptyStatePanel");
+    if (emptyPanel) {
+      emptyPanel.style.display = stats.entered === 0 ? "block" : "none";
+    }
+  }
+
+  if (!tableRows.length) {
+    return;
+  }
+
+  loadLocalDraft();
+  initializeRowComputations();
+
+  scoreInputs.forEach(function (input) {
+    input.addEventListener("input", function () {
+      updateRowComputedValues(input.closest("tr"));
+      computeLiveStats();
+      saveLocalDraft(false);
+    });
+
+    input.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        moveToInput(input, 1);
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        moveToInput(input, 1);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        moveToInput(input, -1);
+      }
+    });
+
+    input.addEventListener("paste", handleScorePaste);
+  });
+
+  remarkInputs.forEach(function (input) {
+    input.addEventListener("input", function () {
+      saveLocalDraft(false);
+    });
+  });
+
+  var searchInput = document.getElementById("studentSearch");
+  if (searchInput) {
+    searchInput.addEventListener("input", filterRows);
+  }
+
+  var clearSearchBtn = document.getElementById("clearSearchBtn");
+  if (clearSearchBtn && searchInput) {
+    clearSearchBtn.addEventListener("click", function () {
+      searchInput.value = "";
+      filterRows();
+    });
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+      event.preventDefault();
+      if (!isEditableBatch) return;
+      if (!validateBeforeDraftSave()) return;
+      var saveBtn = document.getElementById("saveDraftBtn");
+      if (saveBtn) {
+        saveBtn.click();
+      }
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
+      event.preventDefault();
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+  });
+
+  var form = document.getElementById("resultsEntryForm");
+  if (form) {
+    form.addEventListener("submit", function (event) {
+      var submitter = event.submitter || document.activeElement;
+      if (submitter && submitter.name === "save_draft") {
+        if (!validateBeforeDraftSave()) {
+          event.preventDefault();
+          return;
+        }
+      }
+
+      if (submitter && submitter.name === "unlock_batch") {
+        var ok = window.confirm("Reopen this verified batch for editing?");
+        if (!ok) {
+          event.preventDefault();
+          return;
+        }
+      }
+
+      localStorage.removeItem(storageKey);
+    });
+  }
+
+  var openSubmitModalBtn = document.getElementById("openSubmitModalBtn");
+  if (openSubmitModalBtn) {
+    openSubmitModalBtn.addEventListener("click", function () {
+      if (!validateBeforeSubmit()) return;
+      $("#confirmSubmitModal").modal("show");
+    });
+  }
+
+  var confirmSubmitBtn = document.getElementById("confirmSubmitBtn");
+  if (confirmSubmitBtn) {
+    confirmSubmitBtn.addEventListener("click", function () {
+      if (!validateBeforeSubmit()) return;
+      var hiddenSubmit = document.getElementById("submitBatchHiddenBtn");
+      if (hiddenSubmit) {
+        $("#confirmSubmitModal").modal("hide");
+        hiddenSubmit.click();
+      }
+    });
+  }
+
+  window.setInterval(function () {
+    if (isEditableBatch) {
+      saveLocalDraft(false);
+    }
+  }, 30000);
+})();
+</script>
+{% endblock content %}

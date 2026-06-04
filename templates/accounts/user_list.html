@@ -1,0 +1,784 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}User Accounts Management{% endblock %}
+
+{% block content %}
+<style>
+    /* Gentellela Theme Colors */
+    :root {
+        --primary-color: #3498DB;
+        --primary-hover: #2980B9;
+        --success-color: #26B99A;
+        --warning-color: #F0AD4E;
+        --danger-color: #E74C3C;
+        --info-color: #3498DB;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+        --bg-light: #f5f7fb;
+        --bg-card: #ffffff;
+        --border-color: #e2e8f0;
+        --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+        --shadow-md: 0 6px 16px rgba(15, 23, 42, 0.08);
+        --shadow-lg: 0 12px 24px rgba(15, 23, 42, 0.12);
+        --radius-sm: 6px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --transition-fast: 0.15s ease-in-out;
+        --transition-normal: 0.3s ease-in-out;
+    }
+
+    .accounts-page {
+        background: var(--bg-light);
+        border-radius: var(--radius-lg);
+        padding: 12px;
+    }
+
+    .section-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Enhanced KPI Cards */
+    .kpi-card {
+        background: linear-gradient(135deg, var(--bg-card), #f8fafc);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        text-align: center;
+        transition: var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .kpi-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+        color: white;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.2);
+    }
+
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .kpi-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+
+    /* User Cards */
+    .user-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        transition: var(--transition-normal);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .user-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    }
+
+    .user-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .user-header {
+        background: #f8fafc;
+        color: var(--text-primary);
+        padding: 1.5rem;
+        position: relative;
+    }
+
+    .user-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 3px solid #e2e8f0;
+        object-fit: cover;
+    }
+
+    .user-badge {
+        background: #e2e8f0;
+        border: 1px solid #cbd5f5;
+        color: #1e293b;
+        font-size: 0.875rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .user-body {
+        padding: 1.5rem;
+    }
+
+    .user-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .user-info-row:last-child {
+        border-bottom: none;
+    }
+
+    .user-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+
+    .user-value {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .user-footer {
+        background: var(--bg-light);
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* Status Badges */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid var(--border-color);
+    }
+
+    .status-active {
+        background: rgba(38, 185, 154, 0.1);
+        color: var(--success-color);
+        border-color: rgba(38, 185, 154, 0.3);
+    }
+
+    .status-inactive {
+        background: rgba(231, 76, 60, 0.1);
+        color: var(--danger-color);
+        border-color: rgba(231, 76, 60, 0.3);
+    }
+
+    .status-staff {
+        background: rgba(52, 152, 219, 0.1);
+        color: var(--info-color);
+        border-color: rgba(52, 152, 219, 0.3);
+    }
+
+    /* Enhanced Buttons */
+    .btn-gentellela {
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        transition: var(--transition-fast);
+        border: none;
+        padding: 0.75rem 1.25rem;
+        font-size: 0.875rem;
+    }
+
+    .btn-primary-gentellela {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+    }
+
+    .btn-primary-gentellela:hover {
+        background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn-success-gentellela {
+        background: linear-gradient(135deg, var(--success-color), #15803d);
+        color: white;
+    }
+
+    .btn-warning-gentellela {
+        background: linear-gradient(135deg, var(--warning-color), #d97706);
+        color: white;
+    }
+
+    .btn-danger-gentellela {
+        background: linear-gradient(135deg, var(--danger-color), #b91c1c);
+        color: white;
+    }
+
+    /* Search and Filter */
+    .search-container {
+        padding: 1.5rem;
+    }
+
+    .search-input {
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        transition: var(--transition-fast);
+    }
+
+    .search-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        outline: none;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .kpi-card {
+            margin-bottom: 1rem;
+        }
+        
+        .user-header {
+            padding: 1rem;
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .kpi-value {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+
+<div class="clearfix"></div>
+
+<div class="accounts-page">
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="section-card p-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1"><i class="fa fa-users text-primary"></i> User Accounts Management</h2>
+                <p class="text-muted mb-0">Manage system users and their access permissions</p>
+            </div>
+            <div>
+                <button id="openModalBtn" class="btn btn-success-gentellela btn-lg">
+                    <i class="fa fa-plus-circle me-2"></i> Create Staff Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));">
+                <i class="fa fa-users"></i>
+            </div>
+            <div class="kpi-value">{{ total_users }}</div>
+            <div class="kpi-label">Total Users</div>
+            <small class="text-muted">Registered accounts</small>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, var(--success-color), #15803d);">
+                <i class="fa fa-user-check"></i>
+            </div>
+            <div class="kpi-value">{{ active_users }}</div>
+            <div class="kpi-label">Active Users</div>
+            <small class="text-muted">Enabled accounts</small>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, var(--info-color), var(--primary-hover));">
+                <i class="fa fa-user-shield"></i>
+            </div>
+            <div class="kpi-value">{{ staff_users }}</div>
+            <div class="kpi-label">Staff Accounts</div>
+            <small class="text-muted">With staff privileges</small>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, var(--warning-color), #d97706);">
+                <i class="fa fa-clock"></i>
+            </div>
+            <div class="kpi-value">{{ recent_logins }}</div>
+            <div class="kpi-label">Recent Activity</div>
+            <small class="text-muted">Active in last 30 days</small>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="search-container section-card">
+            <h5 class="mb-3"><i class="fa fa-search me-2"></i> Search & Filter Users</h5>
+            <form method="get" action="{% url 'user_list' %}" class="row g-3">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text" style="background: var(--bg-light); border: 1px solid var(--border-color);">
+                            <i class="fa fa-search text-muted"></i>
+                        </span>
+                        <input type="text" name="search" id="search" class="search-input"
+                               placeholder="Search by username, first name, last name, or email..."
+                               value="{{ search_query }}" style="flex: 1;">
+                        <button type="submit" class="btn btn-primary-gentellela">
+                            <i class="fa fa-search me-2"></i> Search
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex gap-2">
+                        {% if request.GET.search %}
+                        <a href="{% url 'user_list' %}" class="btn btn-warning-gentellela">
+                            <i class="fa fa-times me-2"></i> Clear Search
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Users Grid/List -->
+<div class="row">
+    {% for user in users %}
+    <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+        <div class="user-card h-100">
+            <!-- User Header -->
+            <div class="user-header">
+                <div class="d-flex align-items-center">
+                    {% if user.staff_account and user.staff_account.staff.staff_photo %}
+                        <img src="{{ user.staff_account.staff.staff_photo.url }}" alt="Profile Photo"
+                             class="user-avatar" style="width: 60px; height: 60px; object-fit: cover;">
+                    {% else %}
+                        <div class="user-avatar d-flex align-items-center justify-content-center"
+                             style="background: rgba(255, 255, 255, 0.2); border: 3px solid rgba(255, 255, 255, 0.3);">
+                            {{ user.first_name|first|default:user.username|first|upper }}
+                        </div>
+                    {% endif %}
+                    <div class="ms-3 flex-grow-1">
+                        <h5 class="mb-1" style="color: var(--text-primary);">{{ user.get_full_name|default:user.username }}</h5>
+                        <p class="mb-0" style="color: var(--text-secondary);">@{{ user.username }}</p>
+                    </div>
+                    <span class="user-badge">{{ user.id }}</span>
+                </div>
+            </div>
+
+            <!-- User Body -->
+            <div class="user-body">
+                <!-- User Info -->
+                <div class="user-info-row">
+                    <div>
+                        <span class="user-label">Username</span>
+                        <div class="user-value">{{ user.username }}</div>
+                    </div>
+                    <div>
+                        <span class="user-label">Status</span>
+                        {% if user.is_active %}
+                            <span class="status-badge status-active">
+                                <i class="fa fa-circle"></i> Active
+                            </span>
+                        {% else %}
+                            <span class="status-badge status-inactive">
+                                <i class="fa fa-circle"></i> Inactive
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="user-info-row">
+                    <div>
+                        <span class="user-label">Email</span>
+                        <div class="user-value">{{ user.email|default:"No email" }}</div>
+                    </div>
+                    <div>
+                        <span class="user-label">Role</span>
+                        {% if user.is_superuser %}
+                            <span class="status-badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; border-color: rgba(239, 68, 68, 0.3);">
+                                <i class="fa fa-crown"></i> Superuser
+                            </span>
+                        {% elif user.is_staff %}
+                            <span class="status-badge status-staff">
+                                <i class="fa fa-user-shield"></i> Staff
+                            </span>
+                        {% else %}
+                            <span class="status-badge" style="background: rgba(100, 116, 139, 0.1); color: #64748b; border-color: rgba(100, 116, 139, 0.3);">
+                                <i class="fa fa-user"></i> Regular
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Last Activity -->
+                <div class="user-info-row">
+                    <div>
+                        <span class="user-label">Last Activity</span>
+                        {% if user.last_login %}
+                            <div class="user-value">{{ user.last_login|date:"M d, Y H:i" }}</div>
+                        {% else %}
+                            <div class="user-value text-muted">Never logged in</div>
+                        {% endif %}
+                    </div>
+                    {% if user.date_joined %}
+                    <div>
+                        <span class="user-label">Joined</span>
+                        <div class="user-value">{{ user.date_joined|date:"M Y" }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- User Footer -->
+            <div class="user-footer">
+                <div>
+                         <span class="text-muted">Account Type: </span>
+                         {% if user.is_superuser %}
+                         <span class="badge" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca;">Superuser</span>
+                         {% elif user.is_staff %}
+                         <span class="badge" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd;">Staff</span>
+                         {% else %}
+                         <span class="badge" style="background:#e2e8f0; color:#475569; border:1px solid #cbd5f5;">Regular</span>
+                         {% endif %}
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'user_detail' user.id %}" class="btn btn-primary-gentellela btn-sm">
+                        <i class="fa fa-eye me-2"></i> View Details
+                    </a>
+                    <form action="{% url 'delete_user' user.id %}" method="post" style="display:inline;" onsubmit="return confirmDelete('{{ user.username }}')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger-gentellela btn-sm">
+                            <i class="fa fa-trash me-2"></i> Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="user-card">
+            <div class="user-body text-center py-5">
+                <i class="fa fa-users fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No Users Found</h4>
+                <p class="text-muted mb-4">
+                    {% if request.GET.search %}
+                        No users match your search criteria: "{{ request.GET.search }}"
+                    {% else %}
+                        No users are currently registered in the system.
+                    {% endif %}
+                </p>
+                {% if request.GET.search %}
+                <a href="{% url 'user_list' %}" class="btn btn-warning-gentellela">
+                    <i class="fa fa-times me-2"></i> Clear Search
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="d-flex justify-content-center mt-4">
+    <nav aria-label="User list pagination">
+        <ul class="pagination" style="margin: 0;">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}"
+                       style="border-radius: var(--radius-md); margin: 0 2px; border: 1px solid var(--border-color); color: var(--text-primary);">
+                        <i class="fa fa-angle-double-left"></i> First
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                       style="border-radius: var(--radius-md); margin: 0 2px; border: 1px solid var(--border-color); color: var(--text-primary);">
+                        <i class="fa fa-angle-left"></i> Previous
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link" style="background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); border: none; border-radius: var(--radius-md); margin: 0 2px; color: white;">
+                            {{ num }}
+                        </span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                           style="border-radius: var(--radius-md); margin: 0 2px; border: 1px solid var(--border-color); color: var(--text-primary);">
+                            {{ num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                       style="border-radius: var(--radius-md); margin: 0 2px; border: 1px solid var(--border-color); color: var(--text-primary);">
+                        Next <i class="fa fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                       style="border-radius: var(--radius-md); margin: 0 2px; border: 1px solid var(--border-color); color: var(--text-primary);">
+                        Last <i class="fa fa-angle-double-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+
+<div class="text-center mt-3">
+    <small class="text-muted">
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ paginator.count }} users
+        (Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }})
+    </small>
+</div>
+{% endif %}
+  
+    <!-- Create Account Modal -->
+    <div id="createAccountModal" class="modal fade" tabindex="-1" aria-labelledby="createAccountModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="createAccountModalLabel">
+                        <i class="fa fa-plus-circle me-2"></i>Create Staff Account
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalFormContent">
+                    <!-- AJAX-loaded form will go here -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading form...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Styles -->
+    <style>
+    /* Modal Enhancement */
+    .modal-content {
+        border-radius: var(--radius-lg);
+        border: none;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid var(--border-color);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid var(--border-color);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+    
+    /* Loading Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .user-card {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    /* Enhanced hover effects */
+    .user-card:hover {
+        transform: translateY(-4px);
+    }
+    
+    .btn-gentellela:hover {
+        transform: translateY(-2px);
+    }
+    </style>
+    
+    <!-- JavaScript -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('User list page loaded successfully');
+    
+        // Modal functionality
+        const createModal = new bootstrap.Modal(document.getElementById('createAccountModal'));
+    
+        document.getElementById('openModalBtn').addEventListener('click', function() {
+            createModal.show();
+
+            // Load form content
+            fetch("{% url 'create_account' %}")
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('modalFormContent').innerHTML = html;
+
+                    // Attach submit event to the loaded form
+                    const form = document.querySelector("#modalFormContent form");
+                    if (form) {
+                        form.addEventListener('submit', function(event) {
+                            event.preventDefault();
+
+                            const formData = new FormData(form);
+                            const submitBtn = form.querySelector('button[type="submit"]');
+                            const originalText = submitBtn.innerHTML;
+
+                            // Show loading state
+                            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Creating...';
+                            submitBtn.disabled = true;
+
+                            fetch("{% url 'create_account' %}", {
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+                                },
+                                body: formData
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    createModal.hide();
+                                    // Show success message
+                                    showToast('Account created successfully!', 'success');
+                                    // Reload page after short delay
+                                    setTimeout(() => location.reload(), 1000);
+                                } else {
+                                    // Handle form errors
+                                    if (data.form_html) {
+                                        document.getElementById('modalFormContent').innerHTML = data.form_html;
+                                    } else {
+                                        showToast('Error creating account. Please try again.', 'error');
+                                    }
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                showToast('Network error. Please try again.', 'error');
+                            })
+                            .finally(() => {
+                                // Reset button state
+                                submitBtn.innerHTML = originalText;
+                                submitBtn.disabled = false;
+                            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading form:', error);
+                    document.getElementById('modalFormContent').innerHTML =
+                        '<div class="alert alert-danger">Error loading form. Please try again.</div>';
+                });
+        });
+    
+        // Enhanced search with debouncing
+        const searchInput = document.getElementById('search');
+        let searchTimeout;
+    
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function() {
+                    if (searchInput.value.length >= 2 || searchInput.value.length === 0) {
+                        searchInput.form.submit();
+                    }
+                }, 500);
+            });
+    
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    clearTimeout(searchTimeout);
+                    searchInput.form.submit();
+                }
+            });
+        }
+    });
+    
+    // Utility functions
+    function confirmDelete(username) {
+        return confirm(`Are you sure you want to delete the user "${username}"?\n\nThis action cannot be undone.`);
+    }
+    
+    // Password reset function removed
+    
+    function showToast(message, type = 'info') {
+        // Simple toast implementation
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <i class="fa fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+        `;
+    
+        document.body.appendChild(toast);
+    
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+    
+    // Add loading animation to cards
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.user-card');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+    });
+    </script>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block page_title %}Message Thread{% endblock page_title %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-comments"></i> {{ thread.subject|default:"Conversation" }}</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+        <div style="margin-top:8px;">
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            {% if is_archived %}
+            <button type="submit" name="unarchive" value="1" class="btn btn-default btn-xs">
+              <i class="fa fa-undo"></i> Unarchive
+            </button>
+            {% else %}
+            <button type="submit" name="archive" value="1" class="btn btn-default btn-xs">
+              <i class="fa fa-archive"></i> Archive
+            </button>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+      <div class="x_content">
+        <div class="list-group" style="margin-bottom:16px;">
+          {% for msg in thread.messages.all %}
+          <div class="list-group-item">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                {% if msg.sender and msg.sender.staff_account and msg.sender.staff_account.staff.staff_photo %}
+                <img src="{{ msg.sender.staff_account.staff.staff_photo.url }}" alt="Profile" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">
+                {% else %}
+                <img src="{% static 'images/default_profile.jpg' %}" alt="Profile" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">
+                {% endif %}
+                <strong>{{ msg.sender.get_full_name|default:msg.sender.username }}</strong>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <small class="text-muted">{{ msg.created_at|date:"M d, Y H:i" }}</small>
+                {% if msg.sender == request.user %}
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="delete_message_id" value="{{ msg.id }}" />
+                  <button type="submit" class="btn btn-danger btn-xs" onclick="return confirm('Delete this message?');">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </div>
+            <div style="margin-top:6px;">{{ msg.body }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          {{ form|crispy }}
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary"><i class="fa fa-paper-plane"></i> Send</button>
+            <a href="{% url 'message_inbox' %}" class="btn btn-default"><i class="fa fa-arrow-left"></i> Back</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  (function() {
+    try {
+      document.cookie = 'comm_seen_at=' + new Date().toISOString() + '; path=/';
+    } catch (e) {
+      // no-op
+    }
+  })();
+</script>
+{% endblock content %}

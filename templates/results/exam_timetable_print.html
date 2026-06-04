@@ -1,0 +1,67 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Exam Timetable</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #1f2a44; }
+    .header { text-align: center; margin-bottom: 12px; }
+    .school { font-size: 18px; font-weight: bold; }
+    .subtitle { font-size: 14px; color: #1f2a44; font-weight: 700; }
+    .meta { margin: 8px 0 14px; font-size: 12px; color: #5b6b82; font-weight: 700; }
+.meta span { margin-right: 16px; }
+.date-block { margin-bottom: 14px; }
+    .date-title { background: #f5f7fb; padding: 6px 8px; font-weight: bold; border: 1px solid #e6edf5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    th, td { border: 1px solid #dfe6f1; padding: 6px 8px; }
+    th { background: #f0f4f9; text-align: left; }
+    .footer { margin-top: 18px; font-size: 10px; color: #7a889e; text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="school">{{ school.school_name }}</div>
+    <div class="subtitle">Exam Timetable</div>
+  </div>
+  <div class="meta">
+    <span><strong>Academic Year:</strong> {{ selected_year_label }}</span>
+    <span><strong>Term:</strong> {{ selected_term_label }}</span>
+    <span><strong>Class:</strong> {{ selected_class_label }}</span>
+    <span><strong>Assessment Type:</strong> {{ selected_assessment_type_label }}</span>
+  </div>
+
+  {% if assessments_by_date %}
+    {% for exam_date, items in assessments_by_date.items %}
+    <div class="date-block">
+      <div class="date-title">{{ exam_date|date:"M d, Y" }}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Class</th>
+            <th>Assessment Type</th>
+            <th>Subject</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in items %}
+          <tr>
+            <td>{{ a.date|date:"M d, Y" }}</td>
+            <td>{{ a.academic_class }}</td>
+            <td>{{ a.assessment_type.name }}</td>
+            <td>{{ a.subject.name }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div>No assessments found.</div>
+  {% endif %}
+
+  <div class="footer">Generated on {{ generated_at|date:"M d, Y H:i" }}</div>
+</body>
+</html>

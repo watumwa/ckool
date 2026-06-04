@@ -1,0 +1,588 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Expenditures Management{% endblock page_title %}
+{% block content %}
+{% with effective_role=active_role|default:user.staff_account.role.name|default:""|lower %}
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2><i class="fa fa-credit-card"></i> Manage Expenditures</h2>
+                    <ul class="nav navbar-right panel_toolbox">
+                        <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+                    </ul>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <!-- Scope Filters: Academic Year / Term / Show All + Date Range -->
+                    <form method="get" class="form-inline mb-3">
+                        <div class="form-group mr-2">
+                            <label for="academic_year"><strong>Academic Year:</strong></label>
+                            <select name="academic_year" id="academic_year" class="form-control ml-2" style="min-width: 180px;">
+                                <option value="">Current</option>
+                                {% if academic_years %}
+                                    {% for y in academic_years %}
+                                        <option value="{{ y.id }}" {% if selected_academic_year and y.id == selected_academic_year %}selected{% endif %}>
+                                            {{ y.academic_year }}
+                                        </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+
+                        <div class="form-group mr-2">
+                            <label for="term"><strong>Term:</strong></label>
+                            <select name="term" id="term" class="form-control ml-2" style="min-width: 140px;">
+                                <option value="">Current</option>
+                                {% if terms %}
+                                    {% for t in terms %}
+                                        <option value="{{ t.id }}" {% if selected_term and t.id == selected_term %}selected{% endif %}>
+                                            {{ t.term }}
+                                        </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+
+                        <div class="form-group mr-2">
+                            <label for="start_date"><strong>From:</strong></label>
+                            <input type="date" name="start_date" id="start_date" class="form-control ml-2" value="{{ start_date }}">
+                        </div>
+
+                        <div class="form-group mr-2">
+                            <label for="end_date"><strong>To:</strong></label>
+                            <input type="date" name="end_date" id="end_date" class="form-control ml-2" value="{{ end_date }}">
+                        </div>
+
+                        <div class="form-group mr-2">
+                            <label for="date_field"><strong>Basis:</strong></label>
+                            <select name="date_field" id="date_field" class="form-control ml-2" style="min-width: 160px;">
+                                <option value="incurred" {% if date_field == 'incurred' %}selected{% endif %}>Date incurred</option>
+                                <option value="recorded" {% if date_field == 'recorded' %}selected{% endif %}>Date recorded</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group form-check mr-3 ml-2">
+                            <input type="checkbox" class="form-check-input" id="show_all" name="show_all" value="1" {% if show_all %}checked{% endif %}>
+                            <label class="form-check-label" for="show_all">Show all terms</label>
+                        </div>
+
+
+
+
+                        <button type="submit" class="btn btn-primary btn-sm mr-2">
+                            <i class="fa fa-filter"></i> Apply
+                        </button>
+                        <a href="{% url 'expenditure_page' %}" class="btn btn-light btn-sm">
+                            Reset
+                        </a>
+                    </form>
+
+                    <!-- Current Scope Summary -->
+                    <div class="alert alert-info py-2">
+                        <strong>Scope:</strong>
+                        {% if show_all %}
+                            All terms
+                        {% else %}
+                            {% if selected_academic_year %}
+                                {% for y in academic_years %}{% if y.id == selected_academic_year %}{{ y.academic_year }}{% endif %}{% endfor %}
+                            {% else %}
+                                Current Year
+                            {% endif %}
+
+                            —
+
+                            {% if selected_term %}
+                                {% for t in terms %}{% if t.id == selected_term %}Term {{ t.term }}{% endif %}{% endfor %}
+                            {% else %}
+                                Current Term
+                            {% endif %}
+                        {% endif %}
+                        {% if date_field %}
+                            — Basis: {% if date_field == 'recorded' %}Date recorded{% else %}Date incurred{% endif %}
+                        {% endif %}
+                    </div>
+
+                    {% if scope_applied and out_of_scope_count > 0 %}
+                    <div class="alert alert-warning py-2 mt-2">
+                        <i class="fa fa-info-circle"></i>
+                        {{ out_of_scope_count }} expenditures in this date window are outside the selected Year/Term. Toggle "Show all terms" or change Year/Term to view them.
+                    </div>
+                    {% endif %}
+
+                    {% if unassigned_in_date_count > 0 and not include_unassigned %}
+                    <div class="alert alert-secondary py-2 mt-2">
+                        <i class="fa fa-tag"></i>
+                        {{ unassigned_in_date_count }} expenditures in this date window have no Budget Item. Tick "Include unassigned (no budget)" to include them.
+                    </div>
+                    {% endif %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {% if effective_role != "head master" and effective_role != "head teacher" and effective_role != "headteacher" and effective_role != "headmaster" %}
+                            <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#addExpenditureModal">
+                                <i class="fa fa-plus"></i> Add Expenditure
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <span class="badge bg-blue">Total Expenditures: {{ expenditures|length }}</span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="text" id="searchInput" class="form-control" placeholder="Search expenditures...">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8 text-right">
+                            <a class="btn btn-outline-secondary btn-sm"
+                               href="?{% if selected_academic_year %}academic_year={{ selected_academic_year }}&{% endif %}{% if selected_term %}term={{ selected_term }}&{% endif %}{% if show_all %}show_all=1&{% endif %}{% if include_unassigned %}include_unassigned=1&{% endif %}{% if ignore_scope %}ignore_scope=1&{% endif %}{% if date_field %}date_field={{ date_field }}&{% endif %}{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}export=csv">
+                                <i class="fa fa-download"></i> Export CSV
+                            </a>
+                        </div>
+                    </div>
+
+
+                    <!-- Start Expenditures List -->
+                    {% if expenditures %}
+                        <div class="table-responsive">
+                            <table id="datatable-checkbox" class="table table-striped table-bordered bulk_action" style="width:100%">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>
+                                            {% if effective_role != "head master" and effective_role != "head teacher" and effective_role != "headteacher" and effective_role != "headmaster" %}
+                                            <input type="checkbox" id="check-all">
+                                            {% endif %}
+                                        </th>
+                                        <th>#</th>
+                                       
+                                        <th>Budget Item</th>
+                                         <th>Description</th>
+                                        <th>Vendor</th>
+                                        <th>Amount (UGX)</th>
+                                        <th>Date Incurred</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenditureTableBody">
+                                    {% for expenditure in expenditures %}
+                                        <tr data-id="{{ expenditure.id }}" data-date="{{ expenditure.date_incurred|date:'Y-m-d' }}" data-amount="{{ expenditure.amount }}">
+                                            <td>
+                                                {% if effective_role != "head master" and effective_role != "head teacher" and effective_role != "headteacher" and effective_role != "headmaster" %}
+                                                <input type="checkbox" class="flat" name="table_records" value="{{ expenditure.id }}">
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ forloop.counter }}</td>
+                                            
+                                            <td>
+                                                {% if expenditure.budget_item %}
+                                                    <small>{{ expenditure.budget_item }}</small>
+                                                {% else %}
+                                                    <small class="text-muted">N/A</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <strong>{{ expenditure.description|truncatechars:50 }}</strong>
+                                            </td>
+                                            <td>
+                                                {% if expenditure.vendor %}
+                                                    <small>{{ expenditure.vendor }}</small>
+                                                {% else %}
+                                                    <small class="text-muted">N/A</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-red">{{ expenditure.amount|intcomma }}</span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ expenditure.date_incurred|date:"Y-m-d" }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge {% if expenditure.payment_status == 'Paid' %}bg-green{% else %}bg-orange{% endif %}">{{ expenditure.payment_status }}</span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'items_page' expenditure.id %}" class="btn btn-primary btn-xs"><i class="fa fa-list"></i> Items</a>
+
+                                                {% if expenditure.approved_by %}
+                                                    <span class="badge bg-green" title="Approved by {{ expenditure.approved_by }}">Approved</span>
+                                                    {% if effective_role != "head master" and effective_role != "head teacher" and effective_role != "headteacher" and effective_role != "headmaster" %}
+                                                    <form method="post" action="{% url 'revoke_expenditure_approval' expenditure.id %}" style="display:inline;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-warning btn-xs">
+                                                            <i class="fa fa-undo"></i> Revoke
+                                                        </button>
+                                                    </form>
+                                                    {% endif %}
+                                                {% else %}
+                                                    {% if effective_role != "head master" and effective_role != "head teacher" and effective_role != "headteacher" and effective_role != "headmaster" %}
+                                                    <form method="post" action="{% url 'approve_expenditure' expenditure.id %}" style="display:inline;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-success btn-xs">
+                                                            <i class="fa fa-check"></i> Approve
+                                                        </button>
+                                                    </form>
+                                                    {% endif %}
+                                                    <span class="badge bg-orange" title="Awaiting approval">Pending Approval</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination">
+                                        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                                    </ul>
+                                </nav>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <p class="mt-2">Showing 1 to 10 of {{ expenditures|length }} entries</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center mt-5">
+                            <h4>No Expenditures Available</h4>
+                            <p>Get started by adding your first expenditure.</p>
+                            <button type="button" class="btn btn-success mt-2" data-toggle="modal" data-target="#addExpenditureModal">
+                                <i class="fa fa-plus"></i> Add First Expenditure
+                            </button>
+                        </div>
+                    {% endif %}
+                    <!-- End Expenditures List -->
+                </div>
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Expenditure Modal -->
+    <div class="modal fade" id="addExpenditureModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add New Expenditure</h4>
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{% url 'add_expenditure_page' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Add Expenditure Modal -->
+
+    <!-- Edit Expenditure Modals -->
+    {% for expenditure in expenditures %}
+    <div class="modal fade" id="editExpenditureModal{{ expenditure.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Edit Expenditure: {{ expenditure.description|truncatechars:30 }}</h4>
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{% url 'edit_expenditure' expenditure.id %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% if edit_forms %}
+                            {% for key, edit_form in edit_forms.items %}
+                                {% if key == expenditure.id %}
+                                    {{ edit_form|crispy }}
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-danger">Edit form not available. Please refresh the page or contact support.</p>
+                        {% endif %}
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <!-- End Edit Expenditure Modals -->
+
+    <!-- Custom CSS for Enhanced Styling -->
+    <style>
+        .x_panel {
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            background: #ffffff;
+        }
+        .x_title h2 {
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+        .x_title h2 i {
+            margin-right: 10px;
+            color: #e67e22;
+        }
+        .btn-success {
+            background-color: #27ae60;
+            border: none;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            border-radius: 6px;
+        }
+        .btn-success:hover {
+            background-color: #219a52;
+            transform: translateY(-2px);
+        }
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+            border-radius: 6px;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        .btn-info {
+            background-color: #1abc9c;
+            border: none;
+            border-radius: 6px;
+        }
+        .btn-info:hover {
+            background-color: #16a085;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+            border: none;
+            border-radius: 6px;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .btn-outline-secondary {
+            border-color: #7f8c8d;
+            color: #7f8c8d;
+            border-radius: 6px;
+        }
+        .btn-outline-secondary:hover {
+            background-color: #ecf0f1;
+        }
+        .btn-outline-info {
+            border-color: #3498db;
+            color: #3498db;
+            border-radius: 6px;
+        }
+        .btn-outline-info:hover {
+            background-color: #ecf0f1;
+        }
+        .btn-outline-warning {
+            border-color: #f39c12;
+            color: #f39c12;
+            border-radius: 6px;
+        }
+        .btn-outline-warning:hover {
+            background-color: #ecf0f1;
+        }
+        .badge.bg-blue {
+            background-color: #3498db;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: white;
+        }
+        .badge.bg-red {
+            background-color: #e74c3c;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 13px;
+            color: white;
+        }
+        .badge.bg-green {
+            background-color: #27ae60;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 13px;
+            color: white;
+        }
+        .badge.bg-orange {
+            background-color: #f39c12;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 13px;
+            color: white;
+        }
+        .table-responsive {
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .table thead.thead-dark th {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            border: none;
+            font-weight: 600;
+            padding: 12px;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        .table tbody td {
+            vertical-align: middle;
+            padding: 12px;
+        }
+        .text-center h4 {
+            color: #34495e;
+            font-weight: 500;
+        }
+        .text-center p {
+            color: #7f8c8d;
+        }
+        .modal-content {
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .modal-header {
+            background-color: #f8f9fa;
+            border-bottom: none;
+            padding: 15px 20px;
+        }
+        .modal-title {
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+        .modal-footer {
+            border-top: none;
+            justify-content: space-between;
+            background-color: #f8f9fa;
+            padding: 15px 20px;
+        }
+        .input-group {
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .form-control {
+            border-radius: 6px 0 0 6px;
+            border-color: #dcdcdc;
+            box-shadow: none;
+            transition: border-color 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #3498db;
+            box-shadow: none;
+        }
+        .input-group-append .btn {
+            border-radius: 0 6px 6px 0;
+        }
+        .dropdown-menu {
+            border-radius: 6px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+            border: none;
+        }
+        .dropdown-item {
+            padding: 8px 15px;
+            transition: background-color 0.2s ease;
+        }
+        .dropdown-item:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+        .pagination .page-item .page-link {
+            border-radius: 4px;
+            margin: 0 3px;
+            color: #3498db;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #3498db;
+            border-color: #3498db;
+            color: white;
+        }
+        .pagination .page-item .page-link:hover {
+            background-color: rgba(52, 152, 219, 0.2);
+            color: #2980b9;
+        }
+    </style>
+
+    <!-- Custom JavaScript for Interactivity -->
+    <script>
+        $(document).ready(function() {
+            // Check All Functionality for Bulk Actions
+            $('#check-all').on('click', function() {
+                $('.flat').prop('checked', this.checked);
+                toggleBulkDeleteBtn();
+            });
+
+            $('.flat').on('change', function() {
+                toggleBulkDeleteBtn();
+            });
+
+            function toggleBulkDeleteBtn() {
+                if ($('.flat:checked').length > 0) {
+                    $('#bulkDeleteBtn').prop('disabled', false);
+                } else {
+                    $('#bulkDeleteBtn').prop('disabled', true);
+                }
+            }
+
+            // Search Functionality
+            $('#searchInput').on('keyup', function() {
+                var searchTerm = $(this).val().toLowerCase();
+                $('#expenditureTableBody tr').each(function() {
+                    var description = $(this).find('td:nth-child(4)').text().toLowerCase();
+                    var budgetItem = $(this).find('td:nth-child(3)').text().toLowerCase();
+                    var vendor = $(this).find('td:nth-child(5)').text().toLowerCase();
+                    if (description.includes(searchTerm) || budgetItem.includes(searchTerm) || vendor.includes(searchTerm)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+
+            $('#clearSearch').on('click', function() {
+                $('#searchInput').val('');
+                $('#expenditureTableBody tr').show();
+            });
+
+
+            // Bulk Delete Placeholder
+            $('#bulkDeleteBtn').on('click', function() {
+                if (confirm('Are you sure you want to delete selected expenditures?')) {
+                    var selectedIds = $('.flat:checked').map(function() {
+                        return $(this).val();
+                    }).get();
+                    alert('Deleting expenditures with IDs: ' + selectedIds.join(', '));
+                    // Add logic here to send delete request with selected IDs
+                }
+            });
+        });
+    </script>
+{% endblock content %}

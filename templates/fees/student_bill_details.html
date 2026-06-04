@@ -1,0 +1,1381 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Student Bill Details{% endblock %}
+
+{% block content %}
+<div class="x_panel" style="margin-bottom:16px;">
+    <div class="x_title">
+        <h2><i class="fa fa-file-invoice-dollar"></i> Student Bill Details</h2>
+        <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+        <div class="comm-header">
+            <div class="comm-intro">
+                <div class="comm-title">Review billed items, payments, and student balance at a glance.</div>
+                <div class="text-muted">Keep records consistent and up to date.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Professional palette */
+    :root {
+        --primary-color: #1e4f9a;
+        --primary-hover: #173f7b;
+        --secondary-color: #5f6f86;
+        --success-color: #0f766e;
+        --warning-color: #b7791f;
+        --danger-color: #b42318;
+        --info-color: #2563eb;
+        --text-primary: #1f2a44;
+        --text-secondary: #607089;
+        --bg-light: #f5f8fc;
+        --bg-card: #ffffff;
+        --border-color: #dde5ef;
+        --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.06);
+        --shadow-md: 0 6px 16px -4px rgba(15, 23, 42, 0.12);
+        --shadow-lg: 0 18px 30px -12px rgba(15, 23, 42, 0.18);
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+        --transition-fast: 0.15s ease-in-out;
+        --transition-normal: 0.3s ease-in-out;
+    }
+
+    /* Component Styles */
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        transition: var(--transition-normal);
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .card-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .btn {
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        transition: var(--transition-fast);
+        border: none;
+        padding: 0.75rem 1.25rem;
+        font-size: 0.875rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, var(--success-color), #15803d);
+        color: white;
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, var(--info-color), #0284c7);
+        color: white;
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, var(--warning-color), #d97706);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, var(--secondary-color), #475569);
+        color: white;
+    }
+
+    .btn-ghost {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .btn-ghost:hover {
+        background: var(--bg-light);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    /* Typography */
+    .text-display {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.025em;
+    }
+
+    .text-heading {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .text-subtitle {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .student-identity {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .student-avatar {
+        width: 68px;
+        height: 68px;
+        border-radius: 14px;
+        object-fit: cover;
+        border: 2px solid #d7e2ef;
+        background: #eef3fa;
+    }
+
+    .student-avatar-fallback {
+        width: 68px;
+        height: 68px;
+        border-radius: 14px;
+        border: 2px solid #d7e2ef;
+        background: #eef3fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #516179;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .student-meta-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+    }
+
+    .student-meta-pill {
+        display: inline-flex;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: #4f627d;
+        background: #f3f7fc;
+        border: 1px solid #dde6f2;
+        border-radius: 999px;
+        padding: 4px 10px;
+    }
+
+    /* Progress Bars */
+    .progress-container {
+        background: var(--bg-light);
+        border-radius: 999px;
+        padding: 4px;
+        border: 1px solid var(--border-color);
+    }
+
+    .progress-bar-modern {
+        height: 12px;
+        border-radius: 999px;
+        transition: width var(--transition-normal) ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .progress-bar-total {
+        background: linear-gradient(90deg, #e2e8f0, #cbd5e1);
+    }
+
+    .progress-bar-paid {
+        background: linear-gradient(90deg, var(--success-color), #22c55e);
+        box-shadow: inset 0 2px 4px rgba(22, 163, 74, 0.3);
+    }
+
+    .progress-bar-balance {
+        background: linear-gradient(90deg, var(--danger-color), #ef4444);
+        box-shadow: inset 0 2px 4px rgba(220, 38, 38, 0.3);
+    }
+
+    .progress-bar-overdue {
+        background: linear-gradient(90deg, var(--warning-color), #f97316);
+        box-shadow: inset 0 2px 4px rgba(245, 158, 11, 0.3);
+    }
+
+    /* Status Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid var(--border-color);
+    }
+
+    .badge-success {
+        background: rgba(22, 163, 74, 0.1);
+        color: var(--success-color);
+        border-color: rgba(22, 163, 74, 0.3);
+    }
+
+    .badge-warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning-color);
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-danger {
+        background: rgba(220, 38, 38, 0.1);
+        color: var(--danger-color);
+        border-color: rgba(220, 38, 38, 0.3);
+    }
+
+    .badge-info {
+        background: rgba(14, 165, 233, 0.1);
+        color: var(--info-color);
+        border-color: rgba(14, 165, 233, 0.3);
+    }
+
+    /* Data Display */
+    .stat-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        text-align: center;
+        transition: var(--transition-normal);
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+
+    .balance-indicator {
+        margin-top: 0.25rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    .balance-indicator.cr { color: var(--success-color); }
+    .balance-indicator.dr { color: var(--danger-color); }
+    .balance-indicator.balanced { color: var(--secondary-color); }
+
+    /* Tables */
+    .table-modern {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.875rem;
+    }
+
+    .table-modern th {
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        color: var(--text-secondary);
+        font-weight: 600;
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 2px solid var(--border-color);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .table-modern td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    .table-modern tr:hover {
+        background: rgba(37, 99, 235, 0.05);
+    }
+
+    .comm-header{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:16px;
+        flex-wrap:wrap;
+        background:#f8fafc;
+        border:1px solid #e6edf5;
+        border-radius:12px;
+        padding:14px 16px;
+        margin-bottom:14px;
+    }
+    .comm-title{font-weight:600;color:#334155;margin-bottom:4px;}
+
+    /* Tabs */
+    .tabs-container {
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 1rem;
+    }
+
+    .tab-nav {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        background: var(--bg-light);
+        border-radius: var(--radius-lg);
+    }
+
+    .tab-button {
+        background: transparent;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: var(--transition-fast);
+        position: relative;
+    }
+
+    .tab-button:hover {
+        color: var(--primary-color);
+        background: rgba(37, 99, 235, 0.1);
+    }
+
+    .tab-button.active {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .tab-content {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Receipt Styles */
+    .receipt-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .receipt-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .receipt-brand h2 {
+        margin: 0;
+        color: var(--primary-color);
+        font-size: 1.5rem;
+        letter-spacing: 0.02em;
+        font-weight: 700;
+    }
+
+    .receipt-brand small {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .receipt-meta {
+        text-align: right;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    .receipt-title {
+        text-align: center;
+        margin: 1rem 0 2rem;
+        font-weight: 700;
+        font-size: 1.6rem;
+        color: var(--text-primary);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .receipt-details {
+        margin: 1rem 0 2rem;
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+
+    .receipt-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 2rem 0;
+        font-size: 0.875rem;
+    }
+
+    .receipt-table th {
+        background: #0f172a;
+        color: white;
+        padding: 0.85rem 1rem;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    .receipt-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        vertical-align: middle;
+    }
+
+    .receipt-summary {
+        margin-top: 2rem;
+        width: 100%;
+        max-width: 420px;
+        margin-left: auto;
+        font-size: 0.875rem;
+    }
+
+    .receipt-summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .receipt-summary-row:last-child {
+        border-bottom: 2px solid #e5e7eb;
+        margin-top: 0.5rem;
+        padding-top: 1rem;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .receipt-notes {
+        margin-top: 2rem;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .receipt-footer {
+        margin-top: 3rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        border-top: 1px solid #e5e7eb;
+        padding-top: 2rem;
+    }
+
+    /* Print Styles */
+    @media print {
+        body {
+            margin: 0;
+            padding: 0;
+            background: white;
+        }
+        
+        .no-print {
+            display: none !important;
+        }
+        
+        .receipt-wrapper {
+            box-shadow: none;
+            border-radius: 0;
+        }
+        
+        .receipt-table th {
+            background: #1f2937 !important;
+            color: white !important;
+        }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .tab-nav {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .receipt-wrapper {
+            margin: 0 1rem;
+            padding: 1rem;
+        }
+        
+        .receipt-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .receipt-meta {
+            text-align: left;
+        }
+        
+        .receipt-table {
+            font-size: 0.75rem;
+        }
+        
+        .receipt-table th,
+        .receipt-table td {
+            padding: 0.5rem;
+        }
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Student Profile & Summary -->
+        <div class="col-lg-4 col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="student-identity">
+                        <div>
+                            {% if student_bill.student.photo %}
+                            <img src="{{ student_bill.student.photo.url }}" alt="Student Photo" class="student-avatar">
+                            {% else %}
+                            <div class="student-avatar-fallback">{{ student_bill.student.student_name|slice:":1"|upper }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h4 class="text-display mb-0">{{ student_bill.student.student_name }}</h4>
+                            <div class="student-meta-row">
+                                <span class="student-meta-pill">Student ID: {{ student_bill.student.display_student_id }}</span>
+                                <span class="student-meta-pill">Class: {{ student_bill.student.current_class.code }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Financial Summary Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="stat-card">
+                                <div class="stat-value">UGX {{ student_bill.total_amount|intcomma }}</div>
+                                <div class="stat-label">Total Billed</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #ecfdf5, #d1fae5);">
+                                <div class="stat-value" style="color: var(--success-color);">UGX {{ student_bill.amount_paid|intcomma }}</div>
+                                <div class="stat-label">Amount Paid</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #fef2f2, #fee2e2);">
+                                <div class="stat-value" style="color: var(--danger-color);">
+                                    UGX {{ balance|floatformat:2|intcomma }}
+                                </div>
+                                <div class="stat-label">Outstanding</div>
+                                {% if payment_status == "CR" %}
+                                <div class="balance-indicator cr">CR (Credit)</div>
+                                {% elif payment_status == "DR" %}
+                                <div class="balance-indicator dr">DR (Debit)</div>
+                                {% else %}
+                                <div class="balance-indicator balanced">Balanced</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bars -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-subtitle">Payment Progress</span>
+                            <span class="text-subtitle">
+                                {{ amount_paid_percentage|floatformat:1 }}% Paid
+                                {% if payment_status == "CR" %}(CR){% elif payment_status == "DR" %}(DR){% endif %}
+                            </span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar-modern progress-bar-paid" id="payment-progress-bar"></div>
+                        </div>
+                    </div>
+
+                    <!-- Status Badge -->
+                    <div class="mb-4">
+                        {% if payment_status == "CR" %}
+                        <span class="badge badge-success">
+                            <i class="fa fa-check-circle"></i> Credit Balance
+                        </span>
+                        {% elif balance <= 0 %}
+                        <span class="badge badge-success">
+                            <i class="fa fa-check-circle"></i> Paid in Full
+                        </span>
+                        {% elif balance > 0 and balance < student_bill.total_amount %}
+                        <span class="badge badge-warning">
+                            <i class="fa fa-exclamation-triangle"></i> Partial Payment
+                        </span>
+                        {% else %}
+                        <span class="badge badge-danger">
+                            <i class="fa fa-times-circle"></i> No Payment
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-info" onclick="printStatement()">
+                            <i class="fa fa-print me-2"></i>Print Statement
+                        </button>
+                        {% if can_manage_student_bill %}
+                        <button class="btn btn-primary" data-toggle="modal" data-target=".payment-modal-lg">
+                            <i class="fa fa-plus-circle me-2"></i>Record Payment
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-8 col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Bill Details</h5>
+                    {% if can_manage_student_bill %}
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" data-toggle="modal" data-target=".bill-item-modal-lg">
+                            <i class="fa fa-plus me-2"></i>Add Bill Item
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body">
+                    <!-- Billed Items Table -->
+                    <div class="table-responsive">
+                        <table class="table-modern">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Item</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in student_bill.items.all %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ item.bill_item.item_name }}</strong>
+                                        <br><small class="text-muted">{{ item.bill_item.get_category_display }}</small>
+                                    </td>
+                                    <td>{{ item.description }}</td>
+                                    <td class="text-end">UGX {{ item.amount|intcomma }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: linear-gradient(135deg, #f8fafc, #e2e8f0);">
+                                    <td colspan="3" class="text-end fw-bold">Total Amount</td>
+                                    <td class="text-end fw-bold">UGX {{ student_bill.total_amount|intcomma }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs Section -->
+            <div class="card mt-4">
+                <div class="card-body p-0">
+                    <!-- Tab Navigation -->
+                    <div class="tabs-container">
+                        <div class="tab-nav">
+                            <button class="tab-button active" onclick="switchTab('payments')">
+                                <i class="fa fa-history me-2"></i>Payment History
+                            </button>
+                            <button class="tab-button" onclick="switchTab('credits')">
+                                <i class="fa fa-gift me-2"></i>Credits
+                            </button>
+                            <button class="tab-button" onclick="switchTab('discounts')">
+                                <i class="fa fa-tags me-2"></i>Discounts
+                            </button>
+                            <button class="tab-button" onclick="switchTab('documents')">
+                                <i class="fa fa-file me-2"></i>Documents
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <!-- Payment History Tab -->
+                        <div id="payments" class="tab-pane active">
+                            <div class="p-3">
+                                {% if can_manage_student_bill %}
+                                <div class="mb-3 d-flex flex-wrap align-items-center" style="gap:10px;">
+                                    <button class="btn btn-success" data-toggle="modal" data-target=".payment-modal-lg">
+                                        <i class="fa fa-plus me-2"></i>Record New Payment
+                                    </button>
+                                    <span class="text-muted">Print official receipts from each payment row. Use statement print for the full account history.</span>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="table-responsive">
+                                    <table class="table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Method</th>
+                                                <th>Reference</th>
+                                                <th class="text-end">Amount</th>
+                                                <th>Recorded By</th>
+                                                <th class="text-end">Receipt</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for payment in student_bill.payments.all %}
+                                            <tr>
+                                                <td>
+                                                    <div>{{ payment.payment_date|date:"M d, Y" }}</div>
+                                                    <small class="text-muted">{{ payment.payment_date|time:"H:i" }}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-info">
+                                                        <i class="fa fa-credit-card"></i> {{ payment.payment_method }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <code>{{ payment.reference_no }}</code>
+                                                </td>
+                                                <td class="text-end text-success fw-bold">UGX {{ payment.amount|intcomma }}</td>
+                                                <td>{{ payment.recorded_by }}</td>
+                                                <td class="text-end">
+                                                    <a href="{% url 'student_payment_receipt' payment.id %}" class="btn btn-info btn-sm" target="_blank" rel="noopener">
+                                                        <i class="fa fa-print"></i> Receipt
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted py-4">
+                                                    <i class="fa fa-info-circle fa-2x mb-2"></i>
+                                                    <br>No payments recorded yet
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        {% if student_bill.payments.all %}
+                                        <tfoot>
+                                            <tr style="background: linear-gradient(135deg, #f8fafc, #e2e8f0);">
+                                                <td colspan="3" class="fw-bold">TOTAL PAID</td>
+                                                <td class="text-end fw-bold">UGX {{ student_bill.amount_paid|intcomma }}</td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Credits Tab -->
+                        <div id="credits" class="tab-pane" style="display: none;">
+                            <div class="p-3">
+                                <div class="alert alert-info border-0 rounded-3" style="background: linear-gradient(135deg, #e0f2fe, #bae6fd);">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-info-circle fa-2x me-3 text-info"></i>
+                                        <div>
+                                            <h6 class="mb-1">Credit System Active</h6>
+                                            <p class="mb-0">Overpayments are automatically converted to credits for future bill payments.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fa fa-gift fa-3x mb-3"></i>
+                                    <h6 class="mb-2">No Credits Available</h6>
+                                    <p>Credits will appear here when overpayments are made</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Discounts Tab -->
+                        <div id="discounts" class="tab-pane" style="display: none;">
+                            <div class="p-3">
+                                <div class="alert alert-warning border-0 rounded-3" style="background: linear-gradient(135deg, #fffbeb, #fed7aa);">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-tags fa-2x me-3 text-warning"></i>
+                                        <div>
+                                            <h6 class="mb-1">Discount Information</h6>
+                                            <p class="mb-0">Discount details and applied reductions will be displayed here.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fa fa-tags fa-3x mb-3"></i>
+                                    <h6 class="mb-2">No Discounts Applied</h6>
+                                    <p>Discounts will appear here when applied to this bill</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Documents Tab -->
+                        <div id="documents" class="tab-pane" style="display: none;">
+                            <div class="p-3">
+                                <div class="alert alert-secondary border-0 rounded-3" style="background: linear-gradient(135deg, #f1f5f9, #e2e8f0);">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-file fa-2x me-3 text-secondary"></i>
+                                        <div>
+                                            <h6 class="mb-1">Document Management</h6>
+                                            <p class="mb-0">Student fees receipts and documents will be listed here.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% if can_manage_student_bill %}
+                                <div class="mb-3">
+                                    <button class="btn btn-info" data-toggle="modal" data-target=".document-modal-lg">
+                                        <i class="fa fa-plus me-2"></i>Upload Document
+                                    </button>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="table-responsive">
+                                    <table class="table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>File Name</th>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for doc in bill_documents %}
+                                            <tr>
+                                                <td>
+                                                    <span class="badge badge-info">
+                                                        <i class="fa fa-file"></i> {{ doc.get_document_type_display }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ doc.file.name|slice:":30" }}{% if doc.file.name|length > 30 %}...{% endif %}</td>
+                                                <td>{{ doc.uploaded_at|date:"M d, Y" }}</td>
+                                                <td>
+                                                    <span class="badge badge-success">
+                                                        <i class="fa fa-check-circle"></i> Active
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex gap-2">
+                                                        <a href="{{ doc.file.url }}" class="btn btn-ghost btn-sm" target="_blank">
+                                                            <i class="fa fa-eye me-1"></i>View
+                                                        </a>
+                                                        {% if can_manage_student_bill %}
+                                                        <a href="{% url 'delete_bill_document' doc.id %}" class="btn btn-ghost btn-sm text-danger" onclick="return confirm('Are you sure you want to delete this document?');">
+                                                            <i class="fa fa-trash me-1"></i>Delete
+                                                        </a>
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted py-4">
+                                                    <i class="fa fa-file fa-2x mb-2"></i>
+                                                    <br>No documents uploaded yet
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Professional Modals -->
+<div class="modal fade bill-item-modal-lg no-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: var(--radius-lg); border: none; box-shadow: var(--shadow-lg);">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); color: white; border-radius: var(--radius-lg) var(--radius-lg) 0 0; border: none;">
+                <h5 class="modal-title">
+                    <i class="fa fa-plus-circle me-2"></i>Add New Bill Item
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'add_student_bill_item' student_bill.id %}">
+                {% csrf_token %}
+                <div class="modal-body" style="padding: 1.5rem;">
+                    {{ bill_item_form|crispy }}
+                </div>
+                <div class="modal-footer" style="border: none; padding: 1rem 1.5rem;">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa fa-save me-2"></i>Add Bill Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade payment-modal-lg no-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: var(--radius-lg); border: none; box-shadow: var(--shadow-lg);">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--success-color), #15803d); color: white; border-radius: var(--radius-lg) var(--radius-lg) 0 0; border: none;">
+                <h5 class="modal-title">
+                    <i class="fa fa-credit-card me-2"></i>Record New Payment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'record_payment' student_bill.id %}">
+                {% csrf_token %}
+                <div class="modal-body" style="padding: 1.5rem;">
+                    {{ payment_form|crispy }}
+                </div>
+                <div class="modal-footer" style="border: none; padding: 1rem 1.5rem;">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fa fa-check me-2"></i>Record Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade document-modal-lg no-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: var(--radius-lg); border: none; box-shadow: var(--shadow-lg);">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--info-color), #0284c7); color: white; border-radius: var(--radius-lg) var(--radius-lg) 0 0; border: none;">
+                <h5 class="modal-title">
+                    <i class="fa fa-cloud-upload me-2"></i>Upload Document for {{ student_bill.student.student_name }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'upload_bill_document' student_bill.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body" style="padding: 1.5rem;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fa fa-tag text-primary me-2"></i>Document Type *
+                                </label>
+                                <select class="form-select" name="document_type" required>
+                                    <option value="">Select Document Type</option>
+                                    {% for code, display in document_type_choices %}
+                                    <option value="{{ code }}">{{ display }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fa fa-file text-success me-2"></i>Select File *
+                                </label>
+                                <input type="file" class="form-control" name="file" accept=".pdf,.doc,.docx,.jpg,.png,.jpeg" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info border-0 rounded-3 mt-3" style="background: linear-gradient(135deg, #e0f2fe, #bae6fd);">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-info-circle fa-lg me-3 text-info"></i>
+                            <div>
+                                <strong>Upload Guidelines:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Max file size: 3MB</li>
+                                    <li>Use clear, descriptive file names</li>
+                                    <li>Ensure documents are readable and complete</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border: none; padding: 1rem 1.5rem;">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-info">
+                        <i class="fa fa-cloud-upload me-2"></i>Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Printable Account Statement -->
+<div id="printableReceipt" style="display:none;">
+    <div class="receipt-wrapper" style="position: relative;">
+        <!-- Watermark -->
+        <div class="watermark">
+            {% if school_settings and school_settings.school_logo %}
+                <img src="{{ school_settings.school_logo.url }}" alt="School Logo Watermark">
+            {% else %}
+                <span>{{ school_settings.school_name|default:"SCHOOL NAME" }}</span>
+            {% endif %}
+        </div>
+        
+        <div class="header">
+            <div class="brand">
+                <h2>{{ school_settings.school_name|default:"SCHOOL NAME" }}</h2>
+                <small>{{ school_settings.school_motto|default:"Tagline goes here" }}</small>
+            </div>
+
+            <div class="right-info">
+                <div><strong>Statement No:</strong> STMT-{{ student_bill.id }}</div>
+                <div><strong>Statement Date:</strong> {% now "d/m/Y" %}</div>
+            </div>
+        </div>
+
+        <h3 class="title">FEES ACCOUNT STATEMENT</h3>
+
+        <div class="invoice-to">
+            <strong>Student Details:</strong><br>
+            {{ student_bill.student.student_name }}<br>
+            Student ID: {{ student_bill.student.display_student_id }}<br>
+            Class: {{ student_bill.student.current_class.code }}<br>
+            Academic Year: {{ student_bill.academic_class.academic_year.academic_year }}
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Fee Description</th>
+                    <th class="amount">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in student_bill.items.all %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ item.bill_item.item_name }} - {{ item.description }}</td>
+                    <td class="amount">UGX {{ item.amount|intcomma }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="summary">
+            <div><span>Total Amount</span><span>UGX {{ student_bill.total_amount|intcomma }}</span></div>
+            <div><span>Amount Paid</span><span>UGX {{ student_bill.amount_paid|intcomma }}</span></div>
+            <div><span>Outstanding Balance</span><span>UGX {{ balance|intcomma }}</span></div>
+            <div class="total"><span>Net Balance</span><span>UGX {{ balance|intcomma }}</span></div>
+        </div>
+
+        <div class="notes">
+            <strong>Payment History:</strong><br>
+            {% for payment in student_bill.payments.all %}
+            - {{ payment.payment_date|date:"M d, Y" }}: UGX {{ payment.amount|intcomma }} via {{ payment.payment_method }} (Ref: {{ payment.reference_no }})<br>
+            {% empty %}
+            No payments recorded yet.<br>
+            {% endfor %}
+            <br>
+            <strong>Terms & Conditions:</strong><br>
+            This statement shows the full bill position and payment history. Official receipts are issued per payment transaction.
+        </div>
+
+        <div class="footer">
+            Keep this statement for your records. For payment proof, print the specific official receipt from Payment History.
+        </div>
+    </div>
+</div>
+
+<script>
+// Tab Switching Function
+function switchTab(tabName) {
+    // Hide all tab panes
+    const panes = document.querySelectorAll('.tab-pane');
+    panes.forEach(pane => pane.style.display = 'none');
+    
+    // Remove active class from all buttons
+    const buttons = document.querySelectorAll('.tab-button');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    // Show selected tab
+    const selectedPane = document.getElementById(tabName);
+    if (selectedPane) {
+        selectedPane.style.display = 'block';
+        selectedPane.style.animation = 'fadeIn 0.3s ease-in-out';
+    }
+    
+    // Add active class to clicked button
+    const clickedButton = event.target.closest('.tab-button');
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
+}
+
+// Professional Statement Print Function
+function printStatement() {
+    const receiptElement = document.getElementById("printableReceipt");
+    const receipt = receiptElement.innerHTML;
+    const printWindow = window.open('', '_blank', 'height=800,width=1000,scrollbars=yes');
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Fees Statement - {{ student_bill.student.student_name }}</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                *{ box-sizing:border-box; }
+                body{
+                  font-family: Arial, Helvetica, sans-serif;
+                  margin:0;
+                  background:#f4f7fb;
+                  padding: 20px;
+                  position: relative;
+                }
+                
+                .receipt-wrapper{
+                  max-width:900px;
+                  margin:0 auto;
+                  background:#fff;
+                  border-radius:10px;
+                  padding:25px 35px;
+                  box-shadow:0 10px 25px rgba(0,0,0,.07);
+                  position: relative;
+                }
+                
+                /* Watermark Styles */
+                .watermark {
+                  position: absolute;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%) rotate(-45deg);
+                  z-index: 0;
+                  opacity: 0.2;
+                  pointer-events: none;
+                  width: 100%;
+                  height: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: #666;
+                  font-size: 32px;
+                  font-weight: bold;
+                }
+                
+                .watermark img {
+                  max-width: 400px;
+                  max-height: 400px;
+                  opacity: 0.3;
+                }
+                
+                .header{
+                  display:flex;
+                  justify-content:space-between;
+                  align-items:flex-start;
+                  border-bottom:2px solid #eaeaea;
+                  padding-bottom:15px;
+                  position: relative;
+                  z-index: 1;
+                }
+                
+                .brand h2{
+                  margin:0;
+                  color:#1885b0;
+                  letter-spacing:1px;
+                }
+                .brand small{ color:#666; }
+                
+                .right-info{
+                  text-align:right;
+                  font-size:13px;
+                  color:#555;
+                }
+                
+                .title{
+                  text-align:center;
+                  margin:25px 0 10px;
+                  font-weight:700;
+                  font-size:22px;
+                  letter-spacing:1px;
+                  color:#1c7798;
+                  position: relative;
+                  z-index: 1;
+                }
+                
+                .invoice-to{
+                  margin:10px 0 15px;
+                  font-size:14px;
+                  line-height:1.4;
+                  position: relative;
+                  z-index: 1;
+                }
+                
+                table{
+                  width:100%;
+                  border-collapse:collapse;
+                  margin-top:15px;
+                  font-size:14px;
+                  position: relative;
+                  z-index: 1;
+                }
+                thead{
+                  background:#0b7da2;
+                  color:#fff;
+                }
+                th, td{
+                  padding:10px 8px;
+                  border:1px solid #d7d7d7;
+                  text-align:left;
+                }
+                th:nth-child(1), td:nth-child(1){
+                  width:60px;
+                  text-align:center;
+                }
+                td.amount{
+                  text-align:right;
+                }
+                
+                .summary{
+                  margin-top:18px;
+                  width:320px;
+                  margin-left:auto;
+                  font-size:14px;
+                  position: relative;
+                  z-index: 1;
+                }
+                .summary div{
+                  display:flex;
+                  justify-content:space-between;
+                  padding:6px 0;
+                }
+                .summary .total{
+                  font-weight:700;
+                  font-size:16px;
+                  border-top:2px solid #ddd;
+                  margin-top:5px;
+                  padding-top:10px;
+                }
+                
+                .notes{
+                  margin-top:15px;
+                  font-size:13px;
+                  color:#555;
+                  position: relative;
+                  z-index: 1;
+                }
+                
+                .footer{
+                  margin-top:25px;
+                  font-size:12px;
+                  text-align:center;
+                  color:#777;
+                  position: relative;
+                  z-index: 1;
+                }
+                
+                @media print {
+                    body { margin: 0; padding: 10px; }
+                    .receipt-wrapper { box-shadow: none; }
+                    .watermark { opacity: 0.1; }
+                }
+            </style>
+        </head>
+        <body>
+            ${receipt}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(function() {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
+}
+
+// Enhanced Modal Focus
+document.addEventListener('DOMContentLoaded', function() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        modal.addEventListener('shown.bs.modal', function() {
+            const firstInput = this.querySelector('input, select, textarea');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        });
+    });
+});
+
+// Add smooth transitions to progress bars
+document.addEventListener('DOMContentLoaded', function() {
+    // Set dynamic progress bar width
+    const paymentProgressBar = document.getElementById('payment-progress-bar');
+    if (paymentProgressBar) {
+        const percentage = parseFloat('{{ amount_paid_percentage|floatformat:2 }}');
+        const visualPercentage = Math.max(0, Math.min(percentage, 100));
+        paymentProgressBar.style.width = '0%';
+        setTimeout(() => {
+            paymentProgressBar.style.width = visualPercentage + '%';
+        }, 100);
+    }
+    
+    // Animate other progress bars
+    const progressBars = document.querySelectorAll('.progress-bar-modern:not(#payment-progress-bar)');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 100);
+    });
+});
+</script>
+{% endblock %}

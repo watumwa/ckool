@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block page_title %}Attendance History{% endblock page_title %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-history"></i> Attendance History</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <form method="get" class="form-inline" style="margin-bottom: 12px;">
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.class_stream.label_tag }} {{ filter_form.class_stream }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.subject.label_tag }} {{ filter_form.subject }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.academic_year.label_tag }} {{ filter_form.academic_year }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.term.label_tag }} {{ filter_form.term }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.date_from.label_tag }} {{ filter_form.date_from }}
+          </div>
+          <div class="form-group" style="margin-right:8px; margin-bottom:8px;">
+            {{ filter_form.date_to.label_tag }} {{ filter_form.date_to }}
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-bottom:8px;"><i class="fa fa-search"></i> Filter</button>
+        </form>
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Late</th>
+                <th>Excused</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for session in sessions %}
+              <tr>
+                <td>{{ session.date|date:"d/m/Y" }}<br><small class="text-muted">{{ session.lesson_period }}</small></td>
+                <td>{{ session.class_stream }}</td>
+                <td>{{ session.subject.name }}</td>
+                <td>{{ session.present_count }}</td>
+                <td>{{ session.absent_count }}</td>
+                <td>{{ session.late_count }}</td>
+                <td>{{ session.excused_count }}</td>
+                <td>
+                  {% if session.is_locked %}
+                  <span class="label label-success">Locked</span>
+                  {% else %}
+                  <span class="label label-info">Draft</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a class="btn btn-xs btn-default" href="{% url 'take_attendance' %}?class_stream={{ session.class_stream_id }}&subject={{ session.subject_id }}&date={{ session.date|date:'Y-m-d' }}&time_slot={{ session.time_slot_id|default:'' }}">
+                    {% if session.is_locked %}View{% else %}Edit{% endif %}
+                  </a>
+                  {% if can_unlock and session.is_locked %}
+                  <form method="post" action="{% url 'unlock_attendance' session.id %}" style="display:inline-block;">
+                    {% csrf_token %}
+                    <input type="hidden" name="reason" value="Admin override from attendance history">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-xs btn-danger" onclick="return confirm('Reopen this locked session?');">Admin Override</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="9" class="text-center text-muted">No attendance sessions found for the selected filters.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

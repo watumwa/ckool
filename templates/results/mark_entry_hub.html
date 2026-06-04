@@ -1,0 +1,380 @@
+{% extends "../base.html" %}
+
+{% block page_title %}Marks Hub{% endblock page_title %}
+
+{% block content %}
+<div class="results-hub-page">
+  <div class="x_panel hub-hero-panel">
+    <div class="x_title">
+      <h2><i class="fa fa-tasks"></i> {{ hub_title }}</h2>
+      <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+      <p class="text-muted hub-intro">{{ hub_intro }}</p>
+      <div class="hub-scope">
+        <span class="hub-chip"><i class="fa fa-calendar"></i> {{ scope_year_label }}</span>
+        <span class="hub-chip"><i class="fa fa-clock-o"></i> {{ scope_term_label }}</span>
+        <span class="hub-chip"><i class="fa fa-user"></i> {{ role_label }}</span>
+      </div>
+    </div>
+  </div>
+
+  {% if summary_cards %}
+  <div class="row">
+    {% for card in summary_cards %}
+    <div class="col-md-3 col-sm-6">
+      <div class="hub-summary-card tone-{{ card.tone }}">
+        <span class="label">{{ card.label }}</span>
+        <strong class="value">{{ card.value }}</strong>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if hub_mode == "teacher" %}
+  <div class="x_panel">
+    <div class="x_title">
+      <h2>Assigned Assessments</h2>
+      <ul class="nav navbar-right panel_toolbox">
+        <li><a href="{% url 'class_assessment_list' %}" class="btn-link hub-inline-link">Browse All</a></li>
+      </ul>
+      <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+      {% if teacher_rows %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover hub-table">
+          <thead>
+            <tr>
+              <th>Class</th>
+              <th>Subject</th>
+              <th>Assessment</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th>Next Step</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in teacher_rows %}
+            <tr>
+              <td>
+                <strong>{{ row.class_label }}</strong><br>
+                <small class="text-muted">{{ row.date|date:"d M Y" }}</small>
+              </td>
+              <td>{{ row.subject_label }}</td>
+              <td>{{ row.assessment_type_label }}<br><small class="text-muted">Out of {{ row.out_of }}</small></td>
+              <td>
+                <div class="hub-progress">
+                  <div class="hub-progress-bar tone-{{ row.action_tone }}" style="width: {{ row.progress_percent }}%;"></div>
+                </div>
+                <small class="text-muted">{{ row.progress_label }}</small>
+              </td>
+              <td><span class="hub-status status-{{ row.status_key }}">{{ row.status_label }}</span></td>
+              <td>
+                <strong>{{ row.action_label }}</strong><br>
+                <small class="text-muted">{{ row.note }}</small>
+              </td>
+              <td class="hub-actions">
+                <a href="{{ row.action_url }}" class="btn btn-sm btn-{{ row.action_tone }}"><i class="fa fa-arrow-right"></i> Open</a>
+                <a href="{{ row.secondary_url }}" class="btn btn-sm btn-default">{{ row.secondary_label }}</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="hub-empty-state">
+        <i class="fa fa-folder-open"></i>
+        <h4>No current assessments assigned</h4>
+        <p class="text-muted">No assessments were found in the current term for your subject allocations.</p>
+        <a href="{% url 'class_assessment_list' %}" class="btn btn-default btn-sm">Open assessment browser</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% elif hub_mode == "verification" %}
+  <div class="x_panel">
+    <div class="x_title">
+      <h2>Verification Tasks</h2>
+      <ul class="nav navbar-right panel_toolbox">
+        <li><a href="{% url 'verification_overview' %}" class="btn-link hub-inline-link">Full Overview</a></li>
+      </ul>
+      <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+      {% if verification_rows %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover hub-table">
+          <thead>
+            <tr>
+              <th>Class</th>
+              <th>Subject</th>
+              <th>Assessment</th>
+              <th>Submitted</th>
+              <th>Verification Progress</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in verification_rows %}
+            <tr>
+              <td>
+                <strong>{{ row.class_label }}</strong><br>
+                <small class="text-muted">{{ row.date|date:"d M Y" }}</small>
+              </td>
+              <td>{{ row.subject_label }}</td>
+              <td>{{ row.assessment_type_label }}<br><small class="text-muted">Out of {{ row.out_of }}</small></td>
+              <td>
+                <strong>{{ row.submitted_by }}</strong><br>
+                <small class="text-muted">
+                  {% if row.submitted_at %}{{ row.submitted_at|date:"d M Y H:i" }}{% else %}Not submitted{% endif %}
+                </small>
+              </td>
+              <td>
+                <div class="hub-progress">
+                  <div class="hub-progress-bar tone-{{ row.action_tone }}" style="width: {{ row.progress_percent }}%;"></div>
+                </div>
+                <small class="text-muted">{{ row.progress_label }}</small>
+                {% if row.mismatch_count %}
+                <small class="text-danger d-block">{{ row.mismatch_count }} mismatch(es)</small>
+                {% endif %}
+              </td>
+              <td><span class="hub-status status-{{ row.status_key }}">{{ row.status_label }}</span></td>
+              <td class="hub-actions">
+                <a href="{{ row.action_url }}" class="btn btn-sm btn-{{ row.action_tone }}"><i class="fa fa-arrow-right"></i> {{ row.action_label }}</a>
+                <a href="{{ row.report_url }}" class="btn btn-sm btn-default">Report</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="hub-empty-state">
+        <i class="fa fa-check-circle"></i>
+        <h4>No verification work in the current scope</h4>
+        <p class="text-muted">Pending and flagged batches will appear here once teachers submit them.</p>
+        <a href="{% url 'verification_overview' %}" class="btn btn-default btn-sm">Open verification overview</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% elif hub_mode == "class_teacher" %}
+  <div class="x_panel">
+    <div class="x_content">
+      <div class="alert alert-info" style="margin-bottom: 0;">
+        <strong>Class teacher note:</strong> subject marks are entered by subject teachers. Use report-card and class-performance pages to follow up on readiness.
+        <div style="margin-top: 10px;">
+          <a href="{% url 'class_assessment_list' %}" class="btn btn-default btn-sm">Assessment Browser</a>
+          <a href="{% url 'class_bulk_reports' %}" class="btn btn-primary btn-sm">Report Cards</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="x_panel">
+    <div class="x_content">
+      <div class="alert alert-warning" style="margin-bottom: 0;">
+        This page is optimized for teachers and verification staff. Use the assessment browser to continue.
+        <div style="margin-top: 10px;">
+          <a href="{% url 'class_assessment_list' %}" class="btn btn-default btn-sm">Open assessment browser</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .results-hub-page .hub-hero-panel .x_content {
+    padding-top: 8px;
+  }
+
+  .hub-intro {
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+
+  .hub-scope {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hub-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #d8e3ef;
+    border-radius: 999px;
+    padding: 6px 10px;
+    background: #f8fbff;
+    color: #41566e;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .hub-summary-card {
+    border: 1px solid #dde6ef;
+    border-radius: 10px;
+    background: #fff;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 2px rgba(42, 63, 84, 0.05);
+  }
+
+  .hub-summary-card .label {
+    display: block;
+    margin-bottom: 6px;
+    color: #73879c;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .hub-summary-card .value {
+    font-size: 24px;
+    color: #2a3f54;
+  }
+
+  .hub-summary-card.tone-primary {
+    border-top: 3px solid #337ab7;
+  }
+
+  .hub-summary-card.tone-warning {
+    border-top: 3px solid #f0ad4e;
+  }
+
+  .hub-summary-card.tone-success {
+    border-top: 3px solid #26b99a;
+  }
+
+  .hub-summary-card.tone-danger {
+    border-top: 3px solid #d9534f;
+  }
+
+  .hub-summary-card.tone-info {
+    border-top: 3px solid #5bc0de;
+  }
+
+  .hub-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #73879c;
+    background: #f7f9fc;
+  }
+
+  .hub-progress {
+    width: 140px;
+    max-width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: #e9eef4;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+
+  .hub-progress-bar {
+    height: 100%;
+    border-radius: inherit;
+    background: #337ab7;
+  }
+
+  .hub-progress-bar.tone-primary {
+    background: #337ab7;
+  }
+
+  .hub-progress-bar.tone-success {
+    background: #26b99a;
+  }
+
+  .hub-progress-bar.tone-warning {
+    background: #f0ad4e;
+  }
+
+  .hub-progress-bar.tone-danger {
+    background: #d9534f;
+  }
+
+  .hub-progress-bar.tone-info {
+    background: #5bc0de;
+  }
+
+  .hub-progress-bar.tone-default {
+    background: #73879c;
+  }
+
+  .hub-status {
+    display: inline-block;
+    min-width: 88px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .hub-status.status-draft {
+    background: #fff4db;
+    color: #8a6d3b;
+  }
+
+  .hub-status.status-pending {
+    background: #eaf4ff;
+    color: #2f6ca3;
+  }
+
+  .hub-status.status-flagged {
+    background: #fdecec;
+    color: #b94a48;
+  }
+
+  .hub-status.status-verified {
+    background: #e8f7f2;
+    color: #1e7f68;
+  }
+
+  .hub-actions {
+    min-width: 172px;
+  }
+
+  .hub-actions .btn {
+    margin-bottom: 6px;
+  }
+
+  .hub-inline-link {
+    display: inline-block;
+    margin-top: 8px;
+    color: #337ab7;
+  }
+
+  .hub-empty-state {
+    border: 1px dashed #d8e3ef;
+    border-radius: 10px;
+    padding: 28px 16px;
+    text-align: center;
+  }
+
+  .hub-empty-state i {
+    font-size: 28px;
+    color: #8aa0b6;
+    margin-bottom: 10px;
+  }
+
+  @media (max-width: 991px) {
+    .hub-scope {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .hub-actions {
+      min-width: 140px;
+    }
+  }
+</style>
+{% endblock content %}

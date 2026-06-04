@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Events{% endblock page_title %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-calendar"></i> Events</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="comm-header">
+          <div class="comm-intro">
+            <div class="comm-title">Plan and share upcoming school events.</div>
+            <div class="comm-stats">
+              <div class="stat-card">
+                <div class="stat-icon primary"><i class="fa fa-calendar"></i></div>
+                <div>
+                  <div class="stat-label">Total</div>
+                  <div class="stat-value">{{ event_total|default:0 }}</div>
+                  <div class="stat-note">All events</div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon success"><i class="fa fa-check-circle"></i></div>
+                <div>
+                  <div class="stat-label">Active</div>
+                  <div class="stat-value">{{ event_active|default:0 }}</div>
+                  <div class="stat-note">Upcoming</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="comm-actions">
+            <div class="input-group event-search">
+              <input type="text" class="form-control" placeholder="Search events..." id="eventSearch">
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button"><i class="fa fa-search"></i></button>
+              </span>
+            </div>
+            {% if can_manage %}
+            <a href="#" class="btn btn-success" data-toggle="modal" data-target="#eventModal"><i class="fa fa-plus"></i> New Event</a>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if events %}
+        <div id="eventCards">
+          {% for item in events %}
+          <div class="event-card" style="border:1px solid #eef1f6;border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 6px 16px rgba(0,0,0,0.04);border-left:4px solid #17a2b8;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:700;font-size:15px;">{{ item.title }}</div>
+                <div class="text-muted" style="font-size:12px;margin-top:4px;">{{ item.get_audience_display }} • {{ item.start_datetime|date:"M d, Y H:i" }}{% if item.location %} • {{ item.location }}{% endif %}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                {% if item.is_active %}
+                <span class="label label-success">Active</span>
+                {% else %}
+                <span class="label label-default">Inactive</span>
+                {% endif %}
+              </div>
+            </div>
+            <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:6px;">
+              {% if can_manage or item.created_by == user %}
+              <a href="{% url 'event_edit' item.id %}" class="btn btn-info btn-xs"><i class="fa fa-edit"></i> Edit</a>
+              <a href="{% url 'event_delete' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this event?')"><i class="fa fa-trash"></i> Delete</a>
+              {% else %}
+              <span class="text-muted">-</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center">
+          <i class="fa fa-inbox fa-3x text-muted" style="margin-bottom:8px;"></i>
+          <h5 class="text-muted">No events yet</h5>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="eventModal" tabindex="-1" role="dialog" aria-labelledby="eventModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="eventModalLabel"><i class="fa fa-calendar"></i> New Event</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'event_create' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          {% if not can_target_head %}
+          <div class="alert alert-info" role="alert">
+            Teachers cannot target the Head Teacher. The audience option is limited.
+          </div>
+          {% endif %}
+          {{ form|crispy }}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+  $(document).ready(function() {
+    $('#eventSearch').on('keyup', function() {
+      var value = $(this).val().toLowerCase();
+      $('#eventCards .event-card').filter(function() {
+        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+      });
+    });
+  });
+</script>
+<script>
+  (function() {
+    try {
+      document.cookie = 'comm_seen_at=' + new Date().toISOString() + '; path=/';
+    } catch (e) {
+      // no-op
+    }
+  })();
+</script>
+
+<style>
+  .comm-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    background:#f8fafc;
+    border:1px solid #e6edf5;
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:14px;
+  }
+  .comm-title{font-weight:600;color:#334155;margin-bottom:8px;}
+  .comm-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+  .comm-stats{display:flex;gap:10px;flex-wrap:wrap;}
+  .event-search .form-control{border-radius:999px 0 0 999px;}
+  .event-search .btn{border-radius:0 999px 999px 0;}
+  .stat-card{background:#fff;border:1px solid #e6edf5;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 16px rgba(0,0,0,0.04);}
+  .stat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;}
+  .stat-icon.primary{background:#3b82f6;}
+  .stat-icon.success{background:#22c55e;}
+  .stat-label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+  .stat-value{font-size:16px;font-weight:700;color:#1f2a44;line-height:1.2;}
+  .stat-note{font-size:11px;color:#94a3b8;}
+</style>
+{% endblock content %}

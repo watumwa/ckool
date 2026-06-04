@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load get_item %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-calendar"></i> School Timetable</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="alert alert-info" role="alert">
+          <i class="fa fa-info-circle"></i> All class timetables are shown below for quick review.
+        </div>
+
+        {% for stream in class_streams %}
+          <div class="x_panel" style="border:1px solid #eef1f4;">
+            <div class="x_title">
+              <h2>{{ stream }}</h2>
+              <ul class="nav navbar-right panel_toolbox">
+                <li><a href="{% url 'timetable_center' %}?class_stream_id={{ stream.id }}" class="btn btn-default btn-xs"><i class="fa fa-cogs"></i> Edit</a></li>
+              </ul>
+              <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+              <div class="table-responsive">
+                <table class="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Time Slot</th>
+                      {% for weekday, label in weekdays %}
+                        <th>{{ label }}</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for slot in time_slots %}
+                      <tr>
+                        <td>{{ slot }}</td>
+                        {% for weekday, _ in weekdays %}
+                          {% with entry=timetable_data|get_item:stream.id|get_item:weekday|get_item:slot.id %}
+                            <td>
+                              {% if entry %}
+                                <div>
+                                  <strong>{{ entry.subject|default:"Subject" }}</strong><br>
+                                  <span class="text-muted"><i class="fa fa-user"></i> {{ entry.teacher|default:"—" }}</span><br>
+                                  <span class="text-muted"><i class="fa fa-building"></i> {{ entry.classroom|default:"TBD" }}</span>
+                                </div>
+                              {% else %}
+                                <span class="text-muted">—</span>
+                              {% endif %}
+                            </td>
+                          {% endwith %}
+                        {% endfor %}
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-muted">No class streams available.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

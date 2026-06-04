@@ -1,0 +1,600 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Financial Summary Report{% endblock %}
+
+
+{% block content %}
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-line-chart"></i> Financial Summary Report</h2>
+                <ul class="nav navbar-right panel_toolbox">
+                <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                </li>
+                <li><a class="print-link" onclick="window.print()" title="Print Report"><i class="fa fa-print"></i></a>
+                </li>
+                <li><a href="?{% for key, value in request.GET.items %} {{ key }}={{ value }}&{% endfor %}export=csv" title="Export to CSV" target="_blank"><i class="fa fa-file-excel-o"></i></a>
+                </li>
+                </ul>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+
+
+                <!-- Executive Summary -->
+                <div class="row" style="margin-bottom: 30px;">
+                    <div class="col-md-12">
+                        <div class="card" style="border-left: 4px solid #007bff; background-color: #f8f9fa;">
+                            <div class="card-body">
+                                <h3 class="card-title" style="color: #007bff;"><i class="fa fa-clipboard"></i> Executive Summary</h3>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h4><strong>Financial Overview for {{ academic_year_name }} - {{ term_name }}</strong></h4>
+                                        <p class="mb-2">
+                                            {% if collection_rate >= 90 %}
+                                                <span class="badge badge-success">Excellent</span> School fees collection is performing very well at {{ collection_rate }}%.
+                                            {% elif collection_rate >= 75 %}
+                                                <span class="badge badge-warning">Good</span> School fees collection is satisfactory at {{ collection_rate }}%.
+                                            {% else %}
+                                                <span class="badge badge-danger">Needs Attention</span> School fees collection requires improvement at {{ collection_rate }}%.
+                                            {% endif %}
+                                        </p>
+                                        <p class="mb-2">
+                                            {% if net_balance >= 0 %}
+                                                <span class="badge badge-success">Surplus</span> The school has a positive financial position with UGX {{ net_balance|floatformat:0|intcomma }} surplus.
+                                            {% else %}
+                                                <span class="badge badge-warning">Deficit</span> The school has a deficit of UGX {{ net_balance|floatformat:0|intcomma|slice:"1:" }}.
+                                            {% endif %}
+                                        </p>
+                                        <p class="mb-0">
+                                            <strong>Total Revenue:</strong> UGX {{ total_income|floatformat:0|intcomma }} |
+                                            <strong>Total Expenses:</strong> UGX {{ total_expenditure|floatformat:0|intcomma }} |
+                                            <strong>Outstanding Fees:</strong> UGX {{ total_outstanding|floatformat:0|intcomma }}
+                                        </p>
+                                        {% if overall_quality != 'good' %}
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <i class="fa fa-info-circle"></i>
+                                                <strong>Data Quality:</strong>
+                                                {% if overall_quality == 'poor' %}
+                                                    <span class="text-danger">Poor - Critical issues detected</span>
+                                                {% else %}
+                                                    <span class="text-warning">Fair - Some issues detected</span>
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <form method="GET" class="form-inline">
+                            <div class="form-group">
+                                <label for="academic_year"><strong>Academic Year:</strong></label>
+                                <select name="academic_year" id="academic_year" class="form-control">
+                                    {% for year in academic_years %}
+                                        <option value="{{ year.id }}" {% if year.id|stringformat:"s" == selected_academic_year %}selected{% endif %}>{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-left: 20px;">
+                                <label for="term"><strong>Term:</strong></label>
+                                <select name="term" id="term" class="form-control">
+                                    {% for term in terms %}
+                                        <option value="{{ term.id }}" {% if term.id|stringformat:"s" == selected_term %}selected{% endif %}>{{ term }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="margin-left: 20px;">
+                                <i class="fa fa-refresh"></i> Generate Report
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                {% if over_expenditure_alerts %}
+                <div class="row" style="margin-top: 15px;">
+                    <div class="col-md-12">
+                        <div class="alert alert-danger" role="alert">
+                            <h4 class="alert-heading">
+                                <i class="fa fa-exclamation-triangle"></i>
+                                Over-expenditure Alerts ({{ over_expenditure_alerts|length }})
+                            </h4>
+                            <p class="mb-2">The following budget items have exceeded their allocations. Consider corrective actions.</p>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Department</th>
+                                            <th>Expense</th>
+                                            <th>Allocated</th>
+                                            <th>Spent</th>
+                                            <th>Over by</th>
+                                            <th>Utilization</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for a in over_expenditure_alerts %}
+                                        <tr>
+                                            <td>{{ a.department }}</td>
+                                            <td>{{ a.expense }}</td>
+                                            <td>UGX {{ a.allocated|floatformat:0|intcomma }}</td>
+                                            <td>UGX {{ a.spent|floatformat:0|intcomma }}</td>
+                                            <td>UGX {{ a.over_by|floatformat:0|intcomma }}</td>
+                                            <td>{{ a.utilization }}%</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if class_data %}
+                <!-- Key Performance Indicators -->
+                <div class="row" style="margin-top: 30px;">
+                    <div class="col-md-12">
+                        <h3><i class="fa fa-tachometer"></i> Key Performance Indicators</h3>
+                        <p class="text-muted">Quick overview of the school's financial health</p>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card text-center" style="border-left: 4px solid #5cb85c;">
+                                    <div class="card-body">
+                                        <h5>School Fees Collection</h5>
+                                        <h2 class="text-success">{{ collection_rate|floatformat:1 }}%</h2>
+                                        <small class="text-muted">Of billed fees collected</small>
+                                        <div class="mt-2">
+                                            {% if collection_rate >= 90 %}
+                                                <small class="text-success"><i class="fa fa-check-circle"></i> Excellent performance</small>
+                                            {% elif collection_rate >= 75 %}
+                                                <small class="text-warning"><i class="fa fa-exclamation-triangle"></i> Good performance</small>
+                                            {% else %}
+                                                <small class="text-danger"><i class="fa fa-exclamation-circle"></i> Needs improvement</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center" style="border-left: 4px solid #f0ad4e;">
+                                    <div class="card-body">
+                                        <h5>Budget Usage</h5>
+                                        <h2 class="text-warning">{{ budget_utilization }}%</h2>
+                                        <small class="text-muted">Of allocated budget spent</small>
+                                        <div class="mt-2">
+                                            {% if budget_utilization <= 90 %}
+                                                <small class="text-success"><i class="fa fa-thumbs-up"></i> Within budget</small>
+                                            {% elif budget_utilization <= 105 %}
+                                                <small class="text-warning"><i class="fa fa-warning"></i> Slightly over budget</small>
+                                            {% else %}
+                                                <small class="text-danger"><i class="fa fa-exclamation-triangle"></i> Significantly over budget</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center" style="border-left: 4px solid #d9534f;">
+                                    <div class="card-body">
+                                        <h5>Unpaid School Fees</h5>
+                                        <h2 class="text-danger">{{ total_outstanding|floatformat:0|intcomma }}</h2>
+                                        <small class="text-muted">UGX still owed by parents</small>
+                                        <div class="mt-2">
+                                            {% if total_outstanding == 0 %}
+                                                <small class="text-success"><i class="fa fa-check-circle"></i> All fees collected</small>
+                                            {% else %}
+                                                <small class="text-info"><i class="fa fa-info-circle"></i> Outstanding balance</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center" style="border-left: 4px solid #337ab7;">
+                                    <div class="card-body">
+                                        <h5>Collected Fees</h5>
+                                        <h2 class="text-success">
+                                            {{ total_school_fees_collected|floatformat:0|intcomma }}
+                                        </h2>
+                                        <small class="text-muted">UGX collected</small>
+                                        <div class="mt-2">
+                                            <small class="text-success"><i class="fa fa-money-bill-wave"></i> Total collected</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- School Fees Summary -->
+                <div class="row" style="margin-top: 30px;">
+                    <div class="col-md-12">
+                        <h3><i class="fa fa-money"></i> School Fees Collection by Class</h3>
+                        <p class="text-muted">Detailed breakdown of tuition fees and other charges for each class</p>
+                        <div class="x_panel">
+                            <div class="x_content">
+                                <table class="table table-striped jambo_table bulk_action">
+                                <thead>
+                                    <tr>
+                                        <th>Class</th>
+                                        <th>Tuition Fee per Student</th>
+                                        <th>Other Fees per Student</th>
+                                        <th>Number of Students</th>
+                                        <th>Total Tuition Billed</th>
+                                        <th>Total Other Fees</th>
+                                        <th>Total Amount Collected</th>
+                                        <th>Outstanding Balance</th>
+                                        <th>Collection Performance</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="table-hover">
+                                    {% for class_info in class_data %}
+                                    <tr {% if class_info.collection_rate > 200 %}style="background-color: #fff3cd;"{% endif %}>
+                                        <td>
+                                            <strong>{{ class_info.class_name }}</strong>
+                                            {% if class_info.collection_rate > 200 %}
+                                                <i class="fa fa-exclamation-triangle text-warning" title="Unrealistic collection rate detected"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>UGX {{ class_info.school_fees_per_student|intcomma }}</td>
+                                        <td>UGX {{ class_info.other_fees_per_student|intcomma }}</td>
+                                        <td>{{ class_info.num_students }}</td>
+                                        <td>UGX {{ class_info.total_school_fees|intcomma }}</td>
+                                        <td>UGX {{ class_info.total_other_fees|intcomma }}</td>
+                                        <td>UGX {{ class_info.total_collected|intcomma }}</td>
+                                        <td>UGX {{ class_info.outstanding|intcomma }}</td>
+                                        <td>
+                                            <span class="{% if class_info.collection_rate >= 90 %}text-success{% elif class_info.collection_rate >= 75 %}text-warning{% else %}text-danger{% endif %}">
+                                                <strong>{{ class_info.collection_rate|floatformat:1 }}%</strong>
+                                            </span>
+                                            {% if class_info.collection_rate > 200 %}
+                                                <br><small class="text-warning">⚠️ Verify data</small>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr style="font-weight: bold; background-color: #f8f9fa;">
+                                        <td colspan="4"><strong>OVERALL TOTAL</strong></td>
+                                        <td><strong>UGX {{ total_school_fees_billed|intcomma }}</strong></td>
+                                        <td><strong>UGX {{ total_other_income|intcomma }}</strong></td>
+                                        <td><strong>UGX {{ total_school_fees_collected|intcomma }}</strong></td>
+                                        <td><strong>UGX {{ total_outstanding|intcomma }}</strong></td>
+                                        <td><strong class="{% if collection_rate >= 90 %}text-success{% elif collection_rate >= 75 %}text-warning{% else %}text-danger{% endif %}">{{ collection_rate|floatformat:1 }}%</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expenditure and Budget Analysis Accordion -->
+                {% if budget_item_data %}
+                <div class="row" style="margin-top: 30px;">
+                    <div class="col-md-12">
+                        <h3><i class="fa fa-chart-line"></i> Expenditure & Budget Analysis</h3>
+                        <p class="text-muted">Detailed breakdown of budget allocations, actual expenditures, and financial performance</p>
+
+                        <div class="accordion" id="expenditureAccordion">
+                            <!-- Budget Overview -->
+                            <div class="card">
+                                <div class="card-header" id="budgetOverview">
+                                    <h5 class="mb-0">
+                                        <button class="btn btn-link text-left" type="button" data-toggle="collapse" data-target="#budgetOverviewContent" aria-expanded="true" aria-controls="budgetOverviewContent">
+                                            <i class="fa fa-chart-pie"></i> Budget Overview
+                                        </button>
+                                    </h5>
+                                </div>
+                                <div id="budgetOverviewContent" class="collapse show" aria-labelledby="budgetOverview" data-parent="#expenditureAccordion">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="card border-left-success">
+                                                    <div class="card-body text-center">
+                                                        <h5>Total Budget Allocated</h5>
+                                                        <h3 class="text-success">UGX {{ total_allocated }}</h3>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card border-left-warning">
+                                                    <div class="card-body text-center">
+                                                        <h5>Total Spent</h5>
+                                                        <h3 class="text-warning">UGX {{ total_expenditure|floatformat:0|intcomma }}</h3>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card border-left-info">
+                                                    <div class="card-body text-center">
+                                                        <h5>Remaining Budget</h5>
+                                                        <h3 class="text-info">UGX {{ remaining_budget|floatformat:0|intcomma }}</h3>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-12">
+                                                <div class="progress" style="height: 25px;">
+                                                    <div class="progress-bar bg-success" style="width: {{ budget_utilization }}%">
+                                                        {{ budget_utilization }}% Used
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Detailed Budget Items -->
+                            <div class="card">
+                                <div class="card-header" id="budgetItems">
+                                    <h5 class="mb-0">
+                                        <button class="btn btn-link text-left collapsed" type="button" data-toggle="collapse" data-target="#budgetItemsContent" aria-expanded="false" aria-controls="budgetItemsContent">
+                                            <i class="fa fa-list"></i> Budget Items & Expenditures
+                                        </button>
+                                    </h5>
+                                </div>
+                                <div id="budgetItemsContent" class="collapse" aria-labelledby="budgetItems" data-parent="#expenditureAccordion">
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-bordered">
+                                                <thead class="thead-dark">
+                                                    <tr>
+                                                        <th>Department</th>
+                                                        <th>Expense Category</th>
+                                                        <th>Budget Allocated</th>
+                                                        <th>Amount Spent</th>
+                                                        <th>Remaining</th>
+                                                        <th>Utilization</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in budget_item_data %}
+                                                    <tr>
+                                                        <td><strong>{{ item.budget_item.department }}</strong></td>
+                                                        <td>{{ item.budget_item.expense }}</td>
+                                                        <td>UGX {{ item.allocated|floatformat:0|intcomma }}</td>
+                                                        <td>UGX {{ item.spent|floatformat:0|intcomma }}</td>
+                                                        <td>UGX {{ item.remaining|floatformat:0|intcomma }}</td>
+                                                        <td>
+                                                            {% if item.allocated > 0 %}
+                                                                {{ item.utilization }}%
+                                                            {% else %}
+                                                                N/A
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if item.allocated > 0 %}
+                                                                {% if item.spent > item.allocated %}
+                                                                    <span class="badge badge-danger">Over Budget</span>
+                                                                {% elif item.utilization <= 90 %}
+                                                                    <span class="badge badge-success">On Track</span>
+                                                                {% else %}
+                                                                    <span class="badge badge-warning">Near Limit</span>
+                                                                {% endif %}
+                                                            {% else %}
+                                                                <span class="badge badge-secondary">No Budget</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% if item.expenditures %}
+                                                        {% for expenditure in item.expenditures %}
+                                                        <tr style="background-color: #f8f9fa;">
+                                                            <td colspan="2" style="padding-left: 30px;">
+                                                                <small><i class="fa fa-arrow-right"></i> {{ expenditure.description|default:"Expenditure" }}</small>
+                                                            </td>
+                                                            <td colspan="2">
+                                                                <small>UGX {{ expenditure.amount|floatformat:0|intcomma }}</small>
+                                                            </td>
+                                                            <td colspan="3">
+                                                                <small>{{ expenditure.date|date:"M d, Y" }}</small>
+                                                            </td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                    {% endfor %}
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr style="font-weight: bold; background-color: #e9ecef;">
+                                                        <td colspan="2"><strong>TOTAL</strong></td>
+                                                        <td><strong>UGX {{ total_allocated|floatformat:0|intcomma }}</strong></td>
+                                                        <td><strong>UGX {{ total_expenditure|floatformat:0|intcomma }}</strong></td>
+                                                        <td><strong>UGX {{ remaining_budget|floatformat:0|intcomma }}</strong></td>
+                                                        <td><strong>{{ budget_utilization|floatformat:1 }}%</strong></td>
+                                                        <td>
+                                                            {% if budget_utilization <= 90 %}
+                                                                <span class="badge badge-success">Excellent</span>
+                                                            {% elif budget_utilization <= 105 %}
+                                                                <span class="badge badge-warning">Good</span>
+                                                            {% else %}
+                                                                <span class="badge badge-danger">Needs Attention</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Department Breakdown -->
+                            <div class="card">
+                                <div class="card-header" id="departmentBreakdown">
+                                    <h5 class="mb-0">
+                                        <button class="btn btn-link text-left collapsed" type="button" data-toggle="collapse" data-target="#departmentBreakdownContent" aria-expanded="false" aria-controls="departmentBreakdownContent">
+                                            <i class="fa fa-building"></i> Department Breakdown
+                                        </button>
+                                    </h5>
+                                </div>
+                                <div id="departmentBreakdownContent" class="collapse" aria-labelledby="departmentBreakdown" data-parent="#expenditureAccordion">
+                                    <div class="card-body">
+                                        {% for dept_name, dept_data in department_breakdown.items %}
+                                        <div class="mb-4">
+                                            <h5 class="text-primary mb-3"><i class="fa fa-building"></i> {{ dept_name }} Department</h5>
+                                            <div class="table-responsive">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th>Budget Item</th>
+                                                            <th>Expense Category</th>
+                                                            <th>Allocated</th>
+                                                            <th>Spent</th>
+                                                            <th>Remaining</th>
+                                                            <th>Utilization</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for item in budget_item_data %}
+                                                        {% if item.budget_item.department.name == dept_name %}
+                                                        <tr>
+                                                            <td><strong>{{ item.budget_item.expense }}</strong></td>
+                                                            <td>{{ item.budget_item.expense }}</td>
+                                                            <td>UGX {{ item.allocated|floatformat:0|intcomma }}</td>
+                                                            <td>UGX {{ item.spent|floatformat:0|intcomma }}</td>
+                                                            <td>UGX {{ item.remaining|floatformat:0|intcomma }}</td>
+                                                            <td>
+                                                                {% if item.allocated > 0 %}
+                                                                    <span class="{% if item.utilization <= 90 %}text-success{% elif item.utilization <= 105 %}text-warning{% else %}text-danger{% endif %}">
+                                                                        {{ item.utilization }}%
+                                                                    </span>
+                                                                {% else %}
+                                                                    <span class="text-muted">N/A</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        {% endif %}
+                                                        {% endfor %}
+                                                    </tbody>
+                                                    <tfoot class="bg-light">
+                                                        <tr>
+                                                            <td colspan="2"><strong>Department Total</strong></td>
+                                                            <td><strong>UGX {{ dept_data.allocated|floatformat:0|intcomma }}</strong></td>
+                                                            <td><strong>UGX {{ dept_data.spent|floatformat:0|intcomma }}</strong></td>
+                                                            <td><strong>UGX {{ dept_data.remaining|floatformat:0|intcomma }}</strong></td>
+                                                            <td><strong>{{ dept_data.utilization|floatformat:1 }}%</strong></td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Financial Summary -->
+                            <div class="card">
+                                <div class="card-header" id="financialSummary">
+                                    <h5 class="mb-0">
+                                        <button class="btn btn-link text-left collapsed" type="button" data-toggle="collapse" data-target="#financialSummaryContent" aria-expanded="false" aria-controls="financialSummaryContent">
+                                            <i class="fa fa-balance-scale"></i> Financial Summary
+                                        </button>
+                                    </h5>
+                                </div>
+                                <div id="financialSummaryContent" class="collapse" aria-labelledby="financialSummary" data-parent="#expenditureAccordion">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h4>Revenue</h4>
+                                                <table class="table table-borderless">
+                                                    <tr>
+                                                        <td>School Fees Collected:</td>
+                                                        <td class="text-right"><strong>UGX {{ total_school_fees_collected|floatformat:0|intcomma }}</strong></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Other Income:</td>
+                                                        <td class="text-right"><strong>UGX {{ total_other_income|floatformat:0|intcomma }}</strong></td>
+                                                    </tr>
+                                                    <tr style="border-top: 2px solid #dee2e6;">
+                                                        <td><strong>Total Revenue:</strong></td>
+                                                        <td class="text-right"><strong>UGX {{ total_income|floatformat:0|intcomma }}</strong></td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h4>Expenditures</h4>
+                                                <table class="table table-borderless">
+                                                    <tr>
+                                                        <td>Total Expenditures:</td>
+                                                        <td class="text-right"><strong>UGX {{ total_expenditure|floatformat:0|intcomma }}</strong></td>
+                                                    </tr>
+                                                    <tr style="border-top: 2px solid #dee2e6;">
+                                                        <td><strong>Net Position:</strong></td>
+                                                        <td class="text-right">
+                                                            <strong class="{% if net_balance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                                UGX {{ net_balance|floatformat:0|intcomma }}
+                                                            </strong>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-4">
+                                            <div class="col-md-12">
+                                                <div class="alert alert-info">
+                                                    <h5><i class="fa fa-info-circle"></i> Key Performance Indicators</h5>
+                                                    <ul class="mb-0">
+                                                        <li><strong>Collection Rate:</strong> {{ collection_rate|floatformat:1 }}% of billed fees collected</li>
+                                                        <li><strong>Budget Utilization:</strong> {{ budget_utilization|floatformat:1 }}% of allocated budget spent</li>
+                                                        <li><strong>Financial Health:</strong>
+                                                            {% if net_balance >= 0 %}
+                                                                <span class="text-success">Positive balance of UGX {{ net_balance|floatformat:0|intcomma }}</span>
+                                                            {% else %}
+                                                                <span class="text-danger">Deficit of UGX {{ net_balance|floatformat:0|intcomma|slice:"1:" }}</span>
+                                                            {% endif %}
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <h5><i class="fa fa-info-circle"></i> No Budget Data Available</h5>
+                                <p>No budget has been created for the selected academic year and term (<strong>{{ academic_year_name }} - {{ term_name }}</strong>).</p>
+                                <p class="mb-0">To view expenditure analysis, please:</p>
+                                <ul class="mb-0">
+                                    <li>Create a budget for this term in the <a href="{% url 'budget_page' %}" class="alert-link">Budget Management</a> section</li>
+                                    <li>Or select a different academic year/term that has budget data</li>
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% else %}
+                    <div class="card" style="margin-top: 30px;">
+                        <div class="card-body">
+                            <h4><center>No data available for the selected filters</center></h4>
+                        </div>
+                    </div>
+                {% endif %}
+
+
+            </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

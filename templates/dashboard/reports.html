@@ -1,0 +1,1698 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load humanize %}
+
+{% block dashboard_section_content %}
+<style>
+  :root {
+    --reports-navy: #2a3f54;
+    --reports-navy-soft: #3a4f63;
+    --reports-slate: #f7f7f7;
+    --reports-border: #e6e9ed;
+    --reports-text: #2a3f54;
+    --reports-muted: #73879c;
+    --reports-success: #26b99a;
+    --reports-danger: #e74c3c;
+    --reports-warn: #f39c12;
+  }
+
+  .reports-summary-card {
+    border: 1px solid var(--reports-border);
+    border-radius: 10px;
+    border-top: 3px solid var(--reports-navy);
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(42, 63, 84, 0.08);
+    padding: 14px;
+    margin-bottom: 12px;
+    min-height: 126px;
+    position: relative;
+  }
+
+  .reports-summary-card .summary-collapse-toggle {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    border: 1px solid var(--reports-border);
+    background: #f7f7f7;
+    color: var(--reports-navy);
+    border-radius: 6px;
+    width: 26px;
+    height: 24px;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .reports-summary-card.is-collapsed {
+    min-height: 48px;
+    padding-bottom: 12px;
+  }
+
+  .reports-summary-card.is-collapsed .value,
+  .reports-summary-card.is-collapsed .meta {
+    display: none;
+  }
+
+  .reports-summary-card .label {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--reports-muted);
+    font-weight: 700;
+    margin: 0 0 6px;
+    display: block;
+  }
+
+  .reports-summary-card .value {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.2;
+    color: var(--reports-text);
+    font-weight: 700;
+  }
+
+  .reports-summary-card .meta {
+    margin-top: 6px;
+    color: var(--reports-muted);
+    font-size: 12px;
+  }
+
+  .reports-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 14px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid var(--reports-border);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(42, 63, 84, 0.05);
+  }
+
+  .reports-nav a {
+    display: inline-block;
+    padding: 8px 10px;
+    border-radius: 7px;
+    background: #fff;
+    border: 1px solid var(--reports-border);
+    color: var(--reports-navy);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .reports-nav a:hover {
+    background: #f5f7fa;
+  }
+
+  .report-block {
+    border: 1px solid var(--reports-border);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(42, 63, 84, 0.06);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+
+  .report-block .x_title {
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--reports-border);
+    border-left: 4px solid var(--reports-navy);
+    background: #f8fafc;
+    color: var(--reports-text);
+    padding: 10px 14px;
+  }
+
+  .report-block .x_title h2 {
+    color: var(--reports-text);
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .report-block .x_title h2 i {
+    color: var(--reports-navy);
+  }
+
+  .report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .report-actions .btn {
+    font-size: 12px;
+    padding: 5px 9px;
+  }
+
+  .report-actions .report-collapse-toggle {
+    min-width: 88px;
+  }
+
+  .report-filter {
+    background: #fafbfc;
+    border: 1px solid var(--reports-border);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+
+  .report-mini-kpi {
+    border: 1px solid var(--reports-border);
+    border-radius: 8px;
+    border-top: 3px solid #d7dee6;
+    box-shadow: 0 1px 2px rgba(42, 63, 84, 0.05);
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #fff;
+    min-height: 92px;
+  }
+
+  .report-mini-kpi .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--reports-muted);
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .report-mini-kpi .value {
+    margin: 4px 0 0;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--reports-text);
+  }
+
+  .report-mini-kpi .meta {
+    font-size: 12px;
+    color: var(--reports-muted);
+  }
+
+  .chart-card {
+    border: 1px solid var(--reports-border);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(42, 63, 84, 0.05);
+    padding: 10px;
+    background: #fff;
+    margin-bottom: 10px;
+  }
+
+  .chart-card h5 {
+    margin: 0 0 8px;
+    color: var(--reports-navy);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .chart-canvas {
+    width: 100%;
+    height: 220px !important;
+  }
+
+  .status-pill {
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .status-pill.paid,
+  .status-pill.active,
+  .status-pill.completed,
+  .status-pill.generated {
+    background: var(--reports-success);
+  }
+
+  .status-pill.partial,
+  .status-pill.pending {
+    background: var(--reports-warn);
+  }
+
+  .status-pill.unpaid,
+  .status-pill.inactive,
+  .status-pill.flagged {
+    background: var(--reports-danger);
+  }
+
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(40px, 1fr));
+    gap: 6px;
+  }
+
+  .heatmap-cell {
+    border-radius: 6px;
+    border: 1px solid #d7e2ed;
+    padding: 6px 4px;
+    text-align: center;
+    font-size: 11px;
+    color: #2a3d55;
+    background: #f4f7fb;
+  }
+
+  .heatmap-cell .day {
+    display: block;
+    font-weight: 700;
+  }
+
+  .heatmap-cell .wk {
+    display: block;
+    font-size: 10px;
+    opacity: 0.9;
+  }
+
+  .heatmap-cell.lvl-1 { background: #d2e6f9; }
+  .heatmap-cell.lvl-2 { background: #a9d0f5; }
+  .heatmap-cell.lvl-3 { background: #72afea; color: #fff; }
+  .heatmap-cell.lvl-4 { background: #2d76c7; color: #fff; }
+
+  @media (max-width: 991px) {
+    .report-actions {
+      margin-top: 8px;
+      justify-content: flex-start;
+    }
+    .chart-canvas {
+      height: 200px !important;
+    }
+  }
+</style>
+
+<div class="row">
+  <div class="col-md-4 col-sm-6">
+    <div class="reports-summary-card">
+      <span class="label">Collection Rate</span>
+      <p class="value">{{ reports_top_cards.collection_percent|floatformat:1 }}%</p>
+      <div class="meta">
+        Billed: UGX {{ reports_top_cards.fees_billed|floatformat:0|intcomma }}<br>
+        Paid: UGX {{ reports_top_cards.fees_paid|floatformat:0|intcomma }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-6">
+    <div class="reports-summary-card">
+      <span class="label">Net Balance</span>
+      <p class="value">UGX {{ reports_top_cards.net_balance|floatformat:0|intcomma }}</p>
+      <div class="meta">
+        Outstanding fees: UGX {{ reports_top_cards.fees_outstanding|floatformat:0|intcomma }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-6">
+    <div class="reports-summary-card">
+      <span class="label">Attendance & Academics</span>
+      <p class="value">{{ reports_top_cards.attendance_percent|floatformat:1 }}% / {{ reports_top_cards.academic_average|floatformat:1 }}</p>
+      <div class="meta">
+        Attendance percent and average class score
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-6">
+    <div class="reports-summary-card">
+      <span class="label">Verification Queue</span>
+      <p class="value">{{ reports_top_cards.pending_tasks|intcomma }}</p>
+      <div class="meta">
+        Pending quality control tasks
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-6">
+    <div class="reports-summary-card">
+      <span class="label">Users</span>
+      <p class="value">{{ reports_top_cards.active_users|intcomma }}</p>
+      <div class="meta">
+        Active users - {{ reports_inactive_users_count|intcomma }} inactive
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-6">
+    <div class="reports-summary-card">
+      <span class="label">System Health</span>
+      <p class="value">{{ reports_system_version }}</p>
+      <div class="meta">
+        DB {{ reports_db_size_mb|floatformat:2 }} MB - Media {{ reports_media_size_mb|floatformat:2 }} MB
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="reports-nav">
+  <a href="#fees-report">Fees</a>
+  <a href="#financial-summary">Financial Summary</a>
+  <a href="#income-statement">Income Statement</a>
+  <a href="#cash-flow">Cash Flow</a>
+  <a href="#attendance-report">Attendance</a>
+  <a href="#academic-report">Academic</a>
+  <a href="#bulk-cards">Bulk Result Cards</a>
+  <a href="#verification-monitor">Verification Monitor</a>
+  <a href="#user-access-report">User & Access</a>
+</div>
+
+<div class="x_panel report-block" id="fees-report">
+  <div class="x_title">
+    <div class="row">
+      <div class="col-md-6 col-sm-12">
+        <h2><i class="fa fa-money"></i> Fees Report</h2>
+      </div>
+      <div class="col-md-6 col-sm-12">
+        <div class="report-actions">
+          <a href="{{ reports_links_map.fees.url }}" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i> Open</a>
+          <a href="{% url 'fees_status' %}" class="btn btn-default btn-xs"><i class="fa fa-bar-chart"></i> Summary</a>
+          <a href="{{ reports_links_map.fees.url }}?export=excel" class="btn btn-primary btn-xs"><i class="fa fa-file-excel-o"></i> Export Excel</a>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <form method="get" action="{% url 'dashboard_reports' %}#fees-report" class="report-filter">
+      {% if selected_term %}<input type="hidden" name="term" value="{{ selected_term }}">{% endif %}
+      <div class="row">
+        <div class="col-md-3 col-sm-6">
+          <label>Class</label>
+          <select name="fees_class" class="form-control input-sm">
+            <option value="">All Classes</option>
+            {% for item in reports_filter_options.classes %}
+            <option value="{{ item.id }}" {% if fees_selected_class == item.id %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label>Section</label>
+          <select name="fees_section" class="form-control input-sm">
+            <option value="">All Sections</option>
+            {% for item in reports_filter_options.sections %}
+            <option value="{{ item.id }}" {% if fees_selected_section == item.id %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label>Student</label>
+          <select name="fees_student" class="form-control input-sm">
+            <option value="">All Students</option>
+            {% for item in reports_filter_options.students %}
+            <option value="{{ item.id }}" {% if fees_selected_student == item.id %}selected{% endif %}>{{ item.name }} ({{ item.reg_no }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6" style="padding-top: 23px;">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'dashboard_reports' %}{% if selected_term %}?term={{ selected_term }}{% endif %}#fees-report" class="btn btn-default btn-sm">Reset</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="row">
+      <div class="col-md-3 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Total Fees Billed</p>
+          <p class="value">UGX {{ fees_total_billed|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Total Paid</p>
+          <p class="value">UGX {{ fees_total_paid|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Outstanding Fees</p>
+          <p class="value">UGX {{ fees_total_outstanding|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Collection Percentage</p>
+          <p class="value">{{ fees_collection_percent|floatformat:1 }}%</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover datatable">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Student ID</th>
+                <th>Class</th>
+                <th>Fees Billed</th>
+                <th>Fees Paid</th>
+                <th>Outstanding</th>
+                <th>Collection Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in fees_student_rows %}
+              <tr>
+                <td>{{ row.student_name }}</td>
+                <td>{{ row.reg_no }}</td>
+                <td>{{ row.class_label }}</td>
+                <td>UGX {{ row.fees_billed|floatformat:0|intcomma }}</td>
+                <td>UGX {{ row.fees_paid|floatformat:0|intcomma }}</td>
+                <td>UGX {{ row.outstanding|floatformat:0|intcomma }}</td>
+                <td>
+                  <span class="status-pill {% if row.status == 'Paid' %}paid{% elif row.status == 'Partial' %}partial{% else %}unpaid{% endif %}">
+                    {{ row.status }}
+                  </span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center text-muted">No fee records in selected scope.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="chart-card">
+          <h5>Paid vs Outstanding</h5>
+          <canvas id="feesPaidVsOutstandingChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <h5>Class-Wise Outstanding</h5>
+          <canvas id="feesClassOutstandingChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <h5>Monthly Collections</h5>
+          <canvas id="feesMonthlyCollectionChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="x_panel report-block" id="financial-summary">
+  <div class="x_title">
+    <div class="row">
+      <div class="col-md-6 col-sm-12"><h2><i class="fa fa-balance-scale"></i> Financial Summary</h2></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="report-actions">
+          <a href="{{ reports_links_map.financial_summary.url }}" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i> Open</a>
+          <a href="{{ reports_links_map.financial_summary.url }}?export=pdf" class="btn btn-primary btn-xs"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
+          <a href="{{ reports_links_map.financial_summary.url }}?export=excel" class="btn btn-primary btn-xs"><i class="fa fa-file-excel-o"></i> Export Excel</a>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <div class="row">
+      <div class="col-md-3 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Total Income</p>
+          <p class="value">UGX {{ financial_total_income|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Total Expenses</p>
+          <p class="value">UGX {{ financial_total_expenses|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Net Surplus / Deficit</p>
+          <p class="value">UGX {{ financial_net_balance|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Outstanding Receivables</p>
+          <p class="value">UGX {{ financial_outstanding_receivables|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-7">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover datatable">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in financial_summary_rows %}
+              <tr>
+                <td>{{ row.category }}</td>
+                <td>UGX {{ row.amount|floatformat:0|intcomma }}</td>
+                <td>{{ row.notes }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="chart-card">
+          <h5>Income vs Expenses</h5>
+          <canvas id="financialIncomeExpenseChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <h5>Balance Trend</h5>
+          <canvas id="financialBalanceTrendChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="x_panel report-block" id="income-statement">
+  <div class="x_title">
+    <div class="row">
+      <div class="col-md-6 col-sm-12"><h2><i class="fa fa-list-alt"></i> Income Statement</h2></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="report-actions">
+          <a href="{{ reports_links_map.income_statement.url }}" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i> Open</a>
+          <a href="{{ reports_links_map.income_statement.url }}?export=pdf" class="btn btn-primary btn-xs"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
+          <a href="{{ reports_links_map.income_statement.url }}?export=excel" class="btn btn-primary btn-xs"><i class="fa fa-file-excel-o"></i> Export Excel</a>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <form method="get" action="{% url 'dashboard_reports' %}#income-statement" class="report-filter">
+      {% if selected_term %}<input type="hidden" name="term" value="{{ selected_term }}">{% endif %}
+      <div class="row">
+        <div class="col-md-4 col-sm-6">
+          <label>Class</label>
+          <select name="statement_class" class="form-control input-sm">
+            <option value="">All Classes</option>
+            {% for item in reports_filter_options.classes %}
+            <option value="{{ item.id }}" {% if statement_selected_class == item.id %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 col-sm-6" style="padding-top: 23px;">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'dashboard_reports' %}{% if selected_term %}?term={{ selected_term }}{% endif %}#income-statement" class="btn btn-default btn-sm">Reset</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover datatable">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in income_statement_rows %}
+              <tr>
+                <td>{{ row.item }}</td>
+                <td>{{ row.type }}</td>
+                <td>UGX {{ row.amount|floatformat:0|intcomma }}</td>
+                <td>{{ row.notes }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted">No income statement rows in this scope.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="chart-card">
+          <h5>Income vs Expenses by Category</h5>
+          <canvas id="incomeStatementStackChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="x_panel report-block" id="cash-flow">
+  <div class="x_title">
+    <div class="row">
+      <div class="col-md-6 col-sm-12"><h2><i class="fa fa-exchange"></i> Cash Flow</h2></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="report-actions">
+          <a href="{{ reports_links_map.cash_flow.url }}" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i> Open</a>
+          <a href="{{ reports_links_map.cash_flow.url }}?export=pdf" class="btn btn-primary btn-xs"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
+          <a href="{{ reports_links_map.cash_flow.url }}?export=excel" class="btn btn-primary btn-xs"><i class="fa fa-file-excel-o"></i> Export Excel</a>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <form method="get" action="{% url 'dashboard_reports' %}#cash-flow" class="report-filter">
+      {% if selected_term %}<input type="hidden" name="term" value="{{ selected_term }}">{% endif %}
+      <div class="row">
+        <div class="col-md-3 col-sm-6">
+          <label>From</label>
+          <input type="date" name="cash_from" value="{{ cash_from|date:'Y-m-d' }}" class="form-control input-sm">
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label>To</label>
+          <input type="date" name="cash_to" value="{{ cash_to|date:'Y-m-d' }}" class="form-control input-sm">
+        </div>
+        <div class="col-md-6 col-sm-12" style="padding-top: 23px;">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'dashboard_reports' %}{% if selected_term %}?term={{ selected_term }}{% endif %}#cash-flow" class="btn btn-default btn-sm">Reset</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="row">
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Total Inflow</p>
+          <p class="value">UGX {{ cash_total_inflow|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Total Outflow</p>
+          <p class="value">UGX {{ cash_total_outflow|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Net Cash</p>
+          <p class="value">UGX {{ cash_net|floatformat:0|intcomma }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover datatable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Inflow</th>
+                <th>Outflow</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in cash_flow_rows %}
+              <tr>
+                <td>{{ row.date|date:"d-M-Y" }}</td>
+                <td>{{ row.description }}</td>
+                <td>{% if row.inflow %}UGX {{ row.inflow|floatformat:0|intcomma }}{% else %}-{% endif %}</td>
+                <td>{% if row.outflow %}UGX {{ row.outflow|floatformat:0|intcomma }}{% else %}-{% endif %}</td>
+                <td>UGX {{ row.balance|floatformat:0|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted">No cash movement in selected period.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="chart-card">
+          <h5>Cash Movement Trend</h5>
+          <canvas id="cashFlowLineChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <h5>Inflow vs Outflow by Week</h5>
+          <canvas id="cashFlowWeeklyChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="x_panel report-block" id="attendance-report">
+  <div class="x_title">
+    <div class="row">
+      <div class="col-md-6 col-sm-12"><h2><i class="fa fa-calendar-check-o"></i> Attendance Report</h2></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="report-actions">
+          <a href="{{ reports_links_map.attendance.url }}" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i> Open</a>
+          <a href="{{ reports_links_map.attendance.url }}?export=pdf" class="btn btn-primary btn-xs"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
+          <a href="{{ reports_links_map.attendance.url }}?export=excel" class="btn btn-primary btn-xs"><i class="fa fa-file-excel-o"></i> Export Excel</a>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <form method="get" action="{% url 'dashboard_reports' %}#attendance-report" class="report-filter">
+      {% if selected_term %}<input type="hidden" name="term" value="{{ selected_term }}">{% endif %}
+      <div class="row">
+        <div class="col-md-2 col-sm-6">
+          <label>Class</label>
+          <select name="attendance_class" class="form-control input-sm">
+            <option value="">All Classes</option>
+            {% for item in reports_filter_options.classes %}
+            <option value="{{ item.id }}" {% if attendance_selected_class == item.id %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label>Section</label>
+          <select name="attendance_section" class="form-control input-sm">
+            <option value="">All Sections</option>
+            {% for item in reports_filter_options.sections %}
+            <option value="{{ item.id }}" {% if attendance_selected_section == item.id %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label>Date From</label>
+          <input type="date" name="attendance_from" value="{{ attendance_from|date:'Y-m-d' }}" class="form-control input-sm">
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label>Date To</label>
+          <input type="date" name="attendance_to" value="{{ attendance_to|date:'Y-m-d' }}" class="form-control input-sm">
+        </div>
+        <div class="col-md-4 col-sm-12" style="padding-top: 23px;">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'dashboard_reports' %}{% if selected_term %}?term={{ selected_term }}{% endif %}#attendance-report" class="btn btn-default btn-sm">Reset</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="row">
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Total Present</p>
+          <p class="value">{{ attendance_total_present|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Total Absent</p>
+          <p class="value">{{ attendance_total_absent|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Attendance %</p>
+          <p class="value">{{ attendance_percent|floatformat:1 }}%</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover datatable">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Student ID</th>
+                <th>Class</th>
+                <th>Days Present</th>
+                <th>Days Absent</th>
+                <th>Attendance %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in attendance_student_rows %}
+              <tr>
+                <td>{{ row.student_name }}</td>
+                <td>{{ row.reg_no }}</td>
+                <td>{{ row.class_label }}</td>
+                <td>{{ row.days_present|intcomma }}</td>
+                <td>{{ row.days_absent|intcomma }}</td>
+                <td>{{ row.attendance_percent|floatformat:1 }}%</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted">No attendance records in selected scope.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="chart-card">
+          <h5>Class Attendance Comparison</h5>
+          <canvas id="attendanceClassComparisonChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <h5>Daily Attendance Heatmap</h5>
+          {% if attendance_heatmap_truncated %}
+          <p class="text-muted" style="font-size: 11px; margin-bottom: 8px;">Showing latest 42 days.</p>
+          {% endif %}
+          <div class="heatmap-grid">
+            {% for point in attendance_heatmap_points %}
+            <div class="heatmap-cell lvl-{{ point.intensity }}" title="{{ point.date|date:'d-M-Y' }} - {{ point.rate|floatformat:1 }}%">
+              <span class="day">{{ point.day_label }}</span>
+              <span class="wk">{{ point.weekday }}</span>
+            </div>
+            {% empty %}
+            <div class="text-muted">No heatmap data.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="x_panel report-block" id="academic-report">
+  <div class="x_title">
+    <div class="row">
+      <div class="col-md-6 col-sm-12"><h2><i class="fa fa-line-chart"></i> Academic Report</h2></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="report-actions">
+          <a href="{{ reports_links_map.academic.url }}" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i> Open</a>
+          <a href="{{ reports_links_map.academic.url }}?export=pdf" class="btn btn-primary btn-xs"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
+          <a href="{{ reports_links_map.academic.url }}?export=excel" class="btn btn-primary btn-xs"><i class="fa fa-file-excel-o"></i> Export Excel</a>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <form method="get" action="{% url 'dashboard_reports' %}#academic-report" class="report-filter">
+      {% if selected_term %}<input type="hidden" name="term" value="{{ selected_term }}">{% endif %}
+      <div class="row">
+        <div class="col-md-3 col-sm-6">
+          <label>Class</label>
+          <select name="academic_class" class="form-control input-sm">
+            <option value="">All Classes</option>
+            {% for item in reports_filter_options.classes %}
+            <option value="{{ item.id }}" {% if academic_selected_class == item.id %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label>Subject</label>
+          <select name="academic_subject" class="form-control input-sm">
+            <option value="">All Subjects</option>
+            {% for item in reports_filter_options.subjects %}
+            <option value="{{ item.id }}" {% if academic_selected_subject == item.id %}selected{% endif %}>{{ item.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6 col-sm-12" style="padding-top: 23px;">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'dashboard_reports' %}{% if selected_term %}?term={{ selected_term }}{% endif %}#academic-report" class="btn btn-default btn-sm">Reset</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="row">
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Average Class Score</p>
+          <p class="value">{{ academic_average_score|floatformat:1 }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Highest Score</p>
+          <p class="value">{{ academic_highest_score|floatformat:1 }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Lowest Score</p>
+          <p class="value">{{ academic_lowest_score|floatformat:1 }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover datatable">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Student ID</th>
+                <th>Subject</th>
+                <th>Term Score</th>
+                <th>Cumulative Score</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in academic_student_rows %}
+              <tr>
+                <td>{{ row.student_name }}</td>
+                <td>{{ row.reg_no }}</td>
+                <td>{{ row.subject_name }}</td>
+                <td>{{ row.term_score|floatformat:1 }}</td>
+                <td>{{ row.cumulative_score|floatformat:1 }}</td>
+                <td>{{ row.grade }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted">No academic rows for selected scope.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="chart-card">
+          <h5>Subject-Wise Performance</h5>
+          <canvas id="academicSubjectChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <h5>Student Progress Trend</h5>
+          <canvas id="academicProgressChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="x_panel report-block" id="bulk-cards">
+  <div class="x_title">
+    <div class="row">
+      <div class="col-md-6 col-sm-12"><h2><i class="fa fa-files-o"></i> Bulk Result Cards</h2></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="report-actions">
+          <a href="{{ reports_links_map.bulk_cards.url }}" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i> Open</a>
+          <a href="{{ bulk_generate_url }}" class="btn btn-primary btn-xs"><i class="fa fa-file-pdf-o"></i> Bulk Generate</a>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <form method="get" action="{% url 'dashboard_reports' %}#bulk-cards" class="report-filter">
+      {% if selected_term %}<input type="hidden" name="term" value="{{ selected_term }}">{% endif %}
+      <div class="row">
+        <div class="col-md-3 col-sm-6">
+          <label>Class</label>
+          <select name="bulk_class" class="form-control input-sm">
+            <option value="">All Classes</option>
+            {% for item in reports_filter_options.classes %}
+            <option value="{{ item.id }}" {% if bulk_selected_class == item.id %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label>Section</label>
+          <select name="bulk_section" class="form-control input-sm">
+            <option value="">All Sections</option>
+            {% for item in reports_filter_options.sections %}
+            <option value="{{ item.id }}" {% if bulk_selected_section == item.id %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6 col-sm-12" style="padding-top: 23px;">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'dashboard_reports' %}{% if selected_term %}?term={{ selected_term }}{% endif %}#bulk-cards" class="btn btn-default btn-sm">Reset</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="row">
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Generated</p>
+          <p class="value">{{ bulk_generated_count|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Pending</p>
+          <p class="value">{{ bulk_pending_count|intcomma }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="report-mini-kpi">
+          <p class="label">Total Students</p>
+          <p class="value">{{ bulk_total_students|intcomma }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-striped table-hover datatable">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Student ID</th>
+            <th>Class</th>
+            <th>Status</th>
+            <th>Generate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in bulk_result_rows %}
+          <tr>
+            <td>{{ row.student_name }}</td>
+            <td>{{ row.reg_no }}</td>
+            <td>{{ row.class_label }}</td>
+            <td>
+              <span class="status-pill {% if row.is_generated %}generated{% else %}pending{% endif %}">
+                {% if row.is_generated %}Generated{% else %}Pending{% endif %}
+              </span>
+            </td>
+            <td><a href="{{ row.generate_url }}" class="btn btn-xs btn-primary"><i class="fa fa-file-text-o"></i> Generate</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted">No students found for selected scope.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="x_panel report-block" id="verification-monitor">
+  <div class="x_title">
+    <div class="row">
+      <div class="col-md-6 col-sm-12"><h2><i class="fa fa-shield"></i> Result Verification Monitor</h2></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="report-actions">
+          <a href="{{ reports_links_map.verification.url }}" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i> Open</a>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <form method="get" action="{% url 'dashboard_reports' %}#verification-monitor" class="report-filter">
+      {% if selected_term %}<input type="hidden" name="term" value="{{ selected_term }}">{% endif %}
+      <div class="row">
+        <div class="col-md-4 col-sm-6">
+          <label>Status</label>
+          <select name="monitor_status" class="form-control input-sm">
+            <option value="all" {% if monitor_selected_status == "all" %}selected{% endif %}>All Statuses</option>
+            <option value="draft" {% if monitor_selected_status == "draft" %}selected{% endif %}>Draft</option>
+            <option value="pending" {% if monitor_selected_status == "pending" %}selected{% endif %}>Pending</option>
+            <option value="flagged" {% if monitor_selected_status == "flagged" %}selected{% endif %}>Flagged</option>
+            <option value="verified" {% if monitor_selected_status == "verified" %}selected{% endif %}>Verified</option>
+          </select>
+        </div>
+        <div class="col-md-4 col-sm-6">
+          <label>Responsible User</label>
+          <select name="monitor_user" class="form-control input-sm">
+            <option value="">All Users</option>
+            {% for item in reports_filter_options.monitor_users %}
+            <option value="{{ item.id }}" {% if monitor_selected_user == item.id %}selected{% endif %}>{{ item.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 col-sm-12" style="padding-top: 23px;">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'dashboard_reports' %}{% if selected_term %}?term={{ selected_term }}{% endif %}#verification-monitor" class="btn btn-default btn-sm">Reset</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover datatable">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Created On</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in verification_tasks %}
+              <tr>
+                <td>{{ row.task }}</td>
+                <td>{{ row.type }}</td>
+                <td>
+                  <span class="status-pill {% if row.status_key == 'verified' or row.status_key == 'approved' or row.status_key == 'success' or row.status_key == 'completed' %}completed{% elif row.status_key == 'flagged' %}flagged{% else %}pending{% endif %}">
+                    {{ row.status }}
+                  </span>
+                </td>
+                <td>{{ row.assigned_to }}</td>
+                <td>{{ row.created_on|date:"d-M-Y" }}</td>
+                <td>{{ row.notes|truncatechars:80 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted">No verification tasks found.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="report-mini-kpi">
+          <p class="label">Pending Tasks</p>
+          <p class="value">{{ verification_pending_count|intcomma }}</p>
+        </div>
+        <div class="report-mini-kpi">
+          <p class="label">Completed Tasks</p>
+          <p class="value">{{ verification_completed_count|intcomma }}</p>
+        </div>
+        <div class="chart-card">
+          <h5>Pending vs Completed</h5>
+          <canvas id="verificationStatusChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="x_panel report-block" id="user-access-report">
+  <div class="x_title">
+    <div class="row">
+      <div class="col-md-6 col-sm-12"><h2><i class="fa fa-users"></i> User & Access Report</h2></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="report-actions">
+          <a href="{{ reports_links_map.users.url }}" class="btn btn-default btn-xs"><i class="fa fa-external-link"></i> Open</a>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <form method="get" action="{% url 'dashboard_reports' %}#user-access-report" class="report-filter">
+      {% if selected_term %}<input type="hidden" name="term" value="{{ selected_term }}">{% endif %}
+      <div class="row">
+        <div class="col-md-3 col-sm-6">
+          <label>Role</label>
+          <select name="user_role" class="form-control input-sm">
+            <option value="">All Roles</option>
+            {% for item in reports_filter_options.roles %}
+            <option value="{{ item.name }}" {% if user_selected_role == item.name %}selected{% endif %}>{{ item.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label>Department</label>
+          <select name="user_department" class="form-control input-sm">
+            <option value="">All Departments</option>
+            {% for item in reports_filter_options.departments %}
+            <option value="{{ item }}" {% if user_selected_department == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label>Status</label>
+          <select name="user_status" class="form-control input-sm">
+            <option value="all" {% if user_selected_status == "all" %}selected{% endif %}>All</option>
+            <option value="active" {% if user_selected_status == "active" %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if user_selected_status == "inactive" %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-12" style="padding-top: 23px;">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'dashboard_reports' %}{% if selected_term %}?term={{ selected_term }}{% endif %}#user-access-report" class="btn btn-default btn-sm">Reset</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover datatable">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in user_access_rows %}
+              <tr>
+                <td>{{ row.username }}<br><small class="text-muted">{{ row.department }}</small></td>
+                <td>{{ row.role_name }}</td>
+                <td>
+                  <span class="status-pill {% if row.status == 'Active' %}active{% else %}inactive{% endif %}">{{ row.status }}</span>
+                </td>
+                <td>{% if row.last_login %}{{ row.last_login|date:"d-M-Y H:i" }}{% else %}-{% endif %}</td>
+                <td>
+                  <a href="{{ row.view_url }}" class="btn btn-xs btn-primary">View</a>
+                  <a href="{{ row.edit_url }}" class="btn btn-xs btn-info">Edit</a>
+                  {% if row.can_deactivate %}
+                  <a href="{{ row.deactivate_url }}" class="btn btn-xs btn-danger">Deactivate</a>
+                  {% else %}
+                  <button type="button" class="btn btn-xs btn-default" disabled>Deactivate</button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted">No users found.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="chart-card">
+          <h5>Role Distribution</h5>
+          <canvas id="userRoleDistributionChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <h5>System Snapshot</h5>
+          <p><strong>Storage:</strong> {{ reports_storage_total_mb|floatformat:2 }} MB total</p>
+          <p style="margin-bottom: 0;"><strong>Version:</strong> {{ reports_system_version }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="x_panel report-block">
+      <div class="x_title"><h2><i class="fa fa-sign-in"></i> Recent Login Activity</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <table class="table table-striped table-hover">
+          <thead><tr><th>Time</th><th>User</th><th>Action</th><th>IP</th></tr></thead>
+          <tbody>
+            {% for log in reports_recent_login_activity %}
+            <tr>
+              <td>{{ log.timestamp|date:"d-M H:i" }}</td>
+              <td>{% if log.username %}{{ log.username }}{% elif log.user %}{{ log.user.username }}{% else %}anonymous{% endif %}</td>
+              <td>{{ log.action|title }}</td>
+              <td>{{ log.ip_address|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">No login activity logs.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="x_panel report-block">
+      <div class="x_title"><h2><i class="fa fa-history"></i> Recent System Activity</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <table class="table table-striped table-hover">
+          <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Target</th><th>Details</th></tr></thead>
+          <tbody>
+            {% for row in reports_recent_system_activity %}
+            <tr>
+              <td>{{ row.timestamp|date:"d-M H:i" }}</td>
+              <td>{{ row.username }}</td>
+              <td>{{ row.action }}</td>
+              <td>{{ row.target|truncatechars:44 }}</td>
+              <td>{{ row.details|truncatechars:64 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted">No system activity logs.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    function setSummaryState(card, button, collapsed) {
+      card.classList.toggle('is-collapsed', collapsed);
+      button.innerHTML = collapsed ? '<i class="fa fa-plus"></i>' : '<i class="fa fa-minus"></i>';
+      button.setAttribute('title', collapsed ? 'Expand card' : 'Minimize card');
+      button.setAttribute('aria-label', collapsed ? 'Expand card' : 'Minimize card');
+      button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
+
+    function setReportState(panel, button, collapsed) {
+      var content = panel.querySelector('.x_content');
+      if (!content) return;
+      panel.classList.toggle('is-collapsed', collapsed);
+      content.style.display = collapsed ? 'none' : '';
+      button.innerHTML = collapsed
+        ? '<i class="fa fa-plus"></i> Expand'
+        : '<i class="fa fa-minus"></i> Minimize';
+      button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      if (!collapsed) {
+        content.querySelectorAll('canvas').forEach(function (canvas) {
+          if (canvas.__reportChart && typeof canvas.__reportChart.resize === 'function') {
+            canvas.__reportChart.resize();
+          }
+        });
+      }
+    }
+
+    function setupSummaryCardToggles() {
+      document.querySelectorAll('.reports-summary-card').forEach(function (card) {
+        if (card.querySelector('.summary-collapse-toggle')) return;
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'summary-collapse-toggle';
+        card.appendChild(button);
+        setSummaryState(card, button, false);
+        button.addEventListener('click', function () {
+          setSummaryState(card, button, !card.classList.contains('is-collapsed'));
+        });
+      });
+    }
+
+    function setupReportBlockToggles() {
+      document.querySelectorAll('.report-block[id]').forEach(function (panel) {
+        var actionRow = panel.querySelector('.report-actions');
+        if (!actionRow || actionRow.querySelector('.report-collapse-toggle')) return;
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-default btn-xs report-collapse-toggle';
+        actionRow.appendChild(button);
+        setReportState(panel, button, false);
+        button.addEventListener('click', function () {
+          setReportState(panel, button, !panel.classList.contains('is-collapsed'));
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        setupSummaryCardToggles();
+        setupReportBlockToggles();
+      });
+      return;
+    }
+
+    setupSummaryCardToggles();
+    setupReportBlockToggles();
+  })();
+</script>
+
+<script>
+  (function () {
+    var chartsInitialized = false;
+
+    function buildCharts() {
+      if (chartsInitialized || typeof window.Chart === 'undefined') return false;
+      chartsInitialized = true;
+
+      var payload = {};
+      try {
+        payload = JSON.parse('{{ reports_charts_json|escapejs }}');
+      } catch (err) {
+        payload = {};
+      }
+
+      function ensureSeries(labels, values) {
+        if (!labels || !labels.length) {
+          return { labels: ['No data'], values: [0] };
+        }
+        if (!values || !values.length) {
+          return { labels: labels, values: labels.map(function () { return 0; }) };
+        }
+        return { labels: labels, values: values };
+      }
+
+      function drawChart(id, config) {
+        var node = document.getElementById(id);
+        if (!node) return;
+        var context = node.getContext('2d');
+        if (!context) return;
+        if (node.__reportChart && typeof node.__reportChart.destroy === 'function') {
+          node.__reportChart.destroy();
+        }
+        node.__reportChart = new window.Chart(context, config);
+      }
+
+      var palette = {
+        navy: '#2a3f54',
+        steel: '#3f5367',
+        sky: '#3498db',
+        mint: '#26b99a',
+        amber: '#f39c12',
+        rose: '#e74c3c',
+        slate: '#73879c'
+      };
+
+      var feesPie = ensureSeries(
+        payload.fees_paid_vs_outstanding ? payload.fees_paid_vs_outstanding.labels : [],
+        payload.fees_paid_vs_outstanding ? payload.fees_paid_vs_outstanding.values : []
+      );
+      drawChart('feesPaidVsOutstandingChart', {
+        type: 'doughnut',
+        data: {
+          labels: feesPie.labels,
+          datasets: [{ data: feesPie.values, backgroundColor: [palette.mint, palette.rose] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, legend: { position: 'bottom' } }
+      });
+
+      var feesClass = ensureSeries(
+        payload.fees_class_outstanding ? payload.fees_class_outstanding.labels : [],
+        payload.fees_class_outstanding ? payload.fees_class_outstanding.values : []
+      );
+      drawChart('feesClassOutstandingChart', {
+        type: 'bar',
+        data: {
+          labels: feesClass.labels,
+          datasets: [{ label: 'Outstanding', data: feesClass.values, backgroundColor: palette.rose }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { display: false },
+          scales: { yAxes: [{ ticks: { beginAtZero: true } }] }
+        }
+      });
+
+      var feesMonthly = ensureSeries(
+        payload.fees_monthly_collection ? payload.fees_monthly_collection.labels : [],
+        payload.fees_monthly_collection ? payload.fees_monthly_collection.values : []
+      );
+      drawChart('feesMonthlyCollectionChart', {
+        type: 'line',
+        data: {
+          labels: feesMonthly.labels,
+          datasets: [{
+            label: 'Collections',
+            data: feesMonthly.values,
+            borderColor: palette.navy,
+            backgroundColor: 'rgba(31,79,130,0.15)',
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { display: false },
+          scales: { yAxes: [{ ticks: { beginAtZero: true } }] }
+        }
+      });
+
+      var financialPie = ensureSeries(
+        payload.financial_income_vs_expense ? payload.financial_income_vs_expense.labels : [],
+        payload.financial_income_vs_expense ? payload.financial_income_vs_expense.values : []
+      );
+      drawChart('financialIncomeExpenseChart', {
+        type: 'doughnut',
+        data: {
+          labels: financialPie.labels,
+          datasets: [{ data: financialPie.values, backgroundColor: [palette.mint, palette.amber] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, legend: { position: 'bottom' } }
+      });
+
+      var financialTrend = payload.financial_balance_trend || {};
+      drawChart('financialBalanceTrendChart', {
+        type: 'line',
+        data: {
+          labels: financialTrend.labels || ['No data'],
+          datasets: [
+            {
+              label: 'Income',
+              data: financialTrend.income_values || [0],
+              borderColor: palette.mint,
+              fill: false
+            },
+            {
+              label: 'Expenses',
+              data: financialTrend.expense_values || [0],
+              borderColor: palette.rose,
+              fill: false
+            },
+            {
+              label: 'Balance',
+              data: financialTrend.balance_values || [0],
+              borderColor: palette.navy,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { yAxes: [{ ticks: { beginAtZero: true } }] }
+        }
+      });
+
+      var statementStack = payload.income_statement_stack || {};
+      drawChart('incomeStatementStackChart', {
+        type: 'bar',
+        data: {
+          labels: statementStack.labels || ['No data'],
+          datasets: [
+            {
+              label: 'Income',
+              data: statementStack.income_values || [0],
+              backgroundColor: palette.mint
+            },
+            {
+              label: 'Expenses',
+              data: statementStack.expense_values || [0],
+              backgroundColor: palette.rose
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            xAxes: [{ stacked: true }],
+            yAxes: [{ stacked: true, ticks: { beginAtZero: true } }]
+          }
+        }
+      });
+
+      var cashLine = payload.cash_flow_line || {};
+      drawChart('cashFlowLineChart', {
+        type: 'line',
+        data: {
+          labels: cashLine.labels || ['No data'],
+          datasets: [{
+            label: 'Balance',
+            data: cashLine.values || [0],
+            borderColor: palette.navy,
+            backgroundColor: 'rgba(31,79,130,0.15)',
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { display: false },
+          scales: { yAxes: [{ ticks: { beginAtZero: true } }] }
+        }
+      });
+
+      var cashWeek = payload.cash_flow_weekly || {};
+      drawChart('cashFlowWeeklyChart', {
+        type: 'bar',
+        data: {
+          labels: cashWeek.labels || ['No data'],
+          datasets: [
+            { label: 'Inflow', data: cashWeek.inflow_values || [0], backgroundColor: palette.sky },
+            { label: 'Outflow', data: cashWeek.outflow_values || [0], backgroundColor: palette.amber }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { yAxes: [{ ticks: { beginAtZero: true } }] }
+        }
+      });
+
+      var attendanceClass = payload.attendance_class_comparison || {};
+      drawChart('attendanceClassComparisonChart', {
+        type: 'bar',
+        data: {
+          labels: attendanceClass.labels || ['No data'],
+          datasets: [{ label: 'Attendance %', data: attendanceClass.values || [0], backgroundColor: palette.steel }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { display: false },
+          scales: { yAxes: [{ ticks: { beginAtZero: true, max: 100 } }] }
+        }
+      });
+
+      var academicSubject = payload.academic_subject_performance || {};
+      drawChart('academicSubjectChart', {
+        type: 'bar',
+        data: {
+          labels: academicSubject.labels || ['No data'],
+          datasets: [{ label: 'Average Score', data: academicSubject.values || [0], backgroundColor: palette.sky }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { display: false },
+          scales: { yAxes: [{ ticks: { beginAtZero: true } }] }
+        }
+      });
+
+      var academicProgress = payload.academic_progress || {};
+      drawChart('academicProgressChart', {
+        type: 'line',
+        data: {
+          labels: academicProgress.labels || ['No data'],
+          datasets: [{
+            label: 'Average Score',
+            data: academicProgress.values || [0],
+            borderColor: palette.navy,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { display: false },
+          scales: { yAxes: [{ ticks: { beginAtZero: true } }] }
+        }
+      });
+
+      var verificationStatus = ensureSeries(
+        payload.verification_status ? payload.verification_status.labels : [],
+        payload.verification_status ? payload.verification_status.values : []
+      );
+      drawChart('verificationStatusChart', {
+        type: 'pie',
+        data: {
+          labels: verificationStatus.labels,
+          datasets: [{ data: verificationStatus.values, backgroundColor: [palette.amber, palette.mint] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, legend: { position: 'bottom' } }
+      });
+
+      var userRoles = ensureSeries(
+        payload.user_role_distribution ? payload.user_role_distribution.labels : [],
+        payload.user_role_distribution ? payload.user_role_distribution.values : []
+      );
+      drawChart('userRoleDistributionChart', {
+        type: 'doughnut',
+        data: {
+          labels: userRoles.labels,
+          datasets: [{
+            data: userRoles.values,
+            backgroundColor: [palette.navy, palette.sky, palette.mint, palette.amber, palette.rose, palette.slate]
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, legend: { position: 'bottom' } }
+      });
+
+      return true;
+    }
+
+    function initWithRetry(remainingAttempts) {
+      if (buildCharts()) return;
+      if (remainingAttempts <= 0) return;
+      window.setTimeout(function () {
+        initWithRetry(remainingAttempts - 1);
+      }, 120);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        initWithRetry(80);
+      });
+      return;
+    }
+
+    initWithRetry(80);
+  })();
+</script>
+{% endblock %}

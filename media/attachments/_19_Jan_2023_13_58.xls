@@ -1,0 +1,37 @@
+
+
+
+	<div id="total_totals" style="font-weight:bolder;">
+					<div id="ticket_date" >Date</div>
+					<div id="ticket_number">&nbsp;Group / Batch Number</div><div id="ticket_number">Group Name</div>
+					<div id="totalTickets">Tickets Issued</div>
+					<div id="cancelled_cash">UGX</div>
+					<div id="cancelled_cash">USD</div>
+			</div><div id="agent_totals">
+									<div id="agent_name">UWA</div>
+									<div id="totalTickets">&nbsp</div>
+									<div id="totalCash">&nbsp;</div>
+									<div id="totalCash">&nbsp;</div>
+							</div><div id="cashiers_totals">
+							<div id="cashier_name">James's totals</div>
+							<div id="totalTickets">33</div>
+							<div id="totalCash">3,900,000.00</div>
+							<div id="totalCash">1,550.00</div>
+						</div><div id="agent_totals">
+							<div id="agent_name">UWA's totals</div>
+							<div id="totalTickets">33</div>
+							<div id="totalCash">3,900,000.00</div>
+							<div id="totalCash">1,550.00</div>
+						</div><div id="total_totals">
+							<div id="agent_name">Net Totals</div>
+							<div id="totalTickets">33</div>
+							<div id="totalCash">3,900,000.00</div>
+							<div id="totalCash">1,550.00</div>
+							<div style="clear:both"></div>
+					</div><div id="total_totals">
+							<div id="agent_name">Float Usage</div>
+							<div id="totalTickets"></div>
+							<div id="totalCash">0.00</div>
+							<div id="totalCash">0.00</div>
+						</div><div id="daily_cash"><div id="cash_day">2023-01-19 </div><div id="method_tash"><div id="cash_method">Bank Slip </div><div id="cash_amount">3,900,000.00 </div><div id="cash_amount">1,550.00 </div><div style="clear:both; padding:2px"></div></div></div>
+	

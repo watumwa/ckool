@@ -1,0 +1,418 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}{{ viewed_user.get_full_name|default:viewed_user.username }} - User Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="x_panel">
+        <div class="x_title">
+          <h2><i class="fa fa-user"></i> User Profile</h2>
+          <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+          <div class="row">
+            <!-- Profile Section -->
+            <div class="col-md-3 text-center">
+              <div class="profile-section mb-4">
+                {% if staff and staff.staff_photo %}
+                  <img class="img-circle profile-photo" src="{{ staff.staff_photo.url }}" alt="Profile Photo">
+                {% else %}
+                  <div class="profile-photo avatar-default">
+                    {{ viewed_user.first_name|first|default:viewed_user.username|first|upper }}
+                  </div>
+                {% endif %}
+
+                <div class="profile-info mt-3">
+                  <h4 class="mb-1">{{ viewed_user.get_full_name|default:viewed_user.username }}</h4>
+                  <p class="text-muted mb-2 small">@{{ viewed_user.username }}</p>
+
+                  {% if role %}
+                  <p class="mb-2"><i class="fa fa-briefcase text-primary"></i> <strong>{{ role|title }}</strong></p>
+                  {% endif %}
+
+                  <!-- Status Badge -->
+                  <div class="mb-3">
+                    {% if viewed_user.is_active %}
+                      <span class="status-badge active">
+                        <i class="fa fa-circle"></i> Active
+                      </span>
+                    {% else %}
+                      <span class="status-badge inactive">
+                        <i class="fa fa-circle"></i> Inactive
+                      </span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Details Section -->
+            <div class="col-md-9">
+              <!-- Account Information -->
+              <div class="info-section mb-4">
+                <h4 class="section-title"><i class="fa fa-info-circle text-primary"></i> Account Information</h4>
+                <div class="row">
+                  <div class="col-md-6">
+                    <table class="table info-table">
+                      <tbody>
+                        <tr>
+                          <td class="label-col"><strong>Username:</strong></td>
+                          <td>{{ viewed_user.username }}</td>
+                        </tr>
+                        <tr>
+                          <td class="label-col"><strong>Full Name:</strong></td>
+                          <td>{{ viewed_user.get_full_name|default:"Not provided" }}</td>
+                        </tr>
+                        <tr>
+                          <td class="label-col"><strong>Email:</strong></td>
+                          <td>{{ viewed_user.email|default:"Not provided" }}</td>
+                        </tr>
+                        <tr>
+                          <td class="label-col"><strong>Account Type:</strong></td>
+                          <td>
+                            {% if viewed_user.is_superuser %}
+                              <span class="badge-role superuser">Superuser</span>
+                            {% elif viewed_user.is_staff %}
+                              <span class="badge-role staff">Staff</span>
+                            {% else %}
+                              <span class="badge-role regular">Regular User</span>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="col-md-6">
+                    <table class="table info-table">
+                      <tbody>
+                        <tr>
+                          <td class="label-col"><strong>Status:</strong></td>
+                          <td>
+                            {% if viewed_user.is_active %}
+                              <span class="text-success"><i class="fa fa-check-circle"></i> Active</span>
+                            {% else %}
+                              <span class="text-danger"><i class="fa fa-times-circle"></i> Inactive</span>
+                            {% endif %}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="label-col"><strong>Member Since:</strong></td>
+                          <td><i class="fa fa-calendar text-muted"></i> {{ viewed_user.date_joined|date:"M d, Y" }}</td>
+                        </tr>
+                        {% if last_login %}
+                        <tr>
+                          <td class="label-col"><strong>Last Login:</strong></td>
+                          <td><i class="fa fa-clock text-muted"></i> {{ last_login|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                          <td class="label-col"><strong>Last Login:</strong></td>
+                          <td class="text-muted"><i class="fa fa-clock"></i> Never logged in</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                          <td class="label-col"><strong>Account Age:</strong></td>
+                          <td><i class="fa fa-hourglass text-muted"></i> {{ viewed_user.date_joined|timesince }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contact Information -->
+              {% if staff %}
+              <div class="info-section mb-4">
+                <h4 class="section-title"><i class="fa fa-address-card text-primary"></i> Contact Information</h4>
+                <div class="row">
+                  <div class="col-md-6">
+                    <table class="table info-table">
+                      <tbody>
+                        <tr>
+                          <td class="label-col"><strong>Email:</strong></td>
+                          <td><i class="fa fa-envelope text-muted"></i> {{ staff.email|default:"Not provided" }}</td>
+                        </tr>
+                        <tr>
+                          <td class="label-col"><strong>Phone:</strong></td>
+                          <td><i class="fa fa-phone text-muted"></i> {{ staff.contacts|default:"Not provided" }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="col-md-6">
+                    <table class="table info-table">
+                      <tbody>
+                        <tr>
+                          <td class="label-col"><strong>Address:</strong></td>
+                          <td><i class="fa fa-map-marker text-muted"></i> {{ staff.address|default:"Not provided" }}</td>
+                        </tr>
+                        {% if staff.department %}
+                        <tr>
+                          <td class="label-col"><strong>Department:</strong></td>
+                          <td><i class="fa fa-building text-muted"></i> {{ staff.department }}</td>
+                        </tr>
+                        {% endif %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Teaching Assignments -->
+              {% if teaching_assignments %}
+              <div class="info-section">
+                <h4 class="section-title"><i class="fa fa-book text-primary"></i> Teaching Assignments ({{ teaching_assignments|length }})</h4>
+                <div class="table-responsive">
+                  <table class="table table-striped assignments-table">
+                    <thead class="table-dark">
+                      <tr>
+                        <th width="5%">#</th>
+                        <th width="25%">Class</th>
+                        <th width="35%">Subject</th>
+                        <th width="20%">Stream</th>
+                        <th width="15%">Academic Year</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for assignment in teaching_assignments %}
+                      <tr>
+                        <td><span class="badge badge-counter">{{ forloop.counter }}</span></td>
+                        <td><strong>{{ assignment.academic_class_stream.academic_class.Class }}</strong></td>
+                        <td>{{ assignment.subject.name }}</td>
+                        <td>{{ assignment.academic_class_stream.stream }}</td>
+                        <td>{{ assignment.academic_class_stream.academic_class.academic_year }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Action Buttons -->
+              <div class="row mt-4">
+                <div class="col-md-12">
+                  <div class="btn-group">
+                    <a href="{% url 'user_list' %}" class="btn btn-default">
+                      <i class="fa fa-arrow-left"></i> Back to Users
+                    </a>
+                    {% if user.is_authenticated and user.staff_account.role.name == "Admin" and staff %}
+                    <a href="{% url 'edit_staff_details_page' staff.id %}" class="btn btn-primary">
+                      <i class="fa fa-edit"></i> Edit Profile
+                    </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Profile Section */
+.profile-section {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.profile-photo {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.avatar-default {
+    width: 90px;
+    height: 90px;
+    background: linear-gradient(135deg, #337ab7, #5dade2);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    border: 4px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.profile-info h4 {
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-badge.inactive {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-badge i {
+    font-size: 8px;
+}
+
+/* Section Titles */
+.section-title {
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #337ab7;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title i {
+    color: #337ab7;
+}
+
+/* Information Tables */
+.info-section {
+    background: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 25px;
+}
+
+.info-table {
+    margin-bottom: 0;
+}
+
+.info-table td {
+    padding: 12px 8px;
+    vertical-align: middle;
+    border: none;
+}
+
+.label-col {
+    width: 35%;
+    font-weight: 600;
+    color: #666;
+    border: none;
+}
+
+.info-table td:last-child {
+    color: #333;
+}
+
+/* Role Badges */
+.badge-role {
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-role.superuser {
+    background: #dc3545;
+    color: white;
+}
+
+.badge-role.staff {
+    background: #17a2b8;
+    color: white;
+}
+
+.badge-role.regular {
+    background: #6c757d;
+    color: white;
+}
+
+/* Assignments Table */
+.assignments-table {
+    margin-bottom: 0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.assignments-table thead th {
+    background: #343a40;
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 12px;
+}
+
+.assignments-table tbody td {
+    padding: 12px;
+    vertical-align: middle;
+}
+
+.badge-counter {
+    background: #337ab7;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Button Group */
+.btn-group .btn {
+    margin-right: 10px;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-section {
+        margin-bottom: 20px;
+    }
+
+    .info-section {
+        padding: 15px;
+    }
+
+    .section-title {
+        font-size: 16px;
+    }
+
+    .label-col {
+        width: 40%;
+    }
+}
+</style>
+{% endblock %}

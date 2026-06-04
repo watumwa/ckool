@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Result Entry{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div class="page-title">
+    <div class="title_left">
+        <h3><i class="fa fa-upload"></i> Bulk Result Entry</h3>
+    </div>
+</div>
+
+<div class="clearfix"></div>
+
+<div class="row">
+    <div class="col-md-12 col-sm-12 col-xs-12">
+
+        <!-- Upload Form -->
+        <div class="x_panel">
+            <div class="x_title">
+                <h2>Upload CSV File for {{ assessment.subject.name }} - {{ assessment.assessment_type.name }}</h2>
+                <div class="clearfix"></div>
+            </div>
+
+            <div class="x_content">
+                <form method="post" enctype="multipart/form-data" id="bulkUploadForm" aria-label="Bulk result upload form">
+                    {% csrf_token %}
+                    {% if not assessment %}
+                    <div class="mb-3">
+                        <label for="assessment_id" class="form-label">Select Assessment</label>
+                        <select name="assessment_id" id="assessment_id" class="form-select" required>
+                            <option value="">-- Select Assessment --</option>
+                            {% for assessment in assessments %}
+                                <option value="{{ assessment.id }}">{{ assessment.subject.name }} - {{ assessment.assessment_type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label" for="csv_file">Select CSV File or Drop Here</label>
+                        <div id="dropZone" class="border rounded p-3 text-center" tabindex="0" role="region" aria-label="File drop zone">
+                            <p class="mb-1">Drag & drop CSV file here, or click to select</p>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="pickFileBtn">Choose File</button>
+                            <input type="file" name="csv_file" id="csv_file" class="form-control d-none" accept=".csv,.xlsx" aria-describedby="csvHelp">
+                        </div>
+                        <div id="csvHelp" class="form-text text-muted">CSV should have columns: <strong>reg_no</strong>, <strong>score</strong>. Excel (.xlsx) support coming soon.</div>
+                    </div>
+
+                    <div id="previewContainer" class="mb-3 visually-hidden" aria-live="polite">
+                        <h5>Preview</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm" id="csvPreviewTable">
+                                <thead><tr><th>#</th><th>reg_no</th><th>score</th><th>Errors</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" id="uploadBtn" disabled>Upload and Process</button>
+                        {% if assessment %}
+                        <a href="{% url 'add_results' assessment.id %}" class="btn btn-secondary">Back to Manual Entry</a>
+                        {% else %}
+                        <a href="{% url 'class_assessment_list' %}" class="btn btn-secondary">Back to Assessments</a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="x_panel">
+            <div class="x_title">
+                <h2>CSV Format Instructions</h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <p>Your CSV file should contain the following columns:</p>
+                <ul>
+                    <li><strong>reg_no:</strong> Student registration number</li>
+                    <li><strong>score:</strong> Student score (numeric value)</li>
+                </ul>
+                <p>Example:</p>
+                <pre>
+reg_no,score
+REG001,85.5
+REG002,92.0
+REG003,78.3
+                </pre>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// CSV drag/drop and preview
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('csv_file');
+const pickFileBtn = document.getElementById('pickFileBtn');
+const previewContainer = document.getElementById('previewContainer');
+const previewTableBody = document.querySelector('#csvPreviewTable tbody');
+const uploadBtn = document.getElementById('uploadBtn');
+
+pickFileBtn.addEventListener('click', () => fileInput.click());
+
+['dragenter','dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.classList.add('bg-light'); });
+});
+['dragleave','drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.classList.remove('bg-light'); });
+});
+
+dropZone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+});
+
+fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+function handleFiles(files) {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    if (!file.name.endsWith('.csv')) {
+        previewContainer.classList.remove('visually-hidden');
+        previewTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Only CSV files are supported in this UI. Received: ${file.name}</td></tr>`;
+        uploadBtn.disabled = true;
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        parseCSVPreview(text);
+    };
+    reader.readAsText(file);
+}
+
+function parseCSVPreview(text) {
+    previewTableBody.innerHTML = '';
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    if (lines.length === 0) {
+        previewTableBody.innerHTML = `<tr><td colspan="4">No data found in CSV</td></tr>`;
+        uploadBtn.disabled = true;
+        previewContainer.classList.remove('visually-hidden');
+        return;
+    }
+
+    const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const regIdx = header.indexOf('reg_no');
+    const scoreIdx = header.indexOf('score');
+    if (regIdx === -1 || scoreIdx === -1) {
+        previewTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">CSV must contain columns: reg_no, score</td></tr>`;
+        uploadBtn.disabled = true;
+        previewContainer.classList.remove('visually-hidden');
+        return;
+    }
+
+    let valid = true;
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',');
+        const reg = cols[regIdx] ? cols[regIdx].trim() : '';
+        const score = cols[scoreIdx] ? cols[scoreIdx].trim() : '';
+        let err = '';
+        if (!reg) err = 'Missing reg_no';
+        if (score === '') err += (err ? '; ' : '') + 'Missing score';
+        if (score && isNaN(parseFloat(score))) err += (err ? '; ' : '') + 'Invalid score';
+        if (err) valid = false;
+        previewTableBody.insertAdjacentHTML('beforeend', `<tr><td>${i}</td><td>${reg}</td><td>${score}</td><td class="text-danger">${err}</td></tr>`);
+    }
+
+    previewContainer.classList.remove('visually-hidden');
+    uploadBtn.disabled = !valid;
+}
+
+// Graceful submit: prevent submit when preview invalid
+document.getElementById('bulkUploadForm').addEventListener('submit', function(e){
+    if (uploadBtn.disabled) {
+        e.preventDefault();
+        alert('Please fix CSV errors before uploading.');
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,429 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Student Bills Management{% endblock %}
+
+{% block content %}
+<div class="clearfix"></div>
+        
+<!-- Page Header - Gentellela Style -->
+<div class="row">
+    <div class="col-md-12 col-sm-12 ">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-file-invoice-dollar"></i> Student Bills Management</h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <div class="comm-header">
+                    <div class="comm-intro">
+                        <div class="comm-title">Manage and track student fees bills</div>
+                        <div class="text-muted">Monitor totals, payments, and outstanding balances.</div>
+                    </div>
+                    <div class="comm-actions">
+                        <a href="{% url 'carry_forward_balances' %}" class="btn btn-warning">
+                            <i class="fa fa-arrow-circle-right"></i> Carry Forward
+                        </a>
+                        <a href="{% url 'fees_status' %}" class="btn btn-info">
+                            <i class="fa fa-chart-bar"></i> Fees Status Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards - Gentellela Style -->
+<div class="row">
+    <div class="col-md-3 col-sm-6 ">
+        <div class="stat-card">
+            <div class="stat-icon primary"><i class="fa fa-file-invoice"></i></div>
+            <div>
+                <div class="stat-label">Total Bills</div>
+                <div class="stat-value">{{ total_bills }}</div>
+                <div class="stat-note">Active bills</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 ">
+        <div class="stat-card">
+            <div class="stat-icon info"><i class="fa fa-money-bill-wave"></i></div>
+            <div>
+                <div class="stat-label">Total Billed</div>
+                <div class="stat-value">UGX {{ total_amount|intcomma }}</div>
+                <div class="stat-note">Amount due</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 ">
+        <div class="stat-card">
+            <div class="stat-icon success"><i class="fa fa-coins"></i></div>
+            <div>
+                <div class="stat-label">Total Paid</div>
+                <div class="stat-value">UGX {{ total_paid|intcomma }}</div>
+                <div class="stat-note">Amount received</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 ">
+        <div class="stat-card">
+            <div class="stat-icon warning"><i class="fa fa-exclamation-triangle"></i></div>
+            <div>
+                <div class="stat-label">Outstanding</div>
+                <div class="stat-value">UGX {{ total_outstanding|intcomma }}</div>
+                <div class="stat-note">Amount pending</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Breakdown - Gentellela Style -->
+<div class="row">
+    <div class="col-md-12 col-sm-12 ">
+        <div class="x_panel status-panel">
+            <div class="x_title">
+                <h2><i class="fa fa-chart-pie"></i> Bill Status Breakdown</h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <div class="row text-center">
+                    <div class="col-md-4 col-sm-4 ">
+                        <div class="status-card">
+                            <span class="count_top"><i class="fa fa-check-circle"></i> Paid Bills</span>
+                            <div class="count green">{{ paid_bills }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-sm-4 ">
+                        <div class="status-card">
+                            <span class="count_top"><i class="fa fa-clock"></i> Unpaid Bills</span>
+                            <div class="count yellow">{{ unpaid_bills }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-sm-4 ">
+                        <div class="status-card">
+                            <span class="count_top"><i class="fa fa-exclamation-circle"></i> Overdue Bills</span>
+                            <div class="count red">{{ overdue_bills }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Filters - Gentellela Style -->
+<div class="row">
+    <div class="col-md-12 col-sm-12 ">
+        <div class="x_panel filters-panel">
+            <div class="x_title">
+                <h2><i class="fa fa-filter"></i> Filters</h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <form method="GET" class="form-horizontal form-label-left" id="filterForm">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="form-group">
+                                <label for="academic_year">Academic Year</label>
+                                <select name="academic_year" id="academic_year" class="form-control filter-select">
+                                    <option value="">All Years</option>
+                                    {% for year in academic_years %}
+                                        <option value="{{ year.id }}" {% if year.id|stringformat:"s" == selected_academic_year %}selected{% endif %}>{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="form-group">
+                                <label for="term">Term</label>
+                                <select name="term" id="term" class="form-control filter-select">
+                                    <option value="">All Terms</option>
+                                    {% for term in terms %}
+                                        <option value="{{ term.id }}" {% if term.id|stringformat:"s" == selected_term %}selected{% endif %}>{{ term }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="form-group">
+                                <label for="class">Class</label>
+                                <select name="class" id="class" class="form-control filter-select">
+                                    <option value="">All Classes</option>
+                                    {% for class in classes %}
+                                        <option value="{{ class.id }}" {% if class.id|stringformat:"s" == selected_class %}selected{% endif %}>{{ class }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="form-group">
+                                <label for="search">Search Student</label>
+                                <div class="input-group">
+                                    <input type="text" name="search" id="search" class="form-control" placeholder="Student name..." value="{{ search_query }}">
+                                    <span class="input-group-btn">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa fa-search"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Student Bills Table - Gentellela Style -->
+<div class="row">
+    <div class="col-md-12 col-sm-12 ">
+        <div class="x_panel table-panel">
+            <div class="x_title">
+                <h2><i class="fa fa-list"></i> Student Bills <small>{{ student_bills|length }} bills found</small></h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                {% if student_bills %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered datatable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Student</th>
+                                <th>Bill Date</th>
+                                <th>Due Date</th>
+                                <th>Class</th>
+                                <th>Academic Year</th>
+                                <th>Term</th>
+                                <th>Total Amount</th>
+                                <th>Amount Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in student_bills %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ bill.student.student_name }}</strong>
+                                    <br><small class="text-muted">ID: {{ bill.student.display_student_id }}</small>
+                                </td>
+                                <td>{{ bill.bill_date|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if bill.due_date %}
+                                        {{ bill.due_date|date:"M d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">Not set</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ bill.academic_class.Class }}</td>
+                                <td>{{ bill.academic_class.academic_year }}</td>
+                                <td>{{ bill.academic_class.term }}</td>
+                                <td><strong>UGX {{ bill.total_amount|intcomma }}</strong></td>
+                                <td class="text-success"><strong>UGX {{ bill.amount_paid|intcomma }}</strong></td>
+                                <td>
+                                    {% if bill.balance > 0 %}
+                                        <span class="text-danger"><strong>UGX {{ bill.balance|intcomma }}</strong></span>
+                                    {% elif bill.balance < 0 %}
+                                        <span class="text-info"><strong>CR UGX {{ bill.balance|slice:"1:"|intcomma }}</strong></span>
+                                    {% else %}
+                                        <span class="text-success"><strong>Paid</strong></span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if bill.status == 'Paid' %}
+                                        <span class="label label-success">Paid</span>
+                                    {% elif bill.status == 'Overdue' %}
+                                        <span class="label label-danger">Overdue</span>
+                                    {% else %}
+                                        <span class="label label-warning">Unpaid</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'student_bill_details_page' bill.id %}" class="btn btn-primary btn-xs" title="View Details">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                        <a href="#" class="btn btn-success btn-xs" title="Add Payment">
+                                            <i class="fa fa-plus"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination - Gentellela Style -->
+                {% if student_bills.has_other_pages %}
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="dataTables_paginate paging_simple_numbers">
+                            <ul class="pagination">
+                                {% if student_bills.has_previous %}
+                                    <li class="paginate_button previous">
+                                        <a href="?page=1{% if selected_academic_year %}&academic_year={{ selected_academic_year }}{% endif %}{% if selected_term %}&term={{ selected_term }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">First</a>
+                                    </li>
+                                    <li class="paginate_button previous">
+                                        <a href="?page={{ student_bills.previous_page_number }}{% if selected_academic_year %}&academic_year={{ selected_academic_year }}{% endif %}{% if selected_term %}&term={{ selected_term }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in student_bills.paginator.page_range %}
+                                    {% if student_bills.number == num %}
+                                        <li class="paginate_button active">
+                                            <a href="#">{{ num }}</a>
+                                        </li>
+                                    {% elif num > student_bills.number|add:'-3' and num < student_bills.number|add:'3' %}
+                                        <li class="paginate_button">
+                                            <a href="?page={{ num }}{% if selected_academic_year %}&academic_year={{ selected_academic_year }}{% endif %}{% if selected_term %}&term={{ selected_term }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if student_bills.has_next %}
+                                    <li class="paginate_button next">
+                                        <a href="?page={{ student_bills.next_page_number }}{% if selected_academic_year %}&academic_year={{ selected_academic_year }}{% endif %}{% if selected_term %}&term={{ selected_term }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
+                                    </li>
+                                    <li class="paginate_button next">
+                                        <a href="?page={{ student_bills.paginator.num_pages }}{% if selected_academic_year %}&academic_year={{ selected_academic_year }}{% endif %}{% if selected_term %}&term={{ selected_term }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Last</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% else %}
+                 <div class="text-center py-5">
+                    <i class="fa fa-inbox fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Student Bills Found</h4>
+                    <p class="text-muted">Try adjusting your filters or create new bills.</p>
+                    <a href="#" class="btn btn-primary">Create New Bill</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gentellela Custom Styles -->
+ <style>
+  .comm-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    background:#f8fafc;
+    border:1px solid #e6edf5;
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:14px;
+  }
+  .comm-title{font-weight:600;color:#334155;margin-bottom:4px;}
+  .comm-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+
+  .stat-card{background:#fff;border:1px solid #e6edf5;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 16px rgba(0,0,0,0.04);}    
+  .stat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;}
+  .stat-icon.primary{background:#2563eb;}
+  .stat-icon.success{background:#22c55e;}
+  .stat-icon.info{background:#38bdf8;}
+  .stat-icon.warning{background:#f59e0b;}
+  .stat-label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
+  .stat-value{font-size:16px;font-weight:700;color:#1f2a44;line-height:1.2;}
+  .stat-note{font-size:11px;color:#94a3b8;}
+
+  .status-panel .x_content{background:#f8fafc;border-radius:12px;border:1px solid #e6edf5;padding:12px;}
+  .status-card{background:#fff;border:1px solid #e6edf5;border-radius:12px;padding:10px 12px;box-shadow:0 4px 12px rgba(0,0,0,0.04);}    
+
+  .filters-panel .x_content{background:#f8fafc;border-radius:12px;border:1px solid #e6edf5;padding:14px;}
+  .filters-panel .form-control{border-radius:10px;border:1px solid #e2e8f0;background:#fff;}
+
+  .table-panel .x_title h2{font-weight:700;}
+ </style>
+
+<!-- Simple Filter JavaScript -->
+<script>
+// Simple and reliable filter functionality
+console.log('Filter script loaded - DOMContentLoaded waiting');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded, initializing filters');
+    
+    // Get all filter elements
+    var academicYearSelect = document.getElementById('academic_year');
+    var termSelect = document.getElementById('term');
+    var classSelect = document.getElementById('class');
+    var searchInput = document.getElementById('search');
+    var filterForm = document.getElementById('filterForm');
+
+    console.log('Filter elements found:', {
+        academicYearSelect: !!academicYearSelect,
+        termSelect: !!termSelect,
+        classSelect: !!classSelect,
+        searchInput: !!searchInput,
+        filterForm: !!filterForm
+    });
+
+    // Function to submit form
+    function submitForm() {
+        console.log('Submitting filter form');
+        filterForm.submit();
+    }
+
+    // Add event listeners to select elements
+    if (academicYearSelect) {
+        academicYearSelect.addEventListener('change', function() {
+            console.log('Academic year changed:', this.value);
+            submitForm();
+        });
+    }
+    if (termSelect) {
+        termSelect.addEventListener('change', function() {
+            console.log('Term changed:', this.value);
+            submitForm();
+        });
+    }
+    if (classSelect) {
+        classSelect.addEventListener('change', function() {
+            console.log('Class changed:', this.value);
+            submitForm();
+        });
+    }
+
+    // Add debounced input listener to search field
+    var searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            console.log('Search input detected');
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                console.log('Search submitted after debounce:', searchInput.value);
+                submitForm();
+            }, 500); // Wait 500ms after typing stops
+        });
+
+        // Also submit on Enter key
+        searchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                console.log('Enter key pressed, submitting immediately');
+                submitForm();
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}

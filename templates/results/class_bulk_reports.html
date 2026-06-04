@@ -1,0 +1,31 @@
+{% load static report_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bulk Reports - {{ school.school_name }}</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+
+    {% for report in reports %}
+        {# Reuse the single report template for each student #}
+        {% include report_template with school=report.school student=report.student term=report.term academic_year=report.academic_year report_data=report.report_data assessment_types=report.assessment_types total_marks=report.total_marks overall_average=report.overall_average overall_grade=report.overall_grade overall_points=report.overall_points colspan=report.colspan assessment_totals=report.assessment_totals total_aggregates=report.total_aggregates assessment_divisions=report.assessment_divisions next_term_start_date=report.next_term_start_date next_term_name=report.next_term_name head_teacher_signature=report.head_teacher_signature class_teacher_signature=report.class_teacher_signature class_teacher_remark=report.class_teacher_remark head_teacher_remark=report.head_teacher_remark printed_at=report.printed_at report_reference=report.report_reference class_size=report.class_size is_bulk_report=True %}
+        
+        {% if not forloop.last %}
+        <div class="page-break"></div>
+        {% endif %}
+    {% endfor %}
+
+</body>
+</html>

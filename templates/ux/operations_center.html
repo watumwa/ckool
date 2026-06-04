@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block page_title %}Task Center{% endblock %}
+
+{% block content %}
+<div class="ux-hero">
+  <h1><i class="fa fa-compass"></i> Task Center</h1>
+  <p>{{ today|date:"l, d M Y" }} · Active role: <strong>{{ active_role_name }}</strong>. Start from the task you want to complete.</p>
+</div>
+
+{% if alerts %}
+<div class="ux-kpi-row">
+  {% for alert in alerts %}
+  <div class="ux-kpi {{ alert.tone }}">
+    <small>{{ alert.label }}</small>
+    <strong>{{ alert.value|intcomma }}</strong>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="ux-grid">
+  {% for action in quick_actions %}
+  <a href="{{ action.url }}" class="ux-card {{ action.color }}">
+    <div class="ux-card-icon"><i class="fa {{ action.icon }}"></i></div>
+    <h3>{{ action.title }}</h3>
+    <p>{{ action.description }}</p>
+  </a>
+  {% empty %}
+  <div class="ux-empty">
+    <i class="fa fa-info-circle fa-2x"></i>
+    <h4>No task shortcuts available</h4>
+    <p>Contact an administrator to assign your staff role correctly.</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="x_panel">
+  <div class="x_title"><h2><i class="fa fa-lightbulb-o"></i> How staff should use this page</h2><div class="clearfix"></div></div>
+  <div class="x_content">
+    <p class="text-muted">This page reduces menu hunting. Teachers start with attendance or marks; bursars start with quick payment; administrators start with setup, learners, users and reports.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,709 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block page_title %}Fees History — {{ student.student_name }}{% endblock page_title %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+    <div class="col-md-12 col-sm-12 col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-history"></i> Student Fees History</h2>
+                <ul class="nav navbar-right panel_toolbox">
+                    <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+                    <li><a class="close-link"><i class="fa fa-close"></i></a></li>
+                </ul>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+
+                <!-- Student Profile Header -->
+                <div class="sfh-profile">
+                    <div class="sfh-profile-left">
+                        <img src="{{ student.photo.url }}" alt="{{ student.student_name }}" class="sfh-avatar">
+                        <div>
+                            <div class="sfh-name">{{ student.student_name }}</div>
+                            <div class="sfh-meta">Student ID: {{ student.display_student_id }}</div>
+                            <div class="sfh-meta">Class: {{ student.current_class.name }}</div>
+                        </div>
+                    </div>
+                    <div class="sfh-profile-actions">
+                        <form method="get" class="form-inline" style="display: inline-flex; gap: 10px; align-items: center;">
+                            <select name="year" class="form-control form-control-sm" onchange="this.form.submit()">
+                                <option value="">All Years</option>
+                                {% for year in student_years %}
+                                <option value="{{ year.id }}" {% if selected_year_id == year.id %}selected{% endif %}>{{ year.academic_year }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                        <!-- <a href="{% url 'reconcile_overpayments' student.id %}" class="btn btn-warning btn-sm" onclick="return confirm('This will apply any overpayments from later terms to cover earlier balances. Continue?');">
+                            <i class="fa fa-exchange"></i> Reconcile Overpayments
+                        </a> -->
+                        <a href="{% url 'student_fees_receipt' student.id %}" class="btn btn-primary btn-sm" target="_blank">
+                            <i class="fa fa-print"></i> Print Receipt
+                        </a>
+                        <a href="{% url 'fees_status' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fa fa-arrow-left"></i> Back to Fees Status
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Lifetime Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="stat-label">Lifetime Billed</div>
+                                        <div class="stat-value">UGX {{ lifetime_billed|intcomma }}</div>
+                                        <div class="stat-note">{{ bill_count }} bill{{ bill_count|pluralize }}</div>
+                                    </div>
+                                    <div class="stat-icon primary"><i class="fa fa-calculator"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="stat-label">Lifetime Paid</div>
+                                        <div class="stat-value">UGX {{ lifetime_paid|intcomma }}</div>
+                                        <div class="stat-note">{{ lifetime_progress|floatformat:0 }}% overall</div>
+                                    </div>
+                                    <div class="stat-icon success"><i class="fa fa-check-circle"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        {% if lifetime_outstanding < 0 %}
+                                        <div class="stat-label">Credit</div>
+                                        <div class="stat-value" style="color: green;">UGX {{ lifetime_outstanding_abs|intcomma }}</div>
+                                        <div class="stat-note">Overpayment</div>
+                                        {% else %}
+                                        <div class="stat-label">Outstanding</div>
+                                        <div class="stat-value">UGX {{ lifetime_outstanding|intcomma }}</div>
+                                        <div class="stat-note">Pending balance</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="stat-icon {% if lifetime_outstanding < 0 %}success{% else %}warning{% endif %}"><i class="fa fa-{% if lifetime_outstanding < 0 %}check-circle{% else %}clock{% endif %}"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="stat-label">Payment Progress</div>
+                                        <div class="stat-value">{{ lifetime_progress|floatformat:1 }}%</div>
+                                        <div class="stat-note">Overall collection</div>
+                                    </div>
+                                    <div class="stat-icon info"><i class="fa fa-chart-pie"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lifetime Progress Bar -->
+                <div class="sfh-progress-wrap mb-4">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="sfh-progress-label">Overall Payment Progress</span>
+                        <span class="sfh-progress-label">{{ lifetime_progress|floatformat:1 }}%</span>
+                    </div>
+                    <div class="progress" style="height: 10px; border-radius: 999px;">
+                        <div class="progress-bar {% if lifetime_progress >= 100 %}bg-success{% elif lifetime_progress >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                            role="progressbar" style="width: {{ lifetime_progress }}%;"
+                            aria-valuenow="{{ lifetime_progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <!-- Year-by-Year Accordion -->
+                {% if years_data %}
+                {% for year_key, year_info in years_data.items %}
+                <div class="sfh-year-section">
+                    <div class="sfh-year-header" data-toggle="collapse" data-target="#year-{{ year_key }}"
+                        aria-expanded="true">
+                        <div class="sfh-year-title">
+                            <i class="fa fa-calendar-alt"></i>
+                            Academic Year {{ year_info.year.academic_year }}
+                        </div>
+                        <div class="sfh-year-summary">
+                            <span class="sfh-year-badge primary">Billed: UGX {{ year_info.year_total|intcomma }}</span>
+                            <span class="sfh-year-badge success">Paid: UGX {{ year_info.year_paid|intcomma }}</span>
+                            {% if year_info.year_outstanding > 0 %}
+                            <span class="sfh-year-badge danger">Owed: UGX {{ year_info.year_outstanding|intcomma }}</span>
+                            {% elif year_info.year_outstanding < 0 %}
+                            <span class="sfh-year-badge success">Credit: UGX {{ year_info.year_outstanding_abs|intcomma }}</span>
+                            {% endif %}
+                            <i class="fa fa-chevron-down sfh-chevron"></i>
+                        </div>
+                    </div>
+
+                    <div class="collapse show" id="year-{{ year_key }}">
+                        <div class="sfh-year-body">
+                            {% for bd in year_info.bills %}
+                            <div class="sfh-term-card">
+                                <!-- Term Bill Header -->
+                                <div class="sfh-term-header" data-toggle="collapse"
+                                    data-target="#bill-{{ bd.bill.id }}">
+                                    <div class="sfh-term-left">
+                                        <div class="sfh-term-name">
+                                            <i class="fa fa-file-invoice"></i>
+                                            {{ bd.term }} &mdash; {{ bd.academic_class }}
+                                        </div>
+                                        <div class="sfh-term-stats">
+                                            <span>Total: <strong>UGX {{ bd.total_amount|intcomma }}</strong></span>
+                                            <span class="text-success">Paid: <strong>UGX {{ bd.amount_paid|intcomma }}</strong></span>
+                                            {% if bd.balance_label == "DR" %}
+                                            <span class="text-danger">Balance: <strong>DR {{ bd.balance|intcomma }}</strong></span>
+                                            {% elif bd.balance_label == "CR" %}
+                                            <span class="text-success">Credit: <strong>CR {{ bd.balance|intcomma }}</strong></span>
+                                            {% else %}
+                                            <span>Balance: <strong>UGX 0</strong></span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="sfh-term-right">
+                                        {% if bd.payment_status == "Paid" %}
+                                        <span class="badge bg-success"><i class="fa fa-check-circle"></i> Paid</span>
+                                        {% elif bd.payment_status == "Overpaid" %}
+                                        <span class="badge bg-info"><i class="fa fa-plus-circle"></i> Overpaid</span>
+                                        {% elif bd.payment_status == "Unpaid" %}
+                                        <span class="badge bg-secondary"><i class="fa fa-clock"></i> Unpaid</span>
+                                        {% elif bd.payment_status == "Overdue" %}
+                                        <span class="badge bg-danger"><i class="fa fa-exclamation-triangle"></i>
+                                            Overdue</span>
+                                        {% elif bd.payment_status == "Partial" %}
+                                        <span class="badge bg-warning text-dark"><i class="fa fa-adjust"></i>
+                                            Partial</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-dark"><i class="fa fa-ban"></i> No Bill</span>
+                                        {% endif %}
+
+                                        {% if bd.bill %}
+                                        <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#paymentModal{{ bd.bill.id }}">
+                                            <i class="fa fa-money"></i> Pay
+                                        </button>
+                                        
+                                        <!-- Payment Modal -->
+                                        <div class="modal fade" id="paymentModal{{ bd.bill.id }}" tabindex="-1" role="dialog">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                                        <h4 class="modal-title"><i class="fa fa-money"></i> Record Payment - {{ bd.bill }}</h4>
+                                                    </div>
+                                                    <form method="post" action="{% url 'record_payment' bd.bill.id %}">
+                                                        {% csrf_token %}
+                                                        <div class="modal-body">
+                                                            <div class="form-group">
+                                                                <label>Outstanding</label>
+                                                                <input type="text" class="form-control" value="UGX {{ bd.balance|floatformat:0 }}" readonly>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label>Payment Date *</label>
+                                                                <input type="date" name="payment_date" class="form-control" value="{{ today }}" required>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label>Category</label>
+                                                                <select name="fee_category" class="form-control">
+                                                                    <option value="">Auto-detect</option>
+                                                                    <option value="Tuition">Tuition</option>
+                                                                    <option value="Transport">Transport</option>
+                                                                    <option value="Uniform">Uniform</option>
+                                                                    <option value="Other">Other</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label>Amount *</label>
+                                                                <input type="number" name="amount" class="form-control" placeholder="Enter amount" required min="1" max="{{ bd.balance|floatformat:2 }}" step="0.01">
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label>Payment Method *</label>
+                                                                <select name="payment_method" class="form-control" required>
+                                                                    <option value="">Select method</option>
+                                                                    <option value="Cash">Cash</option>
+                                                                    <option value="SchoolPay">SchoolPay</option>
+                                                                    <option value="Bank">Bank</option>
+                                                                    <option value="Other">Other</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label>Reference No</label>
+                                                                <input type="text" name="reference_no" class="form-control" placeholder="Auto-generated if blank">
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label>Notes</label>
+                                                                <textarea name="notes" class="form-control" rows="3" placeholder="Optional remarks"></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-success">Record Payment</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if bd.total_amount > 0 %}
+                                        <div class="progress sfh-mini-progress">
+                                            <div class="progress-bar {% if bd.progress >= 100 %}bg-success{% elif bd.progress >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                                style="width: {{ bd.progress }}%;">{{ bd.progress|floatformat:0 }}%
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        <i class="fa fa-chevron-down sfh-chevron-sm"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Expandable Detail -->
+                                <div class="collapse" id="bill-{{ bd.bill.id }}">
+                                    <div class="sfh-bill-detail">
+                                        <!-- Charge Items Table -->
+                                        <h6 class="sfh-section-title"><i class="fa fa-list"></i> Bill Items / Charges
+                                        </h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered sfh-detail-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Item</th>
+                                                        <th>Category</th>
+                                                        <th>Description</th>
+                                                        <th class="text-end">Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in bd.items %}
+                                                    <tr>
+                                                        <td>{{ forloop.counter }}</td>
+                                                        <td><strong>{{ item.bill_item.item_name }}</strong></td>
+                                                        <td><span class="badge bg-light text-dark">{{ item.bill_item.get_category_display }}</span></td>
+                                                        <td>{{ item.description }}</td>
+                                                        <td class="text-end">UGX {{ item.amount|intcomma }}</td>
+                                                    </tr>
+                                                    {% empty %}
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-3">No charge
+                                                            items on this bill</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                {% if bd.items %}
+                                                <tfoot>
+                                                    <tr class="sfh-total-row">
+                                                        <td colspan="4" class="text-end fw-bold">Total</td>
+                                                        <td class="text-end fw-bold">UGX {{ bd.total_amount|intcomma }}
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                                {% endif %}
+                                            </table>
+                                        </div>
+
+                                        <!-- Payment History -->
+                                        <h6 class="sfh-section-title mt-3"><i class="fa fa-money-bill-wave"></i> Payment
+                                            History</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered sfh-detail-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <th>Method</th>
+                                                        <th>Reference</th>
+                                                        <th class="text-end">Amount</th>
+                                                        <th>Recorded By</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for payment in bd.payments %}
+                                                    <tr>
+                                                        <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                                                        <td><span class="badge bg-info text-white">{{ payment.payment_method }}</span></td>
+                                                        <td><code>{{ payment.reference_no }}</code></td>
+                                                        <td class="text-end text-success fw-bold">UGX {{ payment.amount|intcomma }}</td>
+                                                        <td>{{ payment.recorded_by }}</td>
+                                                    </tr>
+                                                    {% empty %}
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-3">No payments
+                                                            recorded</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                {% if bd.payments %}
+                                                <tfoot>
+                                                    <tr class="sfh-total-row">
+                                                        <td colspan="3" class="text-end fw-bold">Total Paid</td>
+                                                        <td class="text-end fw-bold text-success">UGX {{ bd.amount_paid|intcomma }}</td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tfoot>
+                                                {% endif %}
+                                            </table>
+                                        </div>
+
+                                        <!-- Quick Link -->
+                                        <div class="text-end mt-2">
+                                            <a href="{% url 'student_bill_details_page' bd.bill.id %}"
+                                                class="btn btn-sm btn-outline-primary">
+                                                <i class="fa fa-external-link-alt"></i> View Full Bill Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="alert alert-info" role="alert">
+                        <i class="fa fa-info-circle fa-3x mb-2"></i>
+                        <h4>No Fee Records Found</h4>
+                        <p>This student has no bills in the system yet.</p>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Student Fees History (sfh) styles */
+    .sfh-profile {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        background: #f8fafc;
+        border: 1px solid #e6edf5;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+    }
+
+    .sfh-profile-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .sfh-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #e6edf5;
+    }
+
+    .sfh-name {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1f2a44;
+    }
+
+    .sfh-meta {
+        font-size: 0.82rem;
+        color: #64748b;
+    }
+
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e6edf5;
+        border-radius: 12px;
+        padding: 10px 12px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .stat-icon.primary {
+        background: #2563eb;
+    }
+
+    .stat-icon.success {
+        background: #22c55e;
+    }
+
+    .stat-icon.info {
+        background: #38bdf8;
+    }
+
+    .stat-icon.warning {
+        background: #f59e0b;
+    }
+
+    .stat-label {
+        font-size: 11px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        font-weight: 600;
+    }
+
+    .stat-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1f2a44;
+        line-height: 1.2;
+    }
+
+    .stat-note {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .sfh-progress-wrap {}
+
+    .sfh-progress-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    /* Year Accordion */
+    .sfh-year-section {
+        border: 1px solid #e6edf5;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .sfh-year-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px 20px;
+        background: linear-gradient(135deg, #1e293b, #334155);
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .sfh-year-header:hover {
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+    }
+
+    .sfh-year-title {
+        font-size: 1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sfh-year-summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .sfh-year-badge {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .sfh-year-badge.primary {
+        background: rgba(37, 99, 235, 0.2);
+        color: #93c5fd;
+    }
+
+    .sfh-year-badge.success {
+        background: rgba(34, 197, 94, 0.2);
+        color: #86efac;
+    }
+
+    .sfh-year-badge.danger {
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+    }
+
+    .sfh-chevron {
+        transition: transform 0.3s;
+        font-size: 0.85rem;
+    }
+
+    .collapsed .sfh-chevron {
+        transform: rotate(-90deg);
+    }
+
+    .sfh-year-body {
+        padding: 12px 16px;
+    }
+
+    /* Term Card */
+    .sfh-term-card {
+        border: 1px solid #e6edf5;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .sfh-term-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px 16px;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .sfh-term-header:hover {
+        background: #eff6ff;
+    }
+
+    .sfh-term-name {
+        font-weight: 600;
+        color: #1f2a44;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .sfh-term-stats {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 4px;
+    }
+
+    .sfh-term-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .sfh-mini-progress {
+        width: 80px;
+        height: 8px;
+        border-radius: 999px;
+    }
+
+    .sfh-chevron-sm {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        transition: transform 0.3s;
+    }
+
+    .collapsed .sfh-chevron-sm {
+        transform: rotate(-90deg);
+    }
+
+    /* Bill Detail */
+    .sfh-bill-detail {
+        padding: 16px 20px;
+        border-top: 1px solid #e6edf5;
+        background: #fafbfd;
+    }
+
+    .sfh-section-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .sfh-detail-table {
+        font-size: 0.82rem;
+        margin-bottom: 0;
+    }
+
+    .sfh-detail-table thead th {
+        background: #f1f5f9;
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .sfh-total-row {
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .sfh-profile {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .sfh-year-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .sfh-year-summary {
+            margin-top: 6px;
+        }
+
+        .sfh-term-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .sfh-term-right {
+            margin-top: 6px;
+        }
+
+        .sfh-term-stats {
+            flex-direction: column;
+            gap: 4px;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+{% endblock %}

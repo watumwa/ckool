@@ -1,0 +1,297 @@
+{% load static %}
+<style>
+    /* Subject Performance Summary Section */
+    .subject-performance-section {
+        margin: 2rem 0;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+        break-inside: avoid;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .subject-performance-header {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1.1rem;
+        font-size: 1rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 100%);
+        color: #ffffff;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 8px 16px rgba(29, 78, 216, 0.2);
+    }
+
+    .subject-performance-header:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 18px rgba(29, 78, 216, 0.25);
+    }
+
+    .subject-performance-header i {
+        margin-right: 0.5rem;
+        transition: transform 0.3s ease;
+    }
+
+    .subject-performance-header.collapsed i {
+        transform: rotate(-90deg);
+    }
+
+    .subject-performance-content {
+        break-inside: avoid;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .subject-performance-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.875rem;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    .subject-performance-table th,
+    .subject-performance-table td {
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem;
+        text-align: left;
+    }
+
+    .subject-performance-table th {
+        background: #1e3a8a;
+        color: #ffffff;
+        font-weight: 700;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .subject-performance-table td {
+        vertical-align: middle;
+        color: #1f2937;
+    }
+
+    .subject-performance-table tbody tr {
+        transition: background 0.2s ease;
+    }
+
+    .subject-performance-table tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    .subject-performance-table tbody tr:hover {
+        background: #eff6ff;
+    }
+
+    .subject-performance-table .badge {
+        display: inline-flex;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 6px;
+        background: #e5e7eb;
+        color: #1f2937;
+    }
+
+    .subject-performance-table .score-badge {
+        background: #dbeafe;
+        color: #1e3a8a;
+    }
+
+    .subject-performance-table .trend-up {
+        color: #16a34a;
+        font-weight: 500;
+    }
+
+    .subject-performance-table .trend-down {
+        color: #dc2626;
+        font-weight: 500;
+    }
+
+    .subject-performance-table .trend-stable {
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    .subject-performance-table .scores-list {
+        margin: 0.5rem 0 0 0;
+        padding-left: 1rem;
+        font-size: 0.75rem;
+        color: #6b7280;
+        list-style-type: disc;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 1.5rem;
+        color: #64748b;
+        font-size: 0.875rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        margin: 1rem 0;
+    }
+
+    .no-data i {
+        color: #9ca3af;
+    }
+
+    @media print {
+        .subject-performance-section {
+            margin: 1rem 0;
+            border-top: none;
+        }
+        .subject-performance-header {
+            background: #1d4ed8;
+            cursor: default;
+            box-shadow: none;
+            transform: none;
+        }
+        .subject-performance-header:hover {
+            background: #1d4ed8;
+        }
+        .subject-performance-header i {
+            display: none;
+        }
+        .subject-performance-content {
+            display: block !important;
+        }
+        .subject-performance-table {
+            box-shadow: none;
+            border: 1px solid #d1d5db;
+        }
+        .subject-performance-table tbody tr:hover {
+            background: inherit;
+        }
+        .subject-performance-table a {
+            text-decoration: none;
+            color: #1f2937;
+        }
+        .subject-performance-table .badge {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+        .no-data i {
+            display: none;
+        }
+    }
+
+    @media screen and (max-width: 768px) {
+        .subject-performance-section {
+            margin: 1rem 0;
+            padding-top: 0.75rem;
+        }
+        .subject-performance-header {
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+        }
+        .subject-performance-table {
+            font-size: 0.75rem;
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .subject-performance-table th,
+        .subject-performance-table td {
+            padding: 0.5rem;
+            min-width: 100px;
+        }
+        .subject-performance-table .badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
+        }
+        .subject-performance-table .scores-list {
+            font-size: 0.65rem;
+        }
+        .no-data {
+            font-size: 0.75rem;
+            padding: 1rem;
+        }
+    }
+</style>
+
+<section class="subject-performance-section" aria-labelledby="subject-performance-heading">
+    <h3 class="subject-performance-header collapsed" id="subject-performance-heading" data-toggle="collapse" data-target="#subject-performance-content" aria-expanded="false" aria-controls="subject-performance-content">
+        <i class="fas fa-chevron-down"></i> Subject Performance
+    </h3>
+    <div id="subject-performance-content" class="subject-performance-content collapse" aria-labelledby="subject-performance-heading">
+        {% if subject_averages %}
+        <table class="subject-performance-table" aria-label="Subject Performance Summary Table">
+            <thead>
+                <tr>
+                    <th scope="col">Subject</th>
+                    <th scope="col" class="text-right">Average</th>
+                    <th scope="col" class="text-center">Grade</th>
+                    <th scope="col" class="text-center">Points</th>
+                    <th scope="col" class="text-right">Assessments</th>
+                    <th scope="col" class="text-right">Trend</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for subject in subject_averages %}
+                <tr>
+                    <td>
+                        <strong>{{ subject.subject }}</strong>
+                        {% if subject.teacher %}
+                        <small class="text-muted d-block">{{ subject.teacher.get_full_name }}</small>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        <span class="badge score-badge">{{ subject.average|floatformat:1 }}%</span>
+                    </td>
+                    <td class="text-center">
+                        <strong>{{ subject.grade|default:"N/A" }}</strong>
+                    </td>
+                    <td class="text-center">
+                        {{ subject.points|floatformat:2|default:"0.00" }}
+                    </td>
+                    <td class="text-right">
+                        {% for assessment in subject.assessments %}
+                        <a href="{% url 'student_mini_report' student.obj.id assessment.id %}" class="badge badge-info text-decoration-none" title="View Mini Report">{{ assessment.name }}</a>
+                        {% empty %}
+                        <span class="text-muted">No assessments</span>
+                        {% endfor %}
+                    </td>
+                    <td class="text-right">
+                        {% if subject.trend == 'up' %}
+                        <span class="trend-up"><i class="fas fa-arrow-up"></i> Improving</span>
+                        {% elif subject.trend == 'down' %}
+                        <span class="trend-down"><i class="fas fa-arrow-down"></i> Declining</span>
+                        {% else %}
+                        <span class="trend-stable"><i class="fas fa-arrows-alt-h"></i> Stable</span>
+                        {% endif %}
+                        {% if subject.scores %}
+                        <ul class="scores-list">
+                            {% for assessment_type, score in subject.scores %}
+                            <li>{{ assessment_type }} — {{ score }}%</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No assessment data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="no-data">
+            <i class="fas fa-table fa-2x mb-2"></i>
+            <p>No assessment data available</p>
+        </div>
+        {% endif %}
+    </div>
+</section>

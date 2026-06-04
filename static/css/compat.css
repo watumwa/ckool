@@ -1,0 +1,237 @@
+/*
+ * Gentelella → Admindek Compatibility Layer
+ * Maps old Bootstrap 3 / Gentelella classes to Bootstrap 5 / Admindek equivalents.
+ * This avoids rewriting every template while giving the modern look.
+ */
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.container.body { display: contents; }
+.main_container { display: contents; }
+.right_col { display: contents; }
+.content-wrapper { display: contents; }
+
+/* ── x_panel → card ─────────────────────────────────────────────────────── */
+.x_panel {
+  background: var(--bs-card-bg, #fff);
+  border: 1px solid var(--bs-border-color, #e2e8f0);
+  border-radius: var(--bs-border-radius-lg, 0.5rem);
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  margin-bottom: 1.5rem;
+  padding: 0;
+}
+
+.x_title {
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--bs-border-color, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.x_title h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--bs-heading-color, #1e293b);
+}
+
+.x_title .filter { margin: 0; }
+
+.x_content {
+  padding: 1.25rem;
+}
+
+/* ── page-title ──────────────────────────────────────────────────────────── */
+.page-title {
+  padding: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.page-title .title_left h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.page-title .title_right { margin-left: auto; }
+
+/* ── Bootstrap 3 grid shims ─────────────────────────────────────────────── */
+/* Bootstrap 5 already has col-md-* etc., so only missing ones needed */
+.col-xs-1  { flex: 0 0 auto; width: 8.333333%; }
+.col-xs-2  { flex: 0 0 auto; width: 16.666667%; }
+.col-xs-3  { flex: 0 0 auto; width: 25%; }
+.col-xs-4  { flex: 0 0 auto; width: 33.333333%; }
+.col-xs-5  { flex: 0 0 auto; width: 41.666667%; }
+.col-xs-6  { flex: 0 0 auto; width: 50%; }
+.col-xs-7  { flex: 0 0 auto; width: 58.333333%; }
+.col-xs-8  { flex: 0 0 auto; width: 66.666667%; }
+.col-xs-9  { flex: 0 0 auto; width: 75%; }
+.col-xs-10 { flex: 0 0 auto; width: 83.333333%; }
+.col-xs-11 { flex: 0 0 auto; width: 91.666667%; }
+.col-xs-12 { flex: 0 0 auto; width: 100%; }
+
+/* ── Bootstrap 3 button shims ───────────────────────────────────────────── */
+.btn-default {
+  color: var(--bs-body-color);
+  background-color: var(--bs-light, #f8f9fa);
+  border-color: var(--bs-border-color, #dee2e6);
+}
+.btn-default:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+.btn-xs { padding: .125rem .35rem; font-size: .7rem; }
+.btn-sm { padding: .25rem .5rem; font-size: .775rem; }
+
+/* ── Bootstrap 3 label → badge ──────────────────────────────────────────── */
+.label {
+  display: inline-block;
+  padding: .25em .5em;
+  font-size: .75em;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: .375rem;
+}
+.label-default  { background-color: #6c757d; }
+.label-primary  { background-color: var(--bs-primary, #0d6efd); }
+.label-success  { background-color: var(--bs-success, #198754); }
+.label-info     { background-color: var(--bs-info, #0dcaf0); color: #000; }
+.label-warning  { background-color: var(--bs-warning, #ffc107); color: #000; }
+.label-danger   { background-color: var(--bs-danger, #dc3545); }
+
+/* ── Bootstrap 3 badge shims ────────────────────────────────────────────── */
+.badge-default  { background-color: #6c757d; }
+.badge-primary  { background-color: var(--bs-primary, #0d6efd); }
+.badge-success  { background-color: var(--bs-success, #198754); }
+.badge-info     { background-color: var(--bs-info, #0dcaf0); color: #000; }
+.badge-warning  { background-color: var(--bs-warning, #ffc107); color: #000; }
+.badge-danger   { background-color: var(--bs-danger, #dc3545); }
+.badge-pill     { border-radius: 50rem; }
+
+/* ── Bootstrap 3 panel shims ────────────────────────────────────────────── */
+.panel { border-radius: .5rem; border: 1px solid var(--bs-border-color); margin-bottom: 1rem; }
+.panel-heading { padding: .75rem 1rem; border-bottom: 1px solid var(--bs-border-color); font-weight: 600; }
+.panel-body { padding: 1rem; }
+.panel-default .panel-heading { background: var(--bs-light, #f8f9fa); }
+.panel-primary .panel-heading { background: var(--bs-primary); color: #fff; }
+.panel-success .panel-heading { background: var(--bs-success); color: #fff; }
+.panel-warning .panel-heading { background: var(--bs-warning); color: #000; }
+.panel-danger  .panel-heading { background: var(--bs-danger);  color: #fff; }
+.panel-info    .panel-heading { background: var(--bs-info);    color: #000; }
+
+/* ── Bootstrap 3 well ───────────────────────────────────────────────────── */
+.well {
+  background: var(--bs-light, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Bootstrap 3 form shims ─────────────────────────────────────────────── */
+.form-group { margin-bottom: 1rem; }
+.help-block { display: block; margin-top: .25rem; font-size: .8rem; color: var(--bs-secondary-color, #6c757d); }
+.has-error .form-control { border-color: var(--bs-danger, #dc3545); }
+.has-error .help-block, .has-error .control-label { color: var(--bs-danger, #dc3545); }
+.has-success .form-control { border-color: var(--bs-success, #198754); }
+.control-label { font-weight: 500; margin-bottom: .35rem; display: block; }
+
+/* ── Bootstrap 3 input-group shims ─────────────────────────────────────── */
+.input-group-btn { display: flex; }
+.input-group-btn .btn { border-radius: 0 .375rem .375rem 0; }
+
+/* ── Bootstrap 3 nav-tabs shims ─────────────────────────────────────────── */
+.nav-tabs > li { display: inline-block; }
+.nav-tabs > li > a { display: block; padding: .5rem 1rem; color: var(--bs-body-color); text-decoration: none; border: 1px solid transparent; border-radius: .375rem .375rem 0 0; }
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover { color: var(--bs-primary); border-color: var(--bs-border-color) var(--bs-border-color) #fff; background: #fff; }
+
+/* ── Bootstrap 3 table shims ────────────────────────────────────────────── */
+.table-condensed th, .table-condensed td { padding: .3rem .5rem; }
+.table-bordered { border: 1px solid var(--bs-border-color); }
+.table-bordered th, .table-bordered td { border: 1px solid var(--bs-border-color); }
+
+/* ── Bootstrap 3 alert shims ────────────────────────────────────────────── */
+.alert-dismissable .close,
+.alert-dismissible .close { float: right; font-size: 1.25rem; line-height: 1; opacity: .5; background: none; border: none; cursor: pointer; }
+
+/* ── Bootstrap 3 modal shims ────────────────────────────────────────────── */
+/* data-dismiss → data-bs-dismiss handled by JS shim below */
+.modal-header .close {
+  float: right;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: .5;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: -.5rem -.5rem -.5rem auto;
+}
+
+/* ── Bootstrap 3 pull-* shims ───────────────────────────────────────────── */
+.pull-right { float: right !important; }
+.pull-left  { float: left  !important; }
+
+/* ── Bootstrap 3 text helpers ───────────────────────────────────────────── */
+.text-left   { text-align: left   !important; }
+.text-right  { text-align: right  !important; }
+.text-center { text-align: center !important; }
+
+/* ── Bootstrap 3 hidden/visible shims ──────────────────────────────────── */
+.hidden { display: none !important; }
+.hidden-print { }
+@media print { .hidden-print { display: none !important; } }
+
+/* ── Bootstrap 3 img-circle ─────────────────────────────────────────────── */
+.img-circle { border-radius: 50%; }
+.img-responsive { max-width: 100%; height: auto; }
+
+/* ── Bootstrap 3 clearfix ───────────────────────────────────────────────── */
+.clearfix::after { content: ""; display: table; clear: both; }
+
+/* ── DataTables Bootstrap 5 overrides ───────────────────────────────────── */
+.dataTables_wrapper {
+  background: var(--bs-card-bg, #fff);
+  border: 1px solid var(--bs-border-color, #e2e8f0);
+  border-radius: .5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.dataTables_wrapper .dataTables_length label,
+.dataTables_wrapper .dataTables_filter label { font-weight: 500; }
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  padding: .25rem .5rem;
+  font-size: .85rem;
+}
+table.dataTable thead th { font-weight: 600; }
+
+/* ── Misc Gentelella-specific ────────────────────────────────────────────── */
+.tile_count .tile_stats_count { padding: 1rem; }
+.count_top { font-size: .8rem; color: var(--bs-secondary-color, #6c757d); }
+.count { font-size: 2rem; font-weight: 700; }
+.count_bottom { font-size: .8rem; }
+
+/* ── Responsive table wrapper ───────────────────────────────────────────── */
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── Print ───────────────────────────────────────────────────────────────── */
+@media print {
+  .pc-sidebar, .pc-header, .pc-footer { display: none !important; }
+  .pc-container { margin: 0 !important; padding: 0 !important; }
+  .pc-content { padding: 0 !important; }
+}

@@ -1,0 +1,321 @@
+{% load crispy_forms_tags %}
+
+<div class="p-4">
+    <div class="dept-head">
+        <div>
+            <h3><i class="fa fa-sitemap"></i> School Departments</h3>
+            <p>Organize staff into functional departments and keep structure clear.</p>
+        </div>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addDepartmentModal">
+            <i class="fa fa-plus mr-1"></i> Add Department
+        </button>
+    </div>
+
+    <div class="dept-search-card">
+        <div class="input-group">
+            <span class="input-group-addon"><i class="fa fa-search"></i></span>
+            <input type="text" class="form-control" id="departmentSearch" placeholder="Search departments...">
+        </div>
+    </div>
+
+    {% if departments %}
+        <div class="row" id="departmentsGrid">
+            {% for department in departments %}
+            <div class="col-lg-6 col-md-6 mb-4 department-item">
+                <div class="department-card">
+                    <div class="department-top">
+                        <div class="department-id">Department #{{ department.id }}</div>
+                        <div class="dropdown">
+                            <button class="btn btn-xs btn-default dropdown-toggle" type="button" data-toggle="dropdown">
+                                <i class="fa fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-right">
+                                <li>
+                                    <a href="{% url 'edit_department' department.id %}">
+                                        <i class="fa fa-edit mr-2"></i>Edit
+                                    </a>
+                                </li>
+                                <li role="separator" class="divider"></li>
+                                <li>
+                                    <a href="{% url 'delete_department' department.id %}" class="text-danger" onclick="return confirm('Are you sure you want to delete this department?')">
+                                        <i class="fa fa-trash mr-2"></i>Delete
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <h4 class="department-name">{{ department.get_name_display }}</h4>
+                    {% if department.description %}
+                        <p class="department-desc">{{ department.description|truncatechars:140 }}</p>
+                    {% else %}
+                        <p class="department-desc muted">No description provided.</p>
+                    {% endif %}
+                    <div class="department-stats">
+                        <div class="dept-stat">
+                            <div class="dept-stat-value">{{ department.staff_count|default:0 }}</div>
+                            <div class="dept-stat-label">Staff</div>
+                        </div>
+                        <div class="dept-stat">
+                            <div class="dept-stat-value">{{ department.active_projects|default:0 }}</div>
+                            <div class="dept-stat-label">Projects</div>
+                        </div>
+                    </div>
+                    <div class="department-foot">
+                        <div class="dept-created">
+                            <i class="fa fa-calendar"></i>
+                            {% if department.created_at %}
+                                Created {{ department.created_at|date:"M d, Y" }}
+                            {% else %}
+                                Created recently
+                            {% endif %}
+                        </div>
+                        <span class="dept-status">Active</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="dept-empty">
+            <div class="dept-empty-icon">
+                <i class="fa fa-sitemap"></i>
+            </div>
+            <h4>No Departments Yet</h4>
+            <p>Create departments to organize staff responsibilities and reporting lines.</p>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addDepartmentModal">
+                <i class="fa fa-plus mr-1"></i> Create First Department
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="addDepartmentModal" tabindex="-1" role="dialog" aria-labelledby="addDepartmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="addDepartmentModalLabel">Add Department</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span></button>
+            </div>
+            <form method="POST" action="{% url 'add_department_page' %}" enctype="multipart/form-data" id="addDepartmentForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_name" class="font-weight-bold">
+                                    <i class="fa fa-building mr-1"></i>Department Name
+                                </label>
+                                {{ department_form.name|as_crispy_field }}
+                                <small class="form-text text-muted">Select the department type</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_description" class="font-weight-bold">
+                                    <i class="fa fa-file-text mr-1"></i>Description (Optional)
+                                </label>
+                                {{ department_form.description|as_crispy_field }}
+                                <small class="form-text text-muted">Brief description of the department's purpose</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="formErrors" class="alert alert-danger d-none mt-3">
+                        <i class="fa fa-exclamation-triangle mr-2"></i>
+                        <span id="errorText"></span>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times mr-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fa fa-save mr-1"></i>Save Department
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dept-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+    }
+    .dept-head h3 {
+        margin: 0 0 4px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    .dept-head p {
+        margin: 0;
+        color: #64748b;
+    }
+    .dept-search-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 16px;
+    }
+    .dept-search-card .input-group-addon {
+        background: #f8fafc;
+        border-color: #dbe4ef;
+        color: #64748b;
+    }
+    .dept-search-card .form-control {
+        border-color: #dbe4ef;
+        box-shadow: none;
+    }
+    .department-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        height: 100%;
+        padding: 14px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .department-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+    }
+    .department-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    .department-id {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .department-name {
+        margin: 0 0 8px;
+        color: #1e293b;
+        font-weight: 700;
+        font-size: 20px;
+    }
+    .department-desc {
+        margin: 0 0 12px;
+        color: #475569;
+        min-height: 42px;
+    }
+    .department-desc.muted {
+        color: #94a3b8;
+        font-style: italic;
+    }
+    .department-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .dept-stat {
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+    }
+    .dept-stat-value {
+        font-weight: 700;
+        font-size: 20px;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+    .dept-stat-label {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 3px;
+    }
+    .department-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .dept-created {
+        color: #64748b;
+        font-size: 12px;
+    }
+    .dept-status {
+        background: #dbeafe;
+        color: #1d4ed8;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .dept-empty {
+        text-align: center;
+        border: 1px dashed #cbd5e1;
+        background: #f8fafc;
+        border-radius: 14px;
+        padding: 40px 18px;
+    }
+    .dept-empty-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 14px;
+        margin: 0 auto 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e2e8f0;
+        color: #1e293b;
+        font-size: 28px;
+    }
+    .dept-empty h4 {
+        margin: 0 0 6px;
+        color: #1e293b;
+        font-weight: 700;
+    }
+    .dept-empty p {
+        margin: 0 0 14px;
+        color: #64748b;
+    }
+    .modal-content {
+        border-radius: 12px;
+    }
+</style>
+
+<script>
+$(document).ready(function() {
+    // Search functionality
+    $('#departmentSearch').on('keyup', function() {
+        var value = $(this).val().toLowerCase();
+        $('.department-item').filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+
+    // Form validation
+    $('#addDepartmentForm').on('submit', function(e) {
+        var name = $('#id_name').val();
+
+        if (!name) {
+            e.preventDefault();
+            $('#formErrors').removeClass('d-none');
+            $('#errorText').text('Please select a department name.');
+            return false;
+        }
+
+        $('#submitBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i>Saving...');
+    });
+
+    // Reset form on modal close
+    $('#addDepartmentModal').on('hidden.bs.modal', function() {
+        $('#addDepartmentForm')[0].reset();
+        $('#formErrors').addClass('d-none');
+        $('#submitBtn').prop('disabled', false).html('<i class="fa fa-save mr-1"></i>Save Department');
+    });
+});
+</script>

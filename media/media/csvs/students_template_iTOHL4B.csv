@@ -1,0 +1,59 @@
+STUDENT REGISTRATION DATA,,,,,,,,,,,,,
+ID No,Student Name,Gender,Birth Date(dd/mm/yy),Nationality,Religion,Address,Guardian,Relationship,Guardian Contact,Academic year,Current Class,Stream,Term
+STD2025-173,Aafreen Kasekende,M,5/30/2021,Ugandan,Muslim,Nakawuka,M,Grand Mom,7,2025,ALF,-,1
+STD2025-174,Habiiba Kkamya,F,1/1/2020,Ugandan,Muslim,Kisozi,M,,7,2025,ALF,-,1
+STD2025-175,Tawba Tajweed,F,10/2/2021,Ugandan,Muslim,Buddo,M,Mother,7,2025,ALF,-,1
+STD2025-176,Mariam Namutebi,F,12/9/2022,Ugandan,Muslim,Nakasozi,M,Mother,7,2025,ALF,-,1
+STD2025-177,Yasmeen A,M,10/17/2019,Ugandan,Muslim,Kasenge,M,Grand Mom,7,2025,ALF,-,1
+STD2025-178,Husnah Mugerwa,F,1/28/2021,Ugandan,Muslim,Kasenge,M,Grand Mom,7,2025,ALF,-,1
+STD2025-179,Hannah Walugembe,M,1/3/2021,Ugandan,Muslim,Nsagu,M,Mother,7,2025,ALF,-,1
+STD2025-180,Hannan Luswaata,M,12/11/2021,Ugandan,Muslim,Butega,M,Mother,7,2025,ALF,-,1
+STD2025-181,Aqeel Lukwago,M,1/2/2022,Ugandan,Muslim,Nsagu,M,Father,7,2025,ALF,-,1
+STD2025-182,Talha Kirinya,F,3/22/2022,Ugandan,Muslim,Nsagu,M,Mother,7,2025,ALF,-,1
+STD2025-183,Segawa Abaas,M,7/9/2021,Ugandan,Muslim,Kyengera,M,Mother,7,2025,ALF,-,1
+STD2025-184,Malidad Ibrahim,M,6/7/2021,Ugandan,Muslim,Nakawuka,M,Father,7,2025,ALF,-,1
+STD2025-185,Hariz Kafeero,M,7/6/2021,Ugandan,Muslim,Kivu,M,Mother,7,2025,ALF,-,1
+STD2025-186,Muhammad Mitti,M,6/25/2022,Ugandan,Muslim,Nakasozi,M,Mother,7,2025,ALF,-,1
+STD2025-187,Yusuf Mitti,M,11/2/2021,Ugandan,Muslim,Kisozi,M,Mother,7,2025,ALF,-,1
+STD2025-188,Sulaiman Mitti,M,9/4/2021,Ugandan,Muslim,Kabinja,M,Father,7,2025,ALF,-,1
+STD2025-189,Nijad Ahmed,M,9/10/2021,Ugandan,Muslim,Buddo,M,Mother,7,2025,ALF,-,1
+STD2025-190,Abubakar Sharif,M,12/13/2021,Ugandan,Muslim,Katalemwa,M,Father,7,2025,ALF,-,1
+STD2025-191,Ayman Ali,F,12/13/2021,Ugandan,Muslim,Katalemwa,M,Father,7,2025,ALF,-,1
+STD2025-192,Mukungu Abdul-Haleem,F,8/15/2021,Ugandan,Muslim,Kikajjo,M,Mother,7,2025,ALF,-,1
+STD2025-193,Sammi Habib,F,2/4/2022,Ugandan,Muslim,Ssumba,M,Mother,7,2025,ALF,-,1
+STD2025-194,Takuba Nasser,F,1/2/2022,Ugandan,Muslim,Nankonge,M,Mother,7,2025,ALF,-,1
+STD2025-195,Abdul-Azizi Abdul Qadir,F,9/18/2021,Ugandan,Muslim,Katale,M,Mother,7,2025,ALF,-,1
+STD2025-196,Bashir Matovu,F,8/21/2021,Ugandan,Muslim,Kazinga,M,Grand Mom,7,2025,ALF,-,1
+STD2025-197,Alman Kaweesi,F,5/23/2021,Ugandan,Muslim,Bukaluba,M,Father,7,2025,ALF,-,1
+STD2025-198,Sinnan Aroush,F,7/25/2021,Ugandan,Muslim,Nakasozi,M,Mother,7,2025,ALF,-,1
+STD2025-199,Abdul Nasir Segenddo,F,6/5/2021,Ugandan,Muslim,Nakasozi,M,Mother,7,2025,ALF,-,1
+STD2025-200,Tawfeeq Jemba,F,3/11/2021,Ugandan,Muslim,Nkungulutale,M,Mother,7,2025,ALF,-,1
+STD2025-201,Ridhwan Lubwaama,F,9/16/2022,Ugandan,Muslim,Ssumba,M,Mother,7,2025,ALF,-,1
+STD2025-202,Rajab Rayhan,M,1/1/2020,Ugandan,Muslim,Katale,M,Mother,7,2025,ALF,-,1
+STD2025-203,Quiter Riyadh,F,11/27/2020,Ugandan,Muslim,Ssumba,M,Mother,7,2025,ALF,-,1
+STD2025-204,Muhammad Ssenabulya,M,1/5/2021,Ugandan,Muslim,Buddo,M,Mother,7,2025,ALF,-,1
+STD2025-205,Uthman Ssenabulya,M,11/18/2020,Ugandan,Muslim,Nakasozi,M,Mother,7,2025,ALF,-,1
+STD2025-206,Nyanzi Arafat,M,8/19/2021,Ugandan,Muslim,Kisozi,M,Grand Mom,7,2025,ALF,-,1
+STD2025-207,Uthaymin Ali,M,1/13/2019,Ugandan,Muslim,Mpigi,M,Father,7,2025,ALF,-,1
+STD2025-208,Katende Kalifun,M,10/18/2020,Ugandan,Muslim,Kisozi,M,Sister,7,2025,ALF,-,1
+STD2025-209,Jaroud Kassim,M,8/26/2020,Ugandan,Muslim,Nakasozi,M,Father,7,2025,ALF,-,1
+STD2025-210,Waswa Muhsin,M,1/13/2020,Ugandan,Muslim,Kisozi,M,Mother,7,2025,BA,-,1
+STD2025-211,Abdul Malik Kityamesi,M,8/10/2020,Ugandan,Muslim,Nakasozi,M,Mother,7,2025,BA,-,1
+STD2025-212,Rajab Shaban,M,11/28/2020,Ugandan,Muslim,Kawempe,M,Mother,7,2025,BA,-,1
+STD2025-213,Wamani Ashiraf,M,12/17/2020,Ugandan,Muslim,Kisozi,M,Mother,7,2025,BA,-,1
+STD2025-214,Mahrus Ibrahim,M,5/9/2021,Ugandan,Muslim,Kisozi,M,Mother,7,2025,BA,-,1
+STD2025-215,Kato Ahsan,M,12/23/2020,Ugandan,Muslim,Kikajjo,M,Mother,7,2025,BA,-,1
+STD2025-216,Mutyaba Abdul Rahman,M,12/14/2019,Ugandan,Muslim,Katale,M,Mother,7,2025,BA,-,1
+STD2025-217,Ssekaana Abdul Swabur,M,6/10/2021,Ugandan,Muslim,Nsagu,M,Father,7,2025,BA,-,1
+STD2025-218,Eyyad Hood,M,9/8/2020,Ugandan,Muslim,Ssumba,M,Mother,7,2025,BA,-,1
+STD2025-219,Harith Hood,M,8/31/2020,Ugandan,Muslim,Katale,M,Mother,7,2025,BA,-,1
+STD2025-220,Shuraim Ali,M,8/28/2020,Ugandan,Muslim,Kisozi,M,Mother,7,2025,BA,-,1
+STD2025-221,Mahmood Kayinda,M,10/10/2020,Ugandan,Muslim,Maggwa,M,Mother,7,2025,BA,-,1
+STD2025-222,Shafik Kinene,M,3/24/2021,Ugandan,Muslim,Naggalabi,M,Mother,7,2025,BA,-,1
+STD2025-223,Abdul Halim,M,1/1/2020,Ugandan,Muslim,Kisozi,M,,7,2025,BA,-,1
+STD2025-224,Abdul Hakim Lubega,M,6/10/2020,Ugandan,Muslim,Kitemu,M,Father,7,2025,BA,-,1
+STD2025-225,Rania Sadat,F,5/20/2019,Ugandan,Muslim,Kivu,M,Mother,7,2025,BA,-,1
+STD2025-226,Fatumah Buwembo,F,6/10/2019,Ugandan,Muslim,Nankonge,M,Mother,7,2025,BA,-,1
+STD2025-227,Shahreen Sulaiman,M,4/20/2020,Ugandan,Muslim,Kyondo,M,Mother,7,2025,BA,-,1
+STD2025-228,Sumayyah Mousa,F,1/1/2020,Ugandan,Muslim,Ssumba,M,Mother,7,2025,BA,-,1
+STD2025-229,Huzaimah Kajimu,M,2/9/2020,Ugandan,Muslim,Kyengera,M,Mother,7,2025,BA,-,1

@@ -1,0 +1,509 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Bill Items Management{% endblock %}
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+    <div class="col-md-12 col-sm-12 col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-money-bill-wave"></i> Bill Items Management</h2>
+                <ul class="nav navbar-right panel_toolbox">
+                    <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+                    <li><a class="close-link"><i class="fa fa-close"></i></a></li>
+                </ul>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <div class="comm-header">
+                    <div class="comm-intro">
+                        <div class="comm-title">Manage all billing items and categories for the school.</div>
+                        <div class="text-muted">Keep pricing and durations consistent across classes.</div>
+                    </div>
+                    <div class="comm-actions">
+                        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#addBillItemModal">
+                            <i class="fa fa-plus-circle"></i> Add New Item
+                        </button>
+                    </div>
+                </div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="stat-label">Total Items</h6>
+                        <h3 class="mb-0">{{ bill_items|length }}</h3>
+                    </div>
+                    <div class="stat-icon primary">
+                        <i class="fa fa-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="stat-label">Active Items</h6>
+                        <h3 class="mb-0">{{ bill_items|length }}</h3>
+                    </div>
+                    <div class="stat-icon success">
+                        <i class="fa fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="stat-label">Categories</h6>
+                        <h3 class="mb-0">{{ bill_items|length|add:"2" }}</h3>
+                    </div>
+                    <div class="stat-icon info">
+                        <i class="fa fa-tags fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="stat-label">Monthly Items</h6>
+                        <h3 class="mb-0">{{ bill_items|length }}</h3>
+                    </div>
+                    <div class="stat-icon warning">
+                        <i class="fa fa-calendar-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm filter-card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fa fa-filter"></i> Filters & Search</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search bill items...">
+                            <span class="input-group-text">
+                                <i class="fa fa-search"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-control" id="categoryFilter">
+                            <option value="all">All Categories</option>
+                            <option value="tuition">Tuition</option>
+                            <option value="uniform">Uniform</option>
+                            <option value="books">Books</option>
+                            <option value="transport">Transport</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-control" id="durationFilter">
+                            <option value="all">All Durations</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="termly">Termly</option>
+                            <option value="yearly">Yearly</option>
+                            <option value="once">One-time</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bill Items Grid -->
+<div class="row" id="billItemsContainer">
+    {% for item in bill_items %}
+    <div class="col-xl-3 col-lg-4 col-md-6 mb-4 bill-item-card" data-category="{{ item.category|lower|default:'other' }}" data-duration="{{ item.bill_duration|lower|default:'monthly' }}" data-name="{{ item.item_name|lower }}">
+        <div class="card shadow-sm h-100 border-0 bill-card">
+            <div class="card-header bill-card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fa fa-money-bill-wave me-2"></i>{{ item.item_name }}
+                    </h6>
+                    <span class="badge badge-default">{{ item.bill_duration|title }}</span>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted d-block">
+                        <i class="fa fa-tag"></i> {{ item.category|title }}
+                    </small>
+                    <small class="text-muted d-block">
+                        <i class="fa fa-calendar"></i> {{ item.bill_duration|title }}
+                    </small>
+                </div>
+
+                {% if item.description %}
+                <p class="text-muted small mb-3">{{ item.description|truncatechars:80 }}</p>
+                {% else %}
+                <p class="text-muted small mb-3">No description available</p>
+                {% endif %}
+
+                <div class="d-flex justify-content-end">
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'edit_bill_item_page' item.id %}" class="btn btn-primary btn-sm" title="Edit Item">
+                            <i class="fa fa-edit"></i>
+                        </a>
+                        <button class="btn btn-danger btn-sm" onclick='confirmDelete({{ item.id }}, "{{ item.item_name|escapejs }}")' title="Delete Item">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-light">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <small class="text-success">
+                            <i class="fa fa-check-circle"></i> Active
+                        </small>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-info">
+                            <i class="fa fa-users"></i> All Classes
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Empty State -->
+<div id="emptyState" class="text-center py-5" style="display: none;">
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fa fa-money-bill-wave fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No Bill Items Found</h4>
+            <p class="text-muted mb-4">No bill items match your current filters or search.</p>
+            <button class="btn btn-outline-primary me-2" onclick="clearFilters()">
+                <i class="fa fa-times"></i> Clear Filters
+            </button>
+            <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                <i class="fa fa-search"></i> Clear Search
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Bill Item Modal -->
+<div class="modal fade" id="addBillItemModal" tabindex="-1" aria-labelledby="addBillItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addBillItemModalLabel">
+                    <i class="fa fa-plus-circle me-2"></i>Add New Bill Item
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'add_bill_item_page' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ bill_item_form.item_name.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fa fa-tag text-primary me-1"></i>Item Name *
+                                </label>
+                                {{ bill_item_form.item_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ bill_item_form.category.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fa fa-folder text-success me-1"></i>Category *
+                                </label>
+                                {{ bill_item_form.category }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ bill_item_form.bill_duration.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fa fa-calendar text-info me-1"></i>Bill Duration *
+                                </label>
+                                {{ bill_item_form.bill_duration }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ bill_item_form.description.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fa fa-file-text text-warning me-1"></i>Description
+                                </label>
+                                {{ bill_item_form.description }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fa fa-save me-1"></i>Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">
+                    <i class="fa fa-exclamation-triangle me-2"></i>Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the bill item "<strong id="deleteItemName"></strong>"?</p>
+                <p class="text-danger small">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fa fa-times me-1"></i>Cancel
+                </button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger">
+                    <i class="fa fa-trash me-1"></i>Delete Item
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+  <style>
+/* Gentellela Color Scheme */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #337ab7 0%, #286090 100%);
+}
+
+  .comm-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    background:#f8fafc;
+    border:1px solid #e6edf5;
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:14px;
+  }
+  .comm-title{font-weight:600;color:#334155;margin-bottom:4px;}
+  .comm-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+
+  .stat-card{background:#fff;border:1px solid #e6edf5;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 16px rgba(0,0,0,0.04);}    
+  .stat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;}
+  .stat-icon.primary{background:#2563eb;}
+  .stat-icon.success{background:#22c55e;}
+  .stat-icon.info{background:#38bdf8;}
+  .stat-icon.warning{background:#f59e0b;}
+  .stat-label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
+
+  .filter-card{border-radius:12px;border:1px solid #e6edf5;}
+  .filter-card .card-header{background:#f8fafc;border-bottom:1px solid #e6edf5;}
+
+  .bill-card{border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,0.05);}    
+  .bill-card-header{background:linear-gradient(135deg,#2563eb 0%,#1e40af 100%);color:#fff;border-radius:12px 12px 0 0;}
+
+/* Card Styling */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-radius: 8px;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    border-radius: 8px 8px 0 0 !important;
+    padding: 1rem 1.25rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Form Styling */
+.form-control:focus {
+    border-color: #337ab7;
+    box-shadow: 0 0 0 0.2rem rgba(51, 122, 183, 0.25);
+}
+
+.form-select:focus {
+    border-color: #337ab7;
+    box-shadow: 0 0 0 0.2rem rgba(51, 122, 183, 0.25);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .d-flex.justify-content-between.align-items-center {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .btn-lg {
+        width: 100%;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Animation for cards */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bill-item-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Bill Items Management JavaScript loaded');
+
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const durationFilter = document.getElementById('durationFilter');
+    const billItemCards = document.querySelectorAll('.bill-item-card');
+    const emptyState = document.getElementById('emptyState');
+
+    function filterItems() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const selectedCategory = categoryFilter.value.toLowerCase();
+        const selectedDuration = durationFilter.value.toLowerCase();
+
+        console.log('Filtering with:', { searchTerm, selectedCategory, selectedDuration });
+
+        let visibleCards = 0;
+
+        billItemCards.forEach(card => {
+            const itemName = card.getAttribute('data-name') || '';
+            const category = card.getAttribute('data-category') || '';
+            const duration = card.getAttribute('data-duration') || '';
+
+            console.log('Card data:', { itemName, category, duration });
+
+            const matchesSearch = !searchTerm || itemName.includes(searchTerm);
+            const matchesCategory = selectedCategory === 'all' || category === selectedCategory || category.includes(selectedCategory);
+            const matchesDuration = selectedDuration === 'all' || duration === selectedDuration || duration.includes(selectedDuration);
+
+            console.log('Matches:', { matchesSearch, matchesCategory, matchesDuration });
+
+            if (matchesSearch && matchesCategory && matchesDuration) {
+                card.style.display = 'block';
+                visibleCards++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Show/hide empty state
+        if (visibleCards === 0 && billItemCards.length > 0) {
+            emptyState.style.display = 'block';
+        } else {
+            emptyState.style.display = 'none';
+        }
+
+        console.log('Visible cards:', visibleCards);
+    }
+
+    // Event listeners
+    if (searchInput) {
+        searchInput.addEventListener('input', filterItems);
+    }
+
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', filterItems);
+    }
+
+    if (durationFilter) {
+        durationFilter.addEventListener('change', filterItems);
+    }
+});
+
+// Clear filters function
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').value = 'all';
+    document.getElementById('durationFilter').value = 'all';
+
+    // Trigger filter
+    document.getElementById('searchInput').dispatchEvent(new Event('input'));
+}
+
+// Clear search function
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchInput').dispatchEvent(new Event('input'));
+}
+
+// Delete confirmation function
+function confirmDelete(itemId, itemName) {
+    document.getElementById('deleteItemName').textContent = itemName;
+    document.getElementById('confirmDeleteBtn').href = "{% url 'delete_bill_item_page' 0 %}".replace('0', itemId);
+
+    // Show modal
+    $('#deleteConfirmModal').modal('show');
+}
+</script>

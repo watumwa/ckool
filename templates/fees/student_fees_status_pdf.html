@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+{% load humanize %}
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th, .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .table th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h2>Student Fees Payment Status</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Class</th>
+                <th>Student</th>
+                <th>Total Fees</th>
+                <th>Amount Paid</th>
+                <th>Balance</th>
+                <th>Payment Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student_fee in student_fees_data %}
+                <tr>
+                    <td>{{ student_fee.academic_class }}</td>
+                    <td>{{ student_fee.student.student_name }}</td>
+                    <td>{{ student_fee.total_amount|intcomma }}</td>
+                    <td>{{ student_fee.amount_paid|intcomma }}</td>
+                    <td>{{ student_fee.balance|intcomma }}</td>
+                    <td>{{ student_fee.payment_status }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No students found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

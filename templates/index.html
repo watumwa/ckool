@@ -1,0 +1,1448 @@
+{% extends "./base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block page_title %}School Management{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+.exec-kpi-grid{
+  display:grid!important;
+  grid-template-columns:repeat(8,minmax(0,1fr));
+  gap:14px;
+  margin:0 0 18px;
+}
+.exec-kpi-card{
+  grid-column:span 2;
+  display:flex!important;
+  min-height:168px;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:16px;
+  border:1px solid #e2e8f0;
+  border-top:3px solid #2563eb;
+  border-radius:10px;
+  background:#fff;
+  color:#1f2a44!important;
+  text-decoration:none!important;
+  box-shadow:0 8px 22px rgba(15,23,42,.06);
+}
+.exec-kpi-card:hover{color:#1f2a44!important;border-color:#cbd5e1;box-shadow:0 14px 30px rgba(15,23,42,.1);transform:translateY(-2px)}
+.exec-kpi-card.wide{grid-column:span 4}
+.exec-kpi-top,.exec-kpi-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.exec-kpi-icon{width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;font-size:17px;background:#eff6ff;color:#2563eb}
+.exec-kpi-label{margin-top:14px;color:#64748b;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.exec-kpi-value{margin-top:4px;font-size:31px;line-height:1.08;font-weight:850;color:#0f172a;overflow-wrap:anywhere}
+.exec-kpi-value.money{font-size:27px}
+.exec-kpi-meta{margin-top:4px;color:#64748b;font-size:12px}
+.exec-kpi-foot{margin-top:12px;justify-content:flex-start;color:#475569;font-size:12px;font-weight:700}
+.exec-kpi-badge{display:inline-flex;align-items:center;max-width:100%;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;white-space:nowrap}
+.exec-kpi-badge.good{background:#dcfce7;color:#166534}
+.exec-kpi-badge.watch{background:#fef3c7;color:#92400e}
+.exec-kpi-badge.risk{background:#fee2e2;color:#991b1b}
+.exec-kpi-progress{height:7px;margin-top:13px;border-radius:999px;background:#e2e8f0;overflow:hidden}
+.exec-kpi-progress span{display:block;height:100%;max-width:100%;border-radius:inherit;background:#16a34a}
+.exec-kpi-card.tone-blue{border-top-color:#2563eb}
+.exec-kpi-card.tone-slate{border-top-color:#64748b}
+.exec-kpi-card.tone-green{border-top-color:#16a34a}
+.exec-kpi-card.tone-amber{border-top-color:#f59e0b}
+.exec-kpi-card.tone-purple{border-top-color:#7c3aed}
+.exec-kpi-card.tone-teal{border-top-color:#0f766e}
+.exec-kpi-card.tone-slate .exec-kpi-icon{background:#f1f5f9;color:#475569}
+.exec-kpi-card.tone-green .exec-kpi-icon{background:#dcfce7;color:#15803d}
+.exec-kpi-card.tone-amber .exec-kpi-icon{background:#fef3c7;color:#b45309}
+.exec-kpi-card.tone-purple .exec-kpi-icon{background:#ede9fe;color:#6d28d9}
+.exec-kpi-card.tone-teal .exec-kpi-icon{background:#ccfbf1;color:#0f766e}
+@media(max-width:991px){
+  .exec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .exec-kpi-card,.exec-kpi-card.wide{grid-column:span 1}
+}
+@media(max-width:640px){
+  .exec-kpi-grid{grid-template-columns:1fr}
+  .exec-kpi-card{min-height:auto}
+  .exec-kpi-value,.exec-kpi-value.money{font-size:25px}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="dashboard-shell {% if is_admin_dashboard %}role-admin{% elif is_head_dashboard %}role-head{% elif is_dos_dashboard %}role-dos{% elif is_bursar_dashboard %}role-bursar{% elif is_class_teacher_dashboard %}role-class-teacher{% elif is_teacher_dashboard %}role-teacher{% else %}role-generic{% endif %}">
+  <div class="row">
+    <div class="col-md-12">
+      <section class="dashboard-toolbar">
+        <div class="dashboard-toolbar-copy">
+          <span class="dashboard-toolbar-eyebrow">{{ user_role|default:"School" }} Workspace</span>
+          <h1 class="dashboard-toolbar-title">School Dashboard</h1>
+          <p class="dashboard-toolbar-subtitle">
+            {% if current_year and current_term %}
+            Term {{ current_term.term }} - {{ current_year.academic_year }} live insights
+            {% elif selected_term_label %}
+            {{ selected_term_label }} live insights
+            {% else %}
+            Live operational, academic, and financial insights
+            {% endif %}
+          </p>
+        </div>
+        <div class="dashboard-toolbar-actions">
+          {% if term_options and current_term %}
+          <form method="get" class="dashboard-term-filter">
+            <label for="dashboard-term-select">Active Term</label>
+            <select id="dashboard-term-select" name="term" class="form-control input-sm" onchange="this.form.submit()">
+              {% for opt in term_options %}
+              <option value="{{ opt.id }}" {% if selected_term == opt.id|stringformat:"s" %}selected{% endif %}>
+                Term {{ opt.term }}
+              </option>
+              {% endfor %}
+            </select>
+          </form>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </div>
+
+{% if is_admin_dashboard %}
+<div class="row">
+
+<div class="exec-kpi-grid" data-admin-widget="admin_kpis">
+  <a href="{% url 'student_page' %}" class="exec-kpi-card tone-blue">
+    <div class="exec-kpi-top">
+      <span class="exec-kpi-icon"><i class="fa fa-graduation-cap"></i></span>
+      <span class="exec-kpi-badge good">Live</span>
+    </div>
+    <div class="exec-kpi-label">Students</div>
+    <div class="exec-kpi-value">{{ total_students|default:0|intcomma }}</div>
+    <div class="exec-kpi-meta">Active enrollment</div>
+    <div class="exec-kpi-foot"><i class="fa fa-eye"></i> School-wide visibility</div>
+  </a>
+
+  <a href="{% url 'staff_page' %}" class="exec-kpi-card tone-slate">
+    <div class="exec-kpi-top">
+      <span class="exec-kpi-icon"><i class="fa fa-users"></i></span>
+      <span class="exec-kpi-badge good">Ready</span>
+    </div>
+    <div class="exec-kpi-label">Teachers</div>
+    <div class="exec-kpi-value">{{ total_teachers|default:0|intcomma }}</div>
+    <div class="exec-kpi-meta">Academic staff</div>
+    <div class="exec-kpi-foot"><i class="fa fa-check-circle"></i> Coverage available</div>
+  </a>
+
+  <a href="{% url 'bursar_quick_payment' %}" class="exec-kpi-card tone-green wide">
+    <div class="exec-kpi-top">
+      <span class="exec-kpi-icon"><i class="fa fa-money"></i></span>
+      <span class="exec-kpi-badge {% if fee_collection_rate >= 80 %}good{% elif fee_collection_rate >= 40 %}watch{% else %}risk{% endif %}">
+        {{ fee_collection_rate|default:0 }}%
+      </span>
+    </div>
+    <div class="exec-kpi-label">Fees Collected</div>
+    <div class="exec-kpi-value money">UGX {{ fees_collected_today|floatformat:0|intcomma }}</div>
+    <div class="exec-kpi-meta">Today collected</div>
+    <div class="exec-kpi-progress">
+      <span style="width: {{ fee_collection_rate|default:0|floatformat:0 }}%;"></span>
+    </div>
+    <div class="exec-kpi-foot">Term collection: UGX {{ total_fees_collected|floatformat:0|intcomma }}</div>
+  </a>
+
+  <a href="{% url 'fees_status' %}?status=outstanding" class="exec-kpi-card tone-amber wide">
+    <div class="exec-kpi-top">
+      <span class="exec-kpi-icon"><i class="fa fa-exclamation-circle"></i></span>
+      <span class="exec-kpi-badge {% if total_fees_outstanding > 0 %}risk{% else %}good{% endif %}">
+        {{ overdue_bills|default:0 }} overdue
+      </span>
+    </div>
+    <div class="exec-kpi-label">Pending Fees</div>
+    <div class="exec-kpi-value money">UGX {{ total_fees_outstanding|floatformat:0|intcomma }}</div>
+    <div class="exec-kpi-meta">Outstanding balances</div>
+    <div class="exec-kpi-foot"><i class="fa fa-flag"></i> {% if total_fees_outstanding > 0 %}Needs collection focus{% else %}No collection risk{% endif %}</div>
+  </a>
+
+  <a href="{% url 'attendance_dashboard' %}" class="exec-kpi-card tone-purple">
+    <div class="exec-kpi-top">
+      <span class="exec-kpi-icon"><i class="fa fa-calendar-check-o"></i></span>
+      <span class="exec-kpi-badge {% if student_attendance_rate >= 85 %}good{% else %}risk{% endif %}">
+        {% if student_attendance_rate >= 85 %}On target{% else %}Below target{% endif %}
+      </span>
+    </div>
+    <div class="exec-kpi-label">Attendance Today</div>
+    <div class="exec-kpi-value">{{ student_attendance_rate|default:0 }}%</div>
+    <div class="exec-kpi-meta">Student attendance rate</div>
+    <div class="exec-kpi-foot"><i class="fa fa-line-chart"></i> Daily attendance signal</div>
+  </a>
+
+  <a href="{% url 'academic_class_page' %}" class="exec-kpi-card tone-teal">
+    <div class="exec-kpi-top">
+      <span class="exec-kpi-icon"><i class="fa fa-sitemap"></i></span>
+      <span class="exec-kpi-badge good">Ready</span>
+    </div>
+    <div class="exec-kpi-label">Active Classes</div>
+    <div class="exec-kpi-value">{{ active_classes|default:0|intcomma }}</div>
+    <div class="exec-kpi-meta">{{ total_subjects|default:0|intcomma }} subjects configured</div>
+    <div class="exec-kpi-foot"><i class="fa fa-check-circle"></i> Teaching structure ready</div>
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-md-8 col-sm-12" data-admin-widget="admin_analytics">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-area-chart"></i> Core Trends</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="row">
+          <div class="col-md-6 col-sm-12 chart-block">
+            <h4 class="chart-title">Enrollment Trend</h4>
+            <div id="chart-enrollment-trend" style="height:260px;"></div>
+          </div>
+          <div class="col-md-6 col-sm-12 chart-block">
+            <h4 class="chart-title">Fees Collection</h4>
+            <div id="chart-fees-collection" style="height:260px;"></div>
+          </div>
+          <div class="col-md-12 chart-block">
+            <h4 class="chart-title">Attendance Trend</h4>
+            <div id="chart-attendance-trend" style="height:240px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-12" data-admin-widget="admin_actions_alerts">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bell"></i> Alerts & Quick Actions</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list">
+          {% for alert in admin_system_alerts|slice:":6" %}
+          <li>
+            <span class="name">{{ alert.label }}</span>
+            <span class="value">{{ alert.count }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No active system alerts</span><span class="value">OK</span></li>
+          {% endfor %}
+        </ul>
+        <hr>
+        <p class="text-muted" style="margin-bottom:8px;">License: <strong>{{ license_status }}</strong></p>
+        <hr>
+        <div class="row quick-action-grid">
+          {% for action in quick_actions %}
+          <div class="col-xs-6">
+            <a href="{{ action.url }}" class="btn btn-{% if action.style == 'danger' %}danger{% elif action.style == 'warning' %}warning{% elif action.style == 'primary' %}primary{% else %}info{% endif %} btn-block btn-sm">
+              <i class="fa {{ action.icon }}"></i> {{ action.label }}
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12" data-admin-widget="admin_performance_snapshot">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-line-chart"></i> Academic Performance Snapshot</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-class-subject" style="height:290px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6" data-admin-widget="admin_grade_distribution">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-pie-chart"></i> Performance Mix</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-grade-distribution" style="height:250px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6" data-admin-widget="admin_verification_status">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-check-circle"></i> Result Verification</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-result-status" style="height:250px;"></div>
+        <p class="text-muted chart-muted text-center" style="margin-top:6px;">
+          Pending: {{ verification_pending_count|default:0 }} - Flagged: {{ verification_flagged_count|default:0 }}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" data-admin-widget="admin_operations">
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-user-plus"></i> Recent Registrations</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list dashboard-list-compact">
+          {% for student in recent_registrations|slice:":6" %}
+          <li>
+            <span class="name">{{ student.student_name }}<small>{{ student.reg_no }}</small></span>
+            <span class="value">{{ student.current_class.name|default:"-" }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No recent registrations.</span><span class="value">-</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-hourglass-half"></i> Pending Approvals</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list dashboard-list-compact">
+          {% for approval in pending_approvals|slice:":6" %}
+          <li>
+            <span class="name">{{ approval.expenditure.description|truncatechars:30 }}<small>Level {{ approval.approval_level }}</small></span>
+            <span class="value">{{ approval.status|title }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No pending approvals.</span><span class="value">OK</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-credit-card"></i> Latest Payments</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list dashboard-list-compact">
+          {% for payment in recent_payments|slice:":6" %}
+          <li>
+            <span class="name">{{ payment.bill.student.student_name|default:"Student" }}<small>{{ payment.payment_date|date:"M d" }}</small></span>
+            <span class="value">UGX {{ payment.amount|intcomma }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No recent payments.</span><span class="value">-</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-tasks"></i> Verification Queue</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list dashboard-list-compact">
+          {% for batch in admin_verification_queue|slice:":6" %}
+          <li>
+            <span class="name">{{ batch.assessment.subject.name|default:"Subject" }}<small>{{ batch.assessment.academic_class.Class.code|default:"Class" }}</small></span>
+            <span class="value">{{ batch.status|title }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No pending verification queue.</span><span class="value">OK</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12" data-admin-widget="admin_recent_activity">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-history"></i> Audit Activity</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in recent_activity_logs %}
+              <tr>
+                <td>{{ log.timestamp|date:"M d, H:i" }}</td>
+                <td>{{ log.username }}</td>
+                <td>{{ log.action }}</td>
+                <td>{{ log.target|default:"-" }}</td>
+                <td>{{ log.details|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted text-center">No recent activity logs.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="adminWidgetModal" tabindex="-1" role="dialog" aria-labelledby="adminWidgetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="adminWidgetModalLabel"><i class="fa fa-sliders"></i> Customize Admin Widgets</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small">Choose which blocks appear on your admin dashboard.</p>
+        <div class="admin-widget-options">
+          <label class="admin-widget-option"><input type="checkbox" class="admin-widget-toggle" data-widget-id="admin_kpis" checked> KPI cards</label>
+          <label class="admin-widget-option"><input type="checkbox" class="admin-widget-toggle" data-widget-id="admin_analytics" checked> Core trends</label>
+          <label class="admin-widget-option"><input type="checkbox" class="admin-widget-toggle" data-widget-id="admin_actions_alerts" checked> Alerts + quick actions</label>
+          <label class="admin-widget-option"><input type="checkbox" class="admin-widget-toggle" data-widget-id="admin_performance_snapshot" checked> Performance snapshot</label>
+          <label class="admin-widget-option"><input type="checkbox" class="admin-widget-toggle" data-widget-id="admin_grade_distribution" checked> Performance mix chart</label>
+          <label class="admin-widget-option"><input type="checkbox" class="admin-widget-toggle" data-widget-id="admin_verification_status" checked> Verification chart</label>
+          <label class="admin-widget-option"><input type="checkbox" class="admin-widget-toggle" data-widget-id="admin_operations" checked> Operational widgets</label>
+          <label class="admin-widget-option"><input type="checkbox" class="admin-widget-toggle" data-widget-id="admin_recent_activity" checked> Audit activity table</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" id="resetAdminWidgetsBtn">Reset</button>
+        <button type="button" class="btn btn-primary" id="applyAdminWidgetsBtn">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% elif is_head_dashboard %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel head-dashboard-hero">
+      <div class="x_title">
+        <h2><i class="fa fa-university"></i> Head Teacher Dashboard</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <p class="text-muted">
+          Strategic school performance, attendance, and operational risks.
+          {% if current_year and current_term %}
+          <span class="label label-info">Term {{ current_term.term }} {{ current_year.academic_year }}</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row dashboard-stat-row">
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon success"><i class="fa fa-graduation-cap"></i></div>
+      <div>
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value">{{ total_students|default:0 }}</div>
+        <div class="stat-note">School wide</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon primary"><i class="fa fa-users"></i></div>
+      <div>
+        <div class="stat-label">Total Staff</div>
+        <div class="stat-value">{{ total_staff|default:0 }}</div>
+        <div class="stat-note">All departments</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon info"><i class="fa fa-calendar-check-o"></i></div>
+      <div>
+        <div class="stat-label">Student Attendance</div>
+        <div class="stat-value">{{ student_attendance_rate|default:0 }}%</div>
+        <div class="stat-note">Current term</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon warning"><i class="fa fa-check-circle"></i></div>
+      <div>
+        <div class="stat-label">Assessment Progress</div>
+        <div class="stat-value">{{ assessment_completion_rate|default:0 }}%</div>
+        <div class="stat-note">Completion rate</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-line-chart"></i> School Performance Trend</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-performance-trends" style="height:300px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bell"></i> Key Alerts</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list">
+          {% for alert in head_alerts %}
+          <li>
+            <span class="name">{{ alert.label }}</span>
+            <span class="value">{{ alert.count }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No urgent alerts</span><span class="value">OK</span></li>
+          {% endfor %}
+        </ul>
+        <hr>
+        <div class="row">
+          {% for action in quick_actions %}
+          <div class="col-xs-12" style="margin-bottom:8px;">
+            <a href="{{ action.url }}" class="btn btn-{% if action.style == 'danger' %}danger{% elif action.style == 'warning' %}warning{% elif action.style == 'primary' %}primary{% else %}info{% endif %} btn-block">
+              <i class="fa {{ action.icon }}"></i> {{ action.label }}
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bar-chart"></i> Class Comparison</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-class-subject" style="height:270px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-user-plus"></i> Enrollment Trend</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        {% if has_enrollment_trend_data %}
+        <div id="chart-enrollment-trend" style="height:270px;"></div>
+        {% else %}
+        <div class="text-muted">No enrollment trend data available.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-trophy"></i> Top and Struggling Classes</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <h4 class="text-success">Top Classes</h4>
+        <ul class="list-unstyled dashboard-list" style="margin-bottom:12px;">
+          {% for item in top_classes|slice:":4" %}
+          <li>
+            <span class="name">{{ item.assessment__academic_class__Class__name }}</span>
+            <span class="value">{{ item.avg_score|floatformat:1 }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No data</span><span class="value">-</span></li>
+          {% endfor %}
+        </ul>
+        <h4 class="text-danger">Struggling Classes</h4>
+        <ul class="list-unstyled dashboard-list">
+          {% for item in bottom_classes|slice:":4" %}
+          <li>
+            <span class="name">{{ item.assessment__academic_class__Class__name }}</span>
+            <span class="value">{{ item.avg_score|floatformat:1 }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No data</span><span class="value">-</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-user-md"></i> Teacher Performance Indicators</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Teacher</th>
+                <th>Submitted</th>
+                <th>Verified</th>
+                <th>Pending</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in teacher_submission_rows %}
+              <tr>
+                <td>{{ row.submitted_by__first_name }} {{ row.submitted_by__last_name|default:row.submitted_by__username }}</td>
+                <td>{{ row.submitted }}</td>
+                <td>{{ row.verified }}</td>
+                <td>{{ row.pending }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted text-center">No teacher submission metrics available.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% elif is_dos_dashboard %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel dos-dashboard-hero">
+      <div class="x_title">
+        <h2><i class="fa fa-graduation-cap"></i> Director of Studies Dashboard</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <p class="text-muted">
+          Academic control center for results, verification, and assessment completion.
+          {% if current_year and current_term %}
+          <span class="label label-info">Term {{ current_term.term }} {{ current_year.academic_year }}</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row dashboard-stat-row">
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon danger"><i class="fa fa-check-square-o"></i></div>
+      <div>
+        <div class="stat-label">Verification Queue</div>
+        <div class="stat-value">{{ dos_pending_verification_count|default:0 }}</div>
+        <div class="stat-note">Pending batches</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon primary"><i class="fa fa-percent"></i></div>
+      <div>
+        <div class="stat-label">Assessment Completion</div>
+        <div class="stat-value">{{ assessment_completion_rate|default:0 }}%</div>
+        <div class="stat-note">Current term</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon warning"><i class="fa fa-exclamation-circle"></i></div>
+      <div>
+        <div class="stat-label">Missing Submissions</div>
+        <div class="stat-value">{{ dos_missing_assessments_count|default:0 }}</div>
+        <div class="stat-note">Draft / not submitted</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon info"><i class="fa fa-flag"></i></div>
+      <div>
+        <div class="stat-label">Flagged Results</div>
+        <div class="stat-value">{{ dos_flagged_results_count|default:0 }}</div>
+        <div class="stat-note">Needs correction</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-signal"></i> Results Submission Status by Class</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        {% if has_class_readiness_data %}
+        <div id="chart-class-readiness" style="height:300px;"></div>
+        {% else %}
+        <div class="text-muted">No class readiness data available.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bell"></i> Missing Marks Alerts</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list">
+          {% for alert in dos_alerts %}
+          <li>
+            <span class="name">{{ alert.label }}</span>
+            <span class="value">{{ alert.count }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No immediate alerts</span><span class="value">OK</span></li>
+          {% endfor %}
+        </ul>
+        <hr>
+        <h4>Quick Actions</h4>
+        <div class="row">
+          {% for action in quick_actions %}
+          <div class="col-xs-12" style="margin-bottom:8px;">
+            <a href="{{ action.url }}" class="btn btn-{% if action.style == 'danger' %}danger{% elif action.style == 'warning' %}warning{% elif action.style == 'primary' %}primary{% else %}info{% endif %} btn-block">
+              <i class="fa {{ action.icon }}"></i> {{ action.label }}
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-pie-chart"></i> Grade Distribution</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-grade-distribution" style="height:270px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bar-chart"></i> Subject Performance Comparison</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-class-subject" style="height:270px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-list"></i> Verification Queue</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Assessment</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Submitted By</th>
+                <th>Submitted At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for batch in dos_verification_queue %}
+              <tr>
+                <td>{{ batch.assessment.assessment_type.name }}</td>
+                <td>{{ batch.assessment.academic_class.Class.name }}</td>
+                <td>{{ batch.assessment.subject.name }}</td>
+                <td>{{ batch.submitted_by.get_full_name|default:batch.submitted_by.username|default:"-" }}</td>
+                <td>{{ batch.submitted_at|date:"M d, H:i"|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted text-center">No pending verification batches.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% elif is_class_teacher_dashboard %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel teacher-dashboard-hero">
+      <div class="x_title">
+        <h2><i class="fa fa-users"></i> Class Teacher Dashboard</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <p class="text-muted">
+          Class attendance, student welfare, risk monitoring, and parent communication.
+          {% if class_streams %}
+          <span class="label label-primary">{{ class_streams.0.academic_class.Class.name }} - {{ class_streams.0.stream.stream }}</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row dashboard-stat-row">
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon primary"><i class="fa fa-users"></i></div>
+      <div>
+        <div class="stat-label">Class Students</div>
+        <div class="stat-value">{{ teacher_total_students_count|default:0 }}</div>
+        <div class="stat-note">Active roster</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon info"><i class="fa fa-user-times"></i></div>
+      <div>
+        <div class="stat-label">Absent Today</div>
+        <div class="stat-value">{{ teacher_absent_today_count|default:0 }}</div>
+        <div class="stat-note">Attendance risk</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon warning"><i class="fa fa-money"></i></div>
+      <div>
+        <div class="stat-label">Fee Alerts</div>
+        <div class="stat-value">{{ class_teacher_fee_alert_count|default:0 }}</div>
+        <div class="stat-note">UGX {{ class_teacher_fee_alert_amount|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon danger"><i class="fa fa-flag"></i></div>
+      <div>
+        <div class="stat-label">At-Risk Students</div>
+        <div class="stat-value">{{ class_teacher_at_risk_count|default:0 }}</div>
+        <div class="stat-note">Average score below 50</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-th"></i> Attendance Trend</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        {% if has_attendance_heatmap_data %}
+        <div id="chart-attendance-heatmap" style="height:300px;"></div>
+        {% else %}
+        <div class="text-muted">No attendance trend data available.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bell"></i> Student Alerts</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list">
+          {% for alert in class_teacher_alerts %}
+          <li>
+            <span class="name">{{ alert.label }}</span>
+            <span class="value">{{ alert.count }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No immediate alerts</span><span class="value">OK</span></li>
+          {% endfor %}
+        </ul>
+        <hr>
+        <div class="row">
+          {% for action in quick_actions %}
+          <div class="col-xs-12" style="margin-bottom:8px;">
+            <a href="{{ action.url }}" class="btn btn-{% if action.style == 'danger' %}danger{% elif action.style == 'warning' %}warning{% elif action.style == 'primary' %}primary{% else %}info{% endif %} btn-block">
+              <i class="fa {{ action.icon }}"></i> {{ action.label }}
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-pie-chart"></i> Class Performance Distribution</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-grade-distribution" style="height:260px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-signal"></i> Assessment Completion</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-class-readiness" style="height:260px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-list"></i> Student Performance Summary</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Assessments</th>
+                <th>Average</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in teacher_recent_student_performance %}
+              <tr>
+                <td>{{ row.student__student_name }}</td>
+                <td>{{ row.total_results }}</td>
+                <td>{{ row.avg_score|floatformat:1 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-muted text-center">No student performance data available.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-history"></i> Recent Class Activity</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list">
+          {% for item in class_teacher_recent_activity|slice:":8" %}
+          <li>
+            <span class="name">{{ item.student.student_name }} - {{ item.assessment.subject.name }}</span>
+            <span class="value">{{ item.score|floatformat:1 }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No recent class activities</span><span class="value">-</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% elif is_teacher_dashboard %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel teacher-dashboard-hero">
+      <div class="x_title">
+        <h2><i class="fa fa-chalkboard-teacher"></i> Teacher Dashboard</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <p class="text-muted">Daily teaching workflow: timetable, marks entry, attendance, and class progress.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row dashboard-stat-row">
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon info"><i class="fa fa-calendar"></i></div>
+      <div>
+        <div class="stat-label">Lessons Today</div>
+        <div class="stat-value">{{ teacher_today_lessons_count|default:0 }}</div>
+        <div class="stat-note">Scheduled slots</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon primary"><i class="fa fa-university"></i></div>
+      <div>
+        <div class="stat-label">Classes Taught</div>
+        <div class="stat-value">{{ teacher_class_count|default:0 }}</div>
+        <div class="stat-note">Current term</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon success"><i class="fa fa-book"></i></div>
+      <div>
+        <div class="stat-label">Subjects</div>
+        <div class="stat-value">{{ teacher_subject_count|default:0 }}</div>
+        <div class="stat-note">Assigned</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon warning"><i class="fa fa-edit"></i></div>
+      <div>
+        <div class="stat-label">Pending Marks</div>
+        <div class="stat-value">{{ pending_marks_entry_count|default:0 }}</div>
+        <div class="stat-note">Needs entry</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-line-chart"></i> Class Performance Mini Trend</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-teacher-progress" style="height:280px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bolt"></i> Action Center</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list">
+          {% for alert in teacher_alerts %}
+          <li>
+            <span class="name">{{ alert.label }}</span>
+            <span class="value">{{ alert.count }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No urgent actions</span><span class="value">OK</span></li>
+          {% endfor %}
+        </ul>
+        <hr>
+        <div class="row">
+          {% for action in quick_actions %}
+          <div class="col-xs-12" style="margin-bottom:8px;">
+            <a href="{{ action.url }}" class="btn btn-{% if action.style == 'danger' %}danger{% elif action.style == 'warning' %}warning{% elif action.style == 'primary' %}primary{% else %}info{% endif %} btn-block">
+              <i class="fa {{ action.icon }}"></i> {{ action.label }}
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bar-chart"></i> Assignment Completion</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-class-assessment-volume" style="height:260px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-users"></i> Class Distribution</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list">
+          {% for class_data in class_distribution|slice:":8" %}
+          <li>
+            <span class="name">{{ class_data.current_class__name }}</span>
+            <span class="value">{{ class_data.count }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No assigned class distribution.</span><span class="value">-</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-calendar"></i> Today Timetable</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Class</th>
+                <th>Subject</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for slot in teacher_today_timetable %}
+              <tr>
+                <td>{{ slot.time_slot.start_time|time:"H:i" }} - {{ slot.time_slot.end_time|time:"H:i" }}</td>
+                <td>{{ slot.class_stream.academic_class.Class.name }} {{ slot.class_stream.stream.stream }}</td>
+                <td>{{ slot.subject.name }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-muted text-center">No lessons scheduled today.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-user"></i> Recent Student Performance</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Assessments</th>
+                <th>Average</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in teacher_recent_student_performance %}
+              <tr>
+                <td>{{ row.student__student_name }}</td>
+                <td>{{ row.total_results }}</td>
+                <td>{{ row.avg_score|floatformat:1 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-muted text-center">No student performance metrics yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% elif is_bursar_dashboard %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel bursar-dashboard-hero">
+      <div class="x_title">
+        <h2><i class="fa fa-money"></i> Bursar Dashboard</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <p class="text-muted">
+          Financial control: collections, outstanding balances, and cashflow risk.
+          {% if selected_term_label %}
+          <span class="label label-info">{{ selected_term_label }}</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row dashboard-stat-row">
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon success"><i class="fa fa-calendar-check-o"></i></div>
+      <div>
+        <div class="stat-label">Collected Today</div>
+        <div class="stat-value">UGX {{ fees_collected_today|intcomma }}</div>
+        <div class="stat-note">Daily inflow</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon primary"><i class="fa fa-line-chart"></i></div>
+      <div>
+        <div class="stat-label">Collected This Term</div>
+        <div class="stat-value">UGX {{ total_fees_collected|intcomma }}</div>
+        <div class="stat-note">{{ selected_term_label }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon danger"><i class="fa fa-exclamation-circle"></i></div>
+      <div>
+        <div class="stat-label">Outstanding Balances</div>
+        <div class="stat-value">UGX {{ total_fees_outstanding|intcomma }}</div>
+        <div class="stat-note">Unpaid + overdue</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-12">
+    <div class="stat-card">
+      <div class="stat-icon warning"><i class="fa fa-percent"></i></div>
+      <div>
+        <div class="stat-label">Collection Rate</div>
+        <div class="stat-value">{{ fee_collection_rate|default:0 }}%</div>
+        <div class="stat-note">Term performance</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-area-chart"></i> Revenue vs Expenses</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-revenue-vs-expenses" style="height:300px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bell"></i> Financial Alerts</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list">
+          {% for alert in bursar_alerts %}
+          <li>
+            <span class="name">{{ alert.label }}</span>
+            <span class="value">{{ alert.count }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No urgent finance alerts</span><span class="value">OK</span></li>
+          {% endfor %}
+        </ul>
+        <hr>
+        <div class="row">
+          {% for action in quick_actions %}
+          <div class="col-xs-12" style="margin-bottom:8px;">
+            <a href="{{ action.url }}" class="btn btn-{% if action.style == 'danger' %}danger{% elif action.style == 'warning' %}warning{% elif action.style == 'primary' %}primary{% else %}info{% endif %} btn-block">
+              <i class="fa {{ action.icon }}"></i> {{ action.label }}
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bar-chart"></i> Fee Collection vs Expected</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-fees-collection" style="height:280px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-pie-chart"></i> Payment Methods</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div id="chart-payment-methods" style="height:280px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-7 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-credit-card"></i> Recent Transactions</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Student</th>
+                <th>Method</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for payment in recent_payments %}
+              <tr>
+                <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                <td>{{ payment.bill.student.student_name }}</td>
+                <td>{{ payment.payment_method }}</td>
+                <td>UGX {{ payment.amount|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted text-center">No transactions recorded for this period.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5 col-sm-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-user-times"></i> Top Debtors</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <ul class="list-unstyled dashboard-list">
+          {% for debtor in top_debtors %}
+          <li>
+            <span class="name">{{ debtor.student_name }}</span>
+            <span class="value">UGX {{ debtor.balance|intcomma }}</span>
+          </li>
+          {% empty %}
+          <li><span class="name">No outstanding student balances.</span><span class="value">OK</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_content text-center" style="padding:34px 10px;">
+        <i class="fa fa-dashboard fa-3x text-muted" style="margin-bottom:8px;"></i>
+        <h4 class="text-muted">No role dashboard is configured for this account.</h4>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+</div>
+
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{{ dashboard_chart_data|json_script:"dashboard-chart-data" }}
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}

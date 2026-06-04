@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block page_title %}Class Subject Allocations{% endblock page_title %}
+{% block content %}
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <div class="row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <div class="col-md-8 col-sm-8 col-xs-12">
+                            <h2 style="margin:0;"><i class="fa fa-link"></i> Class Subject Allocations</h2>
+                            <p class="text-muted" style="margin:6px 0 0;">View subject allocations for your assigned class streams.</p>
+                        </div>
+                        <div class="col-md-4 col-sm-4 col-xs-12" style="margin-top:6px;">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Search allocations..." id="allocationSearch">
+                                <span class="input-group-btn">
+                                    <button class="btn btn-default" type="button"><i class="fa fa-search"></i></button>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="nav navbar-right panel_toolbox">
+                        <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+                        <li><a class="close-link"><i class="fa fa-close"></i></a></li>
+                    </ul>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    {% if allocations %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover jambo_table" id="allocationsTable" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th>Class Stream</th>
+                                        <th>Subject</th>
+                                        <th>Subject Teacher</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for allocation in allocations %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>
+                                                <div style="font-weight:600;">{{ allocation.academic_class_stream }}</div>
+                                                <div class="text-muted" style="font-size:12px;">Allocated stream</div>
+                                            </td>
+                                            <td>
+                                                <span class="label label-primary" style="font-size:12px;">{{ allocation.subject }}</span>
+                                            </td>
+                                            <td>
+                                                <div style="display:flex;align-items:center;gap:8px;">
+                                                    {% if allocation.subject_teacher.staff_photo %}
+                                                        <img src="{{ allocation.subject_teacher.staff_photo.url }}" alt="Teacher" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                                                    {% else %}
+                                                        <img src="{% static 'images/default_profile.jpg' %}" alt="Teacher" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                                                    {% endif %}
+                                                    <span>{{ allocation.subject_teacher }}</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center" style="padding:24px 0;">
+                            <div class="alert alert-info" role="alert" style="margin:0;">
+                                <i class="fa fa-info-circle fa-2x"></i>
+                                <h4 style="margin-top:10px;">No Allocations Found</h4>
+                                <p style="margin-bottom:0;">There are currently no subject allocations for your class streams.</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#allocationSearch').on('keyup', function() {
+                var value = $(this).val().toLowerCase();
+                $('#allocationsTable tbody tr').filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+                });
+            });
+        });
+    </script>
+{% endblock %}

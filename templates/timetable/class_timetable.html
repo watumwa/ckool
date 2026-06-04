@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .class-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .class-card {
+    border: 1px solid #e6e9ed;
+    border-radius: 10px;
+    padding: 14px;
+    background: #fff;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    height: 100%;
+  }
+  .class-card:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+  .class-title {
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    color: #2c3e50;
+  }
+  .class-meta {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+  }
+  .class-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .class-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+</style>
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-list"></i> Class Timetable</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="alert alert-info" role="alert">
+          <i class="fa fa-info-circle"></i> Select a class to view or edit its timetable.
+        </div>
+
+        <div class="class-filter">
+          <label for="classFilter" class="control-label">Filter classes:</label>
+          <select id="classFilter" class="form-control" style="max-width: 320px;">
+            <option value="">All classes</option>
+            {% for stream in class_streams %}
+              <option value="{{ stream|lower }}">{{ stream }}</option>
+            {% endfor %}
+          </select>
+          <span id="classFilterCount" class="text-muted"></span>
+        </div>
+
+        <div class="class-grid" id="classGrid">
+          {% for stream in class_streams %}
+            <div class="class-card" data-class-name="{{ stream|lower }}">
+              <h4 class="class-title">{{ stream }}</h4>
+              <div class="class-meta">Timetable management</div>
+              <div class="class-actions">
+                <a class="btn btn-primary btn-sm" href="{% url 'timetable_center' %}?class_stream_id={{ stream.id }}">
+                  <i class="fa fa-calendar"></i> View Timetable
+                </a>
+                <a class="btn btn-default btn-sm" href="{% url 'timetable_center' %}?class_stream_id={{ stream.id }}">
+                  <i class="fa fa-edit"></i> Edit
+                </a>
+              </div>
+            </div>
+          {% empty %}
+            <p class="text-muted">No class streams available.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  (function() {
+    var input = document.getElementById('classFilter');
+    var grid = document.getElementById('classGrid');
+    var count = document.getElementById('classFilterCount');
+    if (!input || !grid) return;
+
+    function updateCount(visible, total) {
+      if (!count) return;
+      count.textContent = visible + " of " + total + " classes";
+    }
+
+    function filterCards() {
+      var value = (input.value || '').toLowerCase().trim();
+      var cards = grid.querySelectorAll('.class-card');
+      var total = cards.length;
+      var visible = 0;
+      Array.prototype.forEach.call(cards, function(card) {
+        var name = card.getAttribute('data-class-name') || '';
+        var show = !value || name.indexOf(value) !== -1;
+        card.style.display = show ? '' : 'none';
+        if (show) visible += 1;
+      });
+      updateCount(visible, total);
+    }
+
+    input.addEventListener('change', filterCards);
+    filterCards();
+  })();
+</script>
+{% endblock content %}

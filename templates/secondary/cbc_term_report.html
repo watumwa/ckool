@@ -1,0 +1,726 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Secondary CBC Term Report{% endblock page_title %}
+
+{% block content %}
+{% include 'secondary/_nav.html' %}
+
+<style>
+  .cbc-report-page {
+    --cbc-bg: #f4f7fb;
+    --cbc-panel: #ffffff;
+    --cbc-text: #0f172a;
+    --cbc-muted: #64748b;
+    --cbc-border: #dbe3ef;
+    --cbc-accent: #1d4ed8;
+    --cbc-green: #15803d;
+    --cbc-amber: #b45309;
+    --cbc-red: #b91c1c;
+    --cbc-blue: #1e40af;
+  }
+
+  .cbc-report-page .x_panel {
+    border-radius: 12px;
+  }
+
+  .cbc-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(160px, 1fr));
+    gap: 12px;
+    align-items: end;
+  }
+
+  .cbc-filter-grid .filter-search {
+    grid-column: span 1;
+  }
+
+  .cbc-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .cbc-report-wrap {
+    background: var(--cbc-bg);
+    border: 1px solid var(--cbc-border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .cbc-header {
+    background: var(--cbc-panel);
+    border: 1px solid var(--cbc-border);
+    border-radius: 12px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1.1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+
+  .cbc-school-block {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .cbc-school-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid var(--cbc-border);
+    background: #fff;
+  }
+
+  .cbc-title-block {
+    text-align: center;
+  }
+
+  .cbc-title-block h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--cbc-text);
+  }
+
+  .cbc-title-block .cbc-subtitle {
+    color: var(--cbc-muted);
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
+  .cbc-student-block {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .cbc-student-photo,
+  .cbc-student-photo-empty {
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    border: 1px solid var(--cbc-border);
+    object-fit: cover;
+    background: #f1f5f9;
+  }
+
+  .cbc-student-photo-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cbc-muted);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .cbc-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .cbc-summary-card {
+    background: var(--cbc-panel);
+    border: 1px solid var(--cbc-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-height: 88px;
+  }
+
+  .cbc-summary-label {
+    font-size: 11px;
+    color: var(--cbc-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .cbc-summary-value {
+    font-size: 20px;
+    line-height: 1.2;
+    font-weight: 800;
+    margin-top: 4px;
+    color: var(--cbc-text);
+  }
+
+  .cbc-summary-note {
+    font-size: 12px;
+    color: var(--cbc-muted);
+    margin-top: 2px;
+  }
+
+  .cbc-level-badge {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid transparent;
+  }
+
+  .cbc-level-beginning {
+    background: #fee2e2;
+    color: var(--cbc-red);
+    border-color: #fecaca;
+  }
+
+  .cbc-level-developing {
+    background: #ffedd5;
+    color: var(--cbc-amber);
+    border-color: #fed7aa;
+  }
+
+  .cbc-level-proficient {
+    background: #dcfce7;
+    color: var(--cbc-green);
+    border-color: #bbf7d0;
+  }
+
+  .cbc-level-advanced {
+    background: #dbeafe;
+    color: var(--cbc-blue);
+    border-color: #bfdbfe;
+  }
+
+  .cbc-level-default {
+    background: #e2e8f0;
+    color: #334155;
+    border-color: #cbd5e1;
+  }
+
+  .cbc-section-card {
+    background: var(--cbc-panel);
+    border: 1px solid var(--cbc-border);
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+
+  .cbc-section-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid var(--cbc-border);
+    padding: 10px 12px;
+  }
+
+  .cbc-section-head h4 {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .cbc-section-body {
+    padding: 12px;
+  }
+
+  .cbc-report-table thead th {
+    background: #e9eef8;
+    color: #0f172a;
+    border-color: #d7dfec;
+    font-size: 12px;
+  }
+
+  .cbc-report-table tbody td {
+    vertical-align: middle;
+    font-size: 13px;
+  }
+
+  .cbc-row-details {
+    background: #f8fbff;
+  }
+
+  .cbc-row-details table {
+    margin: 8px 0 0;
+  }
+
+  .cbc-progress-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 10px;
+  }
+
+  .cbc-progress-item {
+    border: 1px solid var(--cbc-border);
+    border-radius: 10px;
+    padding: 10px;
+    background: #fbfdff;
+  }
+
+  .cbc-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .cbc-progress {
+    width: 100%;
+    height: 9px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .cbc-progress > span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #1d4ed8, #2563eb);
+  }
+
+  .cbc-side-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .cbc-comment-box {
+    border: 1px solid var(--cbc-border);
+    border-radius: 10px;
+    padding: 10px;
+    min-height: 92px;
+    background: #f8fafc;
+    white-space: pre-wrap;
+  }
+
+  .cbc-signature-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .cbc-signature-card {
+    border: 1px solid var(--cbc-border);
+    border-radius: 10px;
+    padding: 10px;
+    background: #fff;
+  }
+
+  .cbc-signature-img {
+    max-height: 38px;
+    object-fit: contain;
+    display: block;
+    margin-top: 8px;
+  }
+
+  .cbc-promo-panel {
+    border: 1px solid var(--cbc-border);
+    border-radius: 10px;
+    padding: 12px;
+    background: #f8fbff;
+  }
+
+  .cbc-promo-full { border-left: 4px solid #16a34a; }
+  .cbc-promo-conditional { border-left: 4px solid #d97706; }
+  .cbc-promo-repeat { border-left: 4px solid #dc2626; }
+  .cbc-promo-graduating { border-left: 4px solid #2563eb; }
+  .cbc-promo-pending { border-left: 4px solid #64748b; }
+
+  .cbc-empty-state {
+    text-align: center;
+    padding: 45px 20px;
+    color: var(--cbc-muted);
+    border: 1px dashed #c7d2e4;
+    border-radius: 12px;
+    background: #fbfdff;
+  }
+
+  @media (max-width: 1100px) {
+    .cbc-filter-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    .cbc-header { grid-template-columns: 1fr; }
+    .cbc-summary-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    .cbc-progress-grid,
+    .cbc-side-grid,
+    .cbc-signature-row { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    .no-print,
+    .left_col,
+    .top_nav,
+    footer {
+      display: none !important;
+    }
+
+    .right_col {
+      margin-left: 0 !important;
+    }
+
+    .cbc-report-page,
+    .cbc-report-wrap,
+    .cbc-section-card,
+    .cbc-summary-card,
+    .cbc-header {
+      background: #fff !important;
+      box-shadow: none !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    .cbc-report-wrap {
+      padding: 0;
+      border: none;
+    }
+
+    .cbc-report-table thead th {
+      background: #f1f5f9 !important;
+      color: #000 !important;
+    }
+
+    .collapse {
+      display: block !important;
+      height: auto !important;
+      visibility: visible !important;
+    }
+
+    .cbc-progress > span {
+      background: #64748b !important;
+    }
+  }
+</style>
+
+<div class="cbc-report-page">
+  <div class="x_panel no-print">
+    <div class="x_title">
+      <h2>Secondary CBC Report Filters</h2>
+      <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+      <form method="get" class="cbc-filter-grid">
+        <div>
+          <label>Academic Year</label>
+          <select name="year_id" class="form-control">
+            <option value="">All Years</option>
+            {% for year in year_options %}
+            <option value="{{ year.id }}" {% if selected_year_id == year.id|stringformat:'s' %}selected{% endif %}>{{ year.academic_year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label>Term</label>
+          <select name="term_id" class="form-control">
+            <option value="">All Terms</option>
+            {% for term in term_options %}
+            <option value="{{ term.id }}" {% if selected_term_id == term.id|stringformat:'s' %}selected{% endif %}>Term {{ term.term }} ({{ term.academic_year.academic_year }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label>Class</label>
+          <select name="academic_class_id" class="form-control">
+            <option value="">Select Class</option>
+            {% for item in class_options %}
+            <option value="{{ item.id }}" {% if selected_academic_class_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item.Class.name }} - Term {{ item.term.term }} ({{ item.academic_year.academic_year }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label>Student</label>
+          <select name="student_id" class="form-control">
+            <option value="">Select Student</option>
+            {% for student in student_options %}
+            <option value="{{ student.id }}" {% if selected_student_id == student.id|stringformat:'s' %}selected{% endif %}>{{ student.student_name }} ({{ student.reg_no }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-search">
+          <label>Search Name / Adm No</label>
+          <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="e.g. Nakato / STD2026-12">
+        </div>
+
+        <div class="cbc-actions" style="grid-column: 1 / -1;">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Apply</button>
+          <a href="{% url 'secondary:cbc_term_report' %}" class="btn btn-default btn-sm">Reset</a>
+          {% if report_ready %}
+          <button type="button" class="btn btn-info btn-sm" onclick="window.print()"><i class="fa fa-print"></i> Print View</button>
+          <a href="{% url 'secondary:cbc_term_report_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm">
+            <i class="fa fa-file-pdf-o"></i> Download PDF
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if report_ready %}
+  <div class="cbc-report-wrap">
+    <div class="cbc-header">
+      <div class="cbc-school-block">
+        {% if school.school_logo %}
+        <img src="{{ school.school_logo.url }}" alt="School logo" class="cbc-school-logo">
+        {% endif %}
+        <div>
+          <div><strong>{{ school.school_name }}</strong></div>
+          <div class="text-muted">{{ school.address }}</div>
+          <div class="text-muted">{{ school.email }}{% if school.mobile %} | {{ school.mobile }}{% endif %}</div>
+        </div>
+      </div>
+
+      <div class="cbc-title-block">
+        <h3>Lower Secondary Term Report</h3>
+        <div class="cbc-subtitle">
+          Academic Year {{ selected_academic_class.academic_year.academic_year }} · Term {{ selected_academic_class.term.term }}
+        </div>
+      </div>
+
+      <div class="cbc-student-block">
+        {% if selected_student.photo %}
+        <img src="{{ selected_student.photo.url }}" alt="{{ selected_student.student_name }}" class="cbc-student-photo">
+        {% else %}
+        <div class="cbc-student-photo-empty">No Photo</div>
+        {% endif %}
+        <div>
+          <div><strong>{{ selected_student.student_name }}</strong></div>
+          <div class="text-muted">Adm No: {{ selected_student.reg_no }}</div>
+          <div class="text-muted">Class: {{ selected_academic_class.Class.code }}{% if selected_student.stream %} · Stream {{ selected_student.stream.stream }}{% endif %}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cbc-summary-grid">
+      <div class="cbc-summary-card">
+        <div class="cbc-summary-label">Overall Competency</div>
+        <div class="cbc-summary-value">{{ summary.overall_level.short_label|default:'-' }}</div>
+        <div class="cbc-summary-note">
+          <span class="cbc-level-badge cbc-level-{{ summary.overall_level.tone|default:'default' }}">{{ summary.overall_level.label|default:'No evidence' }}</span>
+        </div>
+      </div>
+
+      <div class="cbc-summary-card">
+        <div class="cbc-summary-label">Mean Score</div>
+        <div class="cbc-summary-value">{% if summary.mean_score is not None %}{{ summary.mean_score|floatformat:1 }}%{% else %}-{% endif %}</div>
+      </div>
+
+      <div class="cbc-summary-card">
+        <div class="cbc-summary-label">Attendance</div>
+        <div class="cbc-summary-value">{{ summary.attendance_percent|floatformat:1 }}%</div>
+      </div>
+
+      <div class="cbc-summary-card">
+        <div class="cbc-summary-label">Position</div>
+        <div class="cbc-summary-value" style="font-size:15px;">{{ summary.position_label }}</div>
+      </div>
+
+      <div class="cbc-summary-card">
+        <div class="cbc-summary-label">Recommendation</div>
+        <div class="cbc-summary-value" style="font-size:16px;">{{ promotion_decision.title }}</div>
+        <div class="cbc-summary-note">Class size: {{ summary.class_size }}</div>
+      </div>
+    </div>
+
+    <div class="cbc-section-card">
+      <div class="cbc-section-head">
+        <h4>Subject Performance</h4>
+        <small class="text-muted">CA ({{ ca_weight_label|floatformat:0 }}%) · EOT ({{ exam_weight_label|floatformat:0 }}%)</small>
+      </div>
+      <div class="cbc-section-body table-responsive">
+        <table class="table table-bordered table-striped cbc-report-table">
+          <thead>
+            <tr>
+              <th>Learning Area</th>
+              <th>CA ({{ ca_weight_label|floatformat:0 }}%)</th>
+              <th>EOT ({{ exam_weight_label|floatformat:0 }}%)</th>
+              <th>Total</th>
+              <th>Level</th>
+              <th>Teacher Comment</th>
+              <th class="no-print">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in subject_rows %}
+            <tr>
+              <td>{{ row.subject_name }}</td>
+              <td>{% if row.ca_score is not None %}{{ row.ca_score|floatformat:1 }}{% else %}-{% endif %}</td>
+              <td>{% if row.eot_score is not None %}{{ row.eot_score|floatformat:1 }}{% else %}-{% endif %}</td>
+              <td>{% if row.total_score is not None %}{{ row.total_score|floatformat:1 }}{% else %}-{% endif %}</td>
+              <td><span class="cbc-level-badge cbc-level-{{ row.level.tone|default:'default' }}">{{ row.level.short_label }}</span></td>
+              <td>{{ row.teacher_comment|default:'-' }}</td>
+              <td class="no-print">
+                <button type="button" class="btn btn-xs btn-default" data-toggle="collapse" data-target="#subject-detail-{{ forloop.counter }}">
+                  Strands / Tasks
+                </button>
+              </td>
+            </tr>
+            <tr class="cbc-row-details">
+              <td colspan="7" style="padding: 0; border-top: none;">
+                <div id="subject-detail-{{ forloop.counter }}" class="collapse">
+                  <div style="padding: 10px 12px;">
+                    {% if row.details %}
+                    <table class="table table-condensed table-bordered">
+                      <thead>
+                        <tr>
+                          <th>Task / Strand</th>
+                          <th>Type</th>
+                          <th>Score</th>
+                          <th>Level</th>
+                          <th>Competency Link</th>
+                          <th>Comment</th>
+                          <th>Evidence</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for d in row.details %}
+                        <tr>
+                          <td>{{ d.task_title }}</td>
+                          <td>{{ d.task_type }}</td>
+                          <td>{{ d.score|floatformat:1 }}/{{ d.max_score|floatformat:1 }}</td>
+                          <td>{{ d.normalized_score|floatformat:1 }}%</td>
+                          <td>{{ d.competency_name|default:'-' }}</td>
+                          <td>{{ d.teacher_comment|default:'-' }}</td>
+                          <td>{% if d.evidence_reference %}<a href="{{ d.evidence_reference }}" target="_blank">Open</a>{% else %}-{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-muted">No strand/task evidence for this subject in the selected term.</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">No subject performance data found for this student in the selected class/term.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cbc-section-card">
+      <div class="cbc-section-head"><h4>Competency Breakdown</h4></div>
+      <div class="cbc-section-body">
+        <div class="cbc-progress-grid">
+          {% for item in competency_rows %}
+          <div class="cbc-progress-item">
+            <div class="cbc-progress-label">
+              <span>{{ item.name }}</span>
+              <span>
+                {% if item.score_percent is not None %}
+                  {{ item.level.short_label }}
+                {% else %}
+                  No evidence
+                {% endif %}
+              </span>
+            </div>
+            <div class="cbc-progress"><span style="width: {{ item.progress_percent|floatformat:0 }}%;"></span></div>
+            <div class="text-muted" style="margin-top:4px; font-size:12px;">
+              {% if item.score_percent is not None %}{{ item.score_percent|floatformat:1 }}% · {{ item.level.label }}{% else %}-{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="cbc-side-grid">
+      <div class="cbc-section-card">
+        <div class="cbc-section-head"><h4>Projects & Practical Work</h4></div>
+        <div class="cbc-section-body">
+          {% if project_rows %}
+          <table class="table table-bordered table-condensed">
+            <thead>
+              <tr>
+                <th>Project Title</th>
+                <th>Subject</th>
+                <th>Level</th>
+                <th>Teacher Remark</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in project_rows %}
+              <tr>
+                <td>{{ item.title }} <div class="text-muted">{{ item.task_type }}</div></td>
+                <td>{{ item.subject_name }}</td>
+                <td><span class="cbc-level-badge cbc-level-{{ item.level.tone|default:'default' }}">{{ item.level.short_label }}</span></td>
+                <td>{{ item.teacher_comment|default:'-' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="text-muted">No project/practical records captured for the selected report scope.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="cbc-section-card">
+        <div class="cbc-section-head"><h4>Attendance & Behavior</h4></div>
+        <div class="cbc-section-body">
+          <p><strong>Attendance:</strong> {{ attendance_snapshot.attendance_percent|floatformat:1 }}%</p>
+          <div class="progress" style="height: 12px;">
+            <div class="progress-bar progress-bar-info" role="progressbar" style="width: {{ attendance_snapshot.attendance_percent|floatformat:0 }}%;"></div>
+          </div>
+          <p><strong>Participation:</strong> {{ attendance_snapshot.participation_level }}</p>
+          <p><strong>Marked Sessions:</strong> {{ attendance_snapshot.total_records }}</p>
+          <p><strong>Discipline Remarks:</strong></p>
+          <div class="cbc-comment-box">{{ attendance_snapshot.discipline_remarks|default:'No discipline remarks recorded.' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cbc-section-card">
+      <div class="cbc-section-head"><h4>Teacher General Comment</h4></div>
+      <div class="cbc-section-body">
+        <div class="cbc-side-grid">
+          <div>
+            <div class="cbc-summary-label">Class Teacher Remark</div>
+            <div class="cbc-comment-box">{{ class_teacher_remark|default:'No class teacher remark entered yet.' }}</div>
+          </div>
+          <div>
+            <div class="cbc-summary-label">Head Teacher Remark</div>
+            <div class="cbc-comment-box">{{ head_teacher_remark|default:'No head teacher remark entered yet.' }}</div>
+          </div>
+        </div>
+
+        <div class="cbc-signature-row">
+          <div class="cbc-signature-card">
+            <strong>Class Teacher</strong>
+            <div class="text-muted">{{ class_teacher_name|default:'Not assigned' }}</div>
+            {% if class_teacher_signature %}
+            <img src="{{ class_teacher_signature.url }}" alt="Class teacher signature" class="cbc-signature-img">
+            {% endif %}
+          </div>
+
+          <div class="cbc-signature-card">
+            <strong>Head Teacher</strong>
+            <div class="text-muted">School Authorized Signature</div>
+            {% if head_teacher_signature and head_teacher_signature.signature %}
+            <img src="{{ head_teacher_signature.signature.url }}" alt="Head teacher signature" class="cbc-signature-img">
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cbc-promo-panel cbc-promo-{{ promotion_decision.tone|default:'pending' }}">
+      <h4 style="margin-top:0;">Promotion Decision</h4>
+      <p><strong>Promoted To:</strong> {{ promotion_decision.target_label|default:'-' }}</p>
+      <p><strong>Condition:</strong> {{ promotion_decision.title|default:'Pending' }}</p>
+      <p style="margin-bottom:0;" class="text-muted">{{ promotion_decision.condition|default:'No recommendation generated.' }}</p>
+    </div>
+  </div>
+  {% else %}
+  <div class="x_panel">
+    <div class="x_content">
+      <div class="cbc-empty-state">
+        <h4 style="margin-top:0;">Select Class and Student to Generate CBC Report</h4>
+        <p style="margin-bottom:0;">Use the filters above to load the full lower-secondary term report with competency, project, attendance, and promotion recommendation panels.</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock content %}

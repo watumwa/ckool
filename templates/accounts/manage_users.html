@@ -1,0 +1,128 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Manage Users{% endblock page_title %}
+{% block content %}
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Manage Users</h2>
+                    <ul class="nav navbar-right panel_toolbox">
+                    <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                    </li>
+                    </ul>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".add-user-modal">
+                        <i class="fa fa-plus"></i>
+                        Add User
+                    </button> 
+
+                    <!-- start user list -->
+                    <div class="row">
+                        {% for user in users %}
+                            <div class="col-md-4 col-sm-4  profile_details">
+                                <div class="well profile_view">
+                                <div class="col-sm-12">
+                                    <h4 class="brief"><i>{{ user.role }}</i></h4>
+                                    <div class="left col-md-7 col-sm-7">
+                                    <h2>{{ user.username }}</h2>
+                                    <p><strong>Email: </strong> {{ user.email }}</p>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fa fa-phone"></i> Phone #: {{ user.contacts }} 
+                                        </li>
+                                        
+                                    </ul>
+                                    </div>
+                                    <div class="right col-md-5 col-sm-5 text-center">
+                                        {% if user.staff_photo %}
+                                            <img src="{{ user.staff_photo.url }}" alt="" class="img-circle img-fluid">
+                                        {% else %}
+                                            <img src="media/images/user.png" alt="" class="img-circle img-fluid">  
+                                        {% endif %}
+                                    
+                                    </div>
+                                </div>
+                                <div class=" profile-bottom text-center">
+                                    <div class=" col-sm-6 emphasis">
+                                    <p class="ratings">
+                                        <a>4.0</a>
+                                        <a href="#"><span class="fa fa-star"></span></a>
+                                        <a href="#"><span class="fa fa-star"></span></a>
+                                        <a href="#"><span class="fa fa-star"></span></a>
+                                        <a href="#"><span class="fa fa-star"></span></a>
+                                        <a href="#"><span class="fa fa-star-o"></span></a>
+                                    </p>
+                                    </div>
+                                    <div class=" col-sm-6 emphasis">
+                                    
+                                    <a href="" class="btn btn-primary btn-sm">
+                                        <i class="fa fa-user"> </i> View Profile
+                                </a>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add user Modal -->
+    <div class="modal fade add-user-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h4 class="modal-title" id="myModalLabel">Add User</h4>
+              <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{register_form|crispy}}
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+
+          </div>
+        </div>
+    </div>
+
+    <!-- Bulk Upload Modal -->
+    <div class="modal fade bulk-upload-modal" tabindex="0" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h4 class="modal-title" id="myModalLabel">Bulk Upload</h4>
+              <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{csv_form}}
+
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-danger" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+
+          </div>
+        </div>
+    </div>
+          {% endblock content %}

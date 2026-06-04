@@ -1,0 +1,224 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}School Settings{% endblock page_title %}
+{% block content %}
+    <div class="clearfix"></div>
+    <style>
+        .settings-shell {
+            --settings-primary: #1d4ed8;
+            --settings-ink: #1f2937;
+            --settings-muted: #64748b;
+            --settings-border: #e2e8f0;
+            --settings-surface: #ffffff;
+            --settings-soft: #f8fafc;
+        }
+        .settings-shell .breadcrumb {
+            background: #f8fafc;
+            border: 1px solid var(--settings-border);
+            border-radius: 999px;
+            margin-bottom: 14px;
+        }
+        .settings-hero {
+            background: linear-gradient(140deg, #f8fbff 0%, #ffffff 100%);
+            border: 1px solid var(--settings-border);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 14px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+        .settings-hero h2 {
+            margin: 0 0 6px;
+            color: var(--settings-ink);
+            font-weight: 700;
+        }
+        .settings-hero p {
+            margin: 0;
+            color: var(--settings-muted);
+        }
+        .settings-hero .stamp {
+            font-size: 12px;
+            color: var(--settings-muted);
+            text-align: right;
+            margin-top: 8px;
+        }
+        .settings-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--settings-border);
+            background: #fff;
+            border-radius: 999px;
+            padding: 6px 12px;
+            color: #334155;
+            font-weight: 600;
+            margin: 4px 8px 0 0;
+        }
+        .settings-main {
+            border: 1px solid var(--settings-border);
+            border-radius: 14px;
+            background: var(--settings-surface);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
+            overflow: hidden;
+        }
+        .settings-main .nav-wrap {
+            background: var(--settings-soft);
+            border-bottom: 1px solid var(--settings-border);
+            padding: 10px;
+        }
+        .settings-main .nav-tabs {
+            border: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .settings-main .nav-tabs > li {
+            float: none;
+            margin: 0;
+        }
+        .settings-main .nav-tabs > li > a {
+            border: 1px solid var(--settings-border);
+            border-radius: 10px;
+            margin: 0;
+            color: #334155;
+            font-weight: 600;
+            background: #fff;
+            padding: 9px 14px;
+        }
+        .settings-main .nav-tabs > li.active > a,
+        .settings-main .nav-tabs > li.active > a:focus,
+        .settings-main .nav-tabs > li.active > a:hover {
+            border: 1px solid #1d4ed8;
+            background: #1d4ed8;
+            color: #fff;
+        }
+        .settings-main .nav-tabs .badge {
+            margin-left: 6px;
+            background: rgba(15, 23, 42, 0.12);
+            color: inherit;
+        }
+        .settings-main .nav-tabs > li.active > a .badge {
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+        }
+        .settings-main .tab-pane {
+            padding: 0;
+        }
+        .settings-main .tab-pane > .p-4 {
+            padding: 18px !important;
+        }
+    </style>
+
+    <div class="settings-shell">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fa fa-home"></i> Dashboard</a></li>
+                <li class="breadcrumb-item active">School Settings</li>
+            </ol>
+        </nav>
+
+        <div class="settings-hero">
+            <div class="row">
+                <div class="col-md-8 col-sm-12">
+                    <h2><i class="fa fa-cogs text-primary"></i> School Settings</h2>
+                    <p>Manage school configuration, sections, signatures, and departments.</p>
+                </div>
+                <div class="col-md-4 col-sm-12">
+                    <div class="stamp">
+                        Last updated:
+                        {% if school_settings and school_settings.updated_at %}
+                            {{ school_settings.updated_at|date:"M d, Y H:i" }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div>
+                <span class="settings-chip"><i class="fa fa-cog"></i> General</span>
+                <span class="settings-chip"><i class="fa fa-layer-group"></i> Sections {{ school_sections|length|default:0 }}</span>
+                <span class="settings-chip"><i class="fa fa-signature"></i> Signatures {{ signatures|length|default:0 }}</span>
+                <span class="settings-chip"><i class="fa fa-sitemap"></i> Departments {{ departments|length|default:0 }}</span>
+            </div>
+        </div>
+
+        <div class="settings-main">
+            <div class="nav-wrap">
+                <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+                    <li class="active">
+                        <a id="general-tab" data-toggle="tab" href="#general" role="tab" aria-controls="general" aria-selected="true">
+                            <i class="fa fa-cog"></i> General
+                        </a>
+                    </li>
+                    <li>
+                        <a id="sections-tab" data-toggle="tab" href="#sections" role="tab" aria-controls="sections" aria-selected="false">
+                            <i class="fa fa-layer-group"></i> Sections
+                            {% if school_sections %}<span class="badge">{{ school_sections|length }}</span>{% endif %}
+                        </a>
+                    </li>
+                    <li>
+                        <a id="signatures-tab" data-toggle="tab" href="#signatures" role="tab" aria-controls="signatures" aria-selected="false">
+                            <i class="fa fa-pencil-square-o"></i> Signatures
+                            {% if signatures %}<span class="badge">{{ signatures|length }}</span>{% endif %}
+                        </a>
+                    </li>
+                    <li>
+                        <a id="departments-tab" data-toggle="tab" href="#departments" role="tab" aria-controls="departments" aria-selected="false">
+                            <i class="fa fa-sitemap"></i> Departments
+                            {% if departments %}<span class="badge">{{ departments|length }}</span>{% endif %}
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="tab-content" id="settingsTabsContent">
+                <div class="tab-pane fade in active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                    <div class="p-4">{% include "./school_details.html" %}</div>
+                </div>
+                <div class="tab-pane fade" id="sections" role="tabpanel" aria-labelledby="sections-tab">
+                    {% include "./sections.html" %}
+                </div>
+                <div class="tab-pane fade" id="signatures" role="tabpanel" aria-labelledby="signatures-tab">
+                    {% include "./signatures.html" %}
+                </div>
+                <div class="tab-pane fade" id="departments" role="tabpanel" aria-labelledby="departments-tab">
+                    {% include "./departments.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Tab Navigation Script -->
+    <script>
+    (function() {
+        // Activate tab from URL hash if present
+        var hash = window.location.hash;
+        if (hash) {
+            var target = document.querySelector('a[href="' + hash + '"]');
+            if (target) {
+                $(target).tab('show');
+            }
+        }
+
+        // Update hash when tab changes
+        $('#settingsTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            var newHash = e.target.getAttribute('href');
+            if (newHash) {
+                history.replaceState(null, null, newHash);
+            }
+        });
+
+        // Add smooth transitions
+        $('#settingsTabs a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+            $('.tab-pane').removeClass('show');
+        });
+
+        $('#settingsTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $('.tab-pane.active').addClass('show');
+        });
+    })();
+    </script>
+
+
+
+{% endblock content%}

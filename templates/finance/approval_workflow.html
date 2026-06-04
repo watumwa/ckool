@@ -1,0 +1,88 @@
+{% extends "../base.html" %}
+{% load humanize %}
+{% block page_title %}Expenditure Approvals{% endblock %}
+
+{% block content %}
+<div class="clearfix"></div>
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-check-square-o"></i> Pending Expenditure Approvals</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+
+        {% if pending_approvals %}
+        <div class="table-responsive">
+          <table class="table table-striped table-bordered datatable">
+            <thead class="thead-dark">
+              <tr>
+                <th>#</th>
+                <th>Department</th>
+                <th>Expense</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Level</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in pending_approvals %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ a.expenditure.budget_item.department }}</td>
+                <td>{{ a.expenditure.budget_item.expense }}</td>
+                <td>{{ a.expenditure.description|default:"-" }}</td>
+                <td>UGX {{ a.expenditure.amount|floatformat:0|intcomma }}</td>
+                <td>{{ a.approval_level }}/{{ a.max_approval_level }}</td>
+                <td>
+                  <span class="badge {% if a.status == 'pending' %}badge-warning{% elif a.status == 'approved' %}badge-success{% elif a.status == 'rejected' %}badge-danger{% else %}badge-info{% endif %}">
+                    {{ a.status|title }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex" style="gap: 6px;">
+                    <form method="post" action="{% url 'approval_workflow' %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="expenditure_id" value="{{ a.expenditure.id }}"/>
+                      <input type="hidden" name="action" value="approve"/>
+                      <button type="submit" class="btn btn-sm btn-success"><i class="fa fa-check"></i> Approve</button>
+                    </form>
+
+                    <form method="post" action="{% url 'approval_workflow' %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="expenditure_id" value="{{ a.expenditure.id }}"/>
+                      <input type="hidden" name="action" value="escalate"/>
+                      <button type="submit" class="btn btn-sm btn-info"><i class="fa fa-level-up"></i> Escalate</button>
+                    </form>
+
+                    <form method="post" action="{% url 'approval_workflow' %}" class="form-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="expenditure_id" value="{{ a.expenditure.id }}"/>
+                      <input type="hidden" name="action" value="reject"/>
+                      <input type="text" name="rejection_reason" class="form-control input-sm" placeholder="Reason" style="max-width:180px; display:inline-block;"/>
+                      <button type="submit" class="btn btn-sm btn-danger"><i class="fa fa-times"></i> Reject</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i> No pending approvals.
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

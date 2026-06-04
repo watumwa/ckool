@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Secondary CBC Dashboard{% endblock page_title %}
+
+{% block content %}
+{% include 'secondary/_nav.html' %}
+
+{% if is_upper_mode %}
+<div class="row">
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel"><div class="x_content"><h4>Policies</h4><h2>{{ policy_count }}</h2></div></div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel"><div class="x_content"><h4>Competency Scales</h4><h2>{{ a_level_scale_count }}</h2></div></div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel"><div class="x_content"><h4>Component Weights</h4><h2>{{ a_level_weight_count }}</h2></div></div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel"><div class="x_content"><h4>Assessments</h4><h2>{{ a_level_assessment_count }}</h2></div></div>
+  </div>
+</div>
+
+<div class="x_panel">
+  <div class="x_title"><h2>Recent A-Level Assessments</h2><div class="clearfix"></div></div>
+  <div class="x_content table-responsive">
+    <table class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Student</th>
+          <th>Subject</th>
+          <th>Component</th>
+          <th>Module</th>
+          <th>Attempt</th>
+          <th>Competency</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in recent_a_level_assessments %}
+        <tr>
+          <td>{{ item.assessed_on }}</td>
+          <td>{{ item.student.student_name }}</td>
+          <td>{{ item.subject.name }}</td>
+          <td>{{ item.get_component_type_display }}</td>
+          <td>{% if item.module %}{{ item.module.code }}{% else %}-{% endif %}</td>
+          <td>{{ item.attempt_no }}</td>
+          <td>{{ item.get_competency_code_display }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center">No A-Level assessments yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="row">
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel"><div class="x_content"><h4>Policies</h4><h2>{{ policy_count }}</h2></div></div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel"><div class="x_content"><h4>CA Tasks</h4><h2>{{ task_count }}</h2></div></div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel"><div class="x_content"><h4>Pending Moderation</h4><h2>{{ pending_records_count }}</h2></div></div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="x_panel"><div class="x_content"><h4>UNEB Batches</h4><h2>{{ batch_count }} ({{ pending_batch_count }} pending)</h2></div></div>
+  </div>
+</div>
+
+<div class="x_panel">
+  <div class="x_title"><h2>Recent CA Tasks</h2><div class="clearfix"></div></div>
+  <div class="x_content table-responsive">
+    <table class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Class</th>
+          <th>Subject</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in recent_tasks %}
+        <tr>
+          <td>{{ task.title }}</td>
+          <td>{{ task.academic_class }}</td>
+          <td>{{ task.subject }}</td>
+          <td>{{ task.assigned_date }}</td>
+          <td>{{ task.get_status_display }}</td>
+          <td><a href="{% url 'secondary:ca_task_records' task.id %}" class="btn btn-xs btn-info">Records</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center">No tasks yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock content %}

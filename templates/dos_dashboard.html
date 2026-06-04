@@ -1,0 +1,96 @@
+{% load static %}
+{% load verification_tags %}
+{% pending_verification_count as pending_count %}
+
+<ul class="nav side-menu">
+  <li>
+    <a href="{% url 'index_page' %}">
+      <i class="fa fa-dashboard"></i> Dashboard
+    </a>
+  </li>
+
+
+  <li>
+    <a href="{% url 'operations_center' %}">
+      <i class="fa fa-compass"></i> Task Center
+    </a>
+  </li>
+
+  <li>
+    <a>
+      <i class="fa fa-sitemap"></i> Academic Structure
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'class_page' %}">Classes</a></li>
+      <li><a href="{% url 'stream_page' %}">Streams</a></li>
+      <li><a href="{% url 'academic_class_page' %}">Academic Classes</a></li>
+      <li><a href="{% url 'subjects_page' %}">Subjects</a></li>
+      <li><a href="{% url 'subject_allocation_page' %}">Subject Allocation</a></li>
+    </ul>
+  </li>
+
+  <li>
+    <a href="{% url 'student_page' %}">
+      <i class="fa fa-users"></i> Students
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'timetable_center' %}">
+      <i class="fa fa-calendar"></i> Timetable
+    </a>
+  </li>
+
+  <li>
+    <a>
+      <i class="fa fa-graduation-cap"></i> Exams & Assessment
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'assessment_list' %}">Create Assessments</a></li>
+      <li><a href="{% url 'assesment_type_page' %}">Assessment Types</a></li>
+      <li><a href="{% url 'assessment_sheet' %}">Assessment Sheets</a></li>
+      <li><a href="{% url 'bulk_result_entry' %}">Bulk Result Import</a></li>
+      <li><a href="{% url 'add_grading_system_page' %}">Grading Structure</a></li>
+    </ul>
+  </li>
+
+  <li>
+    <a>
+      <i class="fa fa-line-chart"></i> Results & Reports
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'school_results_dashboard' %}">Results Overview</a></li>
+      <li><a href="{% url 'class_performance_summary' %}">Performance Summary</a></li>
+      <!--<li><a href="{% url 'class_stream_filter' %}">Class Reports</a></li>-->
+      <!--<li><a href="{% url 'class_bulk_reports' %}">Bulk Reports</a></li>-->
+      <li><a href="{% url 'class_assessment_combined' %}">Combined Assessment Report</a></li>
+    </ul>
+  </li>
+
+  <li>
+    <a href="{% url 'verification_overview' %}">
+      <i class="fa fa-check-square-o"></i> Verification
+      {% if pending_count > 0 %}
+      <span class="badge bg-red">{{ pending_count }}</span>
+      {% endif %}
+    </a>
+  </li>
+
+  <li>
+    <a>
+      <i class="fa fa-bullhorn"></i> Communication
+      {% if comm_unread_count > 0 %}
+      <span class="badge bg-green">{{ comm_unread_count }}</span>
+      {% endif %}
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'announcement_list' %}">Announcements</a></li>
+      <li><a href="{% url 'event_list' %}">Events</a></li>
+      <li><a href="{% url 'message_inbox' %}">Messages</a></li>
+    </ul>
+  </li>
+</ul>

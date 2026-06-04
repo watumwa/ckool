@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block page_title %}Carry Forward Balances{% endblock page_title %}
+
+{% block content %}
+<style>
+  .bf-hero {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 18px;
+    padding: 26px;
+    border-radius: 24px;
+    color: #fff;
+    background:
+      radial-gradient(circle at 88% 14%, rgba(6,182,212,.28), transparent 18rem),
+      linear-gradient(135deg, #071225, #123763);
+    box-shadow: 0 22px 54px rgba(15, 23, 42, .18);
+  }
+  .bf-hero h1 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.15;
+    font-weight: 900;
+    letter-spacing: -.04em;
+    color: #fff;
+  }
+  .bf-hero p {
+    max-width: 760px;
+    margin: 10px 0 0;
+    color: rgba(226,232,240,.86);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .bf-steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .bf-step {
+    padding: 13px 14px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.14);
+    color: rgba(255,255,255,.92);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .bf-step span {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    margin-right: 7px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.18);
+    color: #fff;
+  }
+  .bf-panel {
+    border: 1px solid #e5edf7;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 12px 32px rgba(15,23,42,.06);
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .bf-panel-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid #e5edf7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .bf-panel-header h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: -.025em;
+  }
+  .bf-panel-header small {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .bf-panel-body { padding: 20px; }
+  .bf-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .bf-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: .01em;
+  }
+  .bf-field .form-control {
+    min-height: 44px;
+    border-radius: 12px;
+    border-color: #cbd5e1;
+    box-shadow: none;
+  }
+  .bf-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .bf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 850;
+    border: 1px solid transparent;
+    text-decoration: none !important;
+  }
+  .bf-btn-primary { color: #fff; background: linear-gradient(135deg, #2563eb, #06b6d4); border-color: transparent; }
+  .bf-btn-outline { color: #0f172a; background: #fff; border-color: #cbd5e1; }
+  .bf-btn-success { color: #fff; background: #16a34a; border-color: #16a34a; }
+  .bf-btn[disabled] { opacity: .55; cursor: not-allowed; }
+  .bf-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .bf-kpi {
+    padding: 18px;
+    border-radius: 20px;
+    background: #fff;
+    border: 1px solid #e5edf7;
+    box-shadow: 0 10px 24px rgba(15,23,42,.05);
+  }
+  .bf-kpi small {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: .055em;
+    margin-bottom: 8px;
+  }
+  .bf-kpi strong {
+    color: #0f172a;
+    display: block;
+    font-size: 24px;
+    font-weight: 950;
+    letter-spacing: -.045em;
+  }
+  .bf-kpi.danger { border-left: 5px solid #ef4444; }
+  .bf-kpi.info { border-left: 5px solid #3b82f6; }
+  .bf-kpi.warning { border-left: 5px solid #f59e0b; }
+  .bf-note {
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    border: 1px solid #bfdbfe;
+    font-size: 13px;
+    line-height: 1.55;
+    margin-bottom: 15px;
+  }
+  .bf-note strong { color: #172554; }
+  .bf-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+  .bf-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .055em;
+    padding: 12px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .bf-table td {
+    padding: 13px 12px;
+    border-bottom: 1px solid #eef2f7;
+    vertical-align: middle;
+    color: #334155;
+  }
+  .bf-table tr:hover td { background: #f8fbff; }
+  .bf-student strong {
+    display: block;
+    color: #0f172a;
+    font-weight: 850;
+  }
+  .bf-student small {
+    display: block;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .bf-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 850;
+  }
+  .bf-badge-ready { color: #166534; background: #dcfce7; }
+  .bf-badge-skip { color: #92400e; background: #fef3c7; }
+  .bf-confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #f8fafc;
+    margin: 15px 0;
+    color: #334155;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .bf-confirm input { margin-top: 2px; }
+  .bf-empty {
+    padding: 34px 18px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 20px;
+    text-align: center;
+    color: #64748b;
+    background: #f8fafc;
+    font-weight: 750;
+  }
+  @media (max-width: 992px) {
+    .bf-filter-grid, .bf-kpis, .bf-steps { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .bf-hero, .bf-panel-body { padding: 18px; }
+    .bf-filter-grid, .bf-kpis, .bf-steps { grid-template-columns: 1fr; }
+    .bf-panel-header { align-items: flex-start; flex-direction: column; }
+    .bf-table { min-width: 780px; }
+  }
+</style>
+
+<div class="bf-hero">
+  <h1><i class="fa fa-arrow-circle-right"></i> Carry Forward Balances</h1>
+  <p>Move unpaid balances from a closed or previous term into the next term without losing the original bill history. The old bill receives a credit adjustment, while the new term receives a separate <strong>Balance Brought Forward</strong> charge.</p>
+  <div class="bf-steps">
+    <div class="bf-step"><span>1</span>Select old term</div>
+    <div class="bf-step"><span>2</span>Preview arrears</div>
+    <div class="bf-step"><span>3</span>Confirm posting</div>
+    <div class="bf-step"><span>4</span>Report separately</div>
+  </div>
+</div>
+
+<div class="bf-panel">
+  <div class="bf-panel-header">
+    <div>
+      <h2>Preview before posting</h2>
+      <small>Use this before opening a new term or after promotion setup.</small>
+    </div>
+  </div>
+  <div class="bf-panel-body">
+    <form method="get">
+      <div class="bf-filter-grid">
+        <div class="bf-field">
+          <label>From term</label>
+          <select name="source_term" class="form-control">
+            <option value="">Select source term</option>
+            {% for term in terms %}
+            <option value="{{ term.id }}" {% if selected_source_term == term.id %}selected{% endif %}>
+              {{ term.academic_year.academic_year }} - Term {{ term.term }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="bf-field">
+          <label>To term</label>
+          <select name="target_term" class="form-control">
+            <option value="">Select target term</option>
+            {% for term in terms %}
+            <option value="{{ term.id }}" {% if selected_target_term == term.id %}selected{% endif %}>
+              {{ term.academic_year.academic_year }} - Term {{ term.term }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="bf-field">
+          <label>Class</label>
+          <select name="class" class="form-control">
+            <option value="">All classes</option>
+            {% for class_obj in classes %}
+            <option value="{{ class_obj.id }}" {% if selected_class == class_obj.id %}selected{% endif %}>
+              {{ class_obj.code|default:class_obj.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="bf-field">
+          <label>Students</label>
+          <select name="active_only" class="form-control">
+            <option value="1" {% if active_students_only %}selected{% endif %}>Active learners only</option>
+            <option value="0" {% if not active_students_only %}selected{% endif %}>Include inactive learners</option>
+          </select>
+        </div>
+      </div>
+      <div class="bf-actions">
+        <button type="submit" class="bf-btn bf-btn-primary"><i class="fa fa-search"></i> Preview balances</button>
+        <a href="{% url 'fees_status' %}" class="bf-btn bf-btn-outline"><i class="fa fa-bar-chart"></i> Fees status</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="bf-kpis">
+  <div class="bf-kpi danger">
+    <small>Total arrears to move</small>
+    <strong>UGX {{ total_outstanding|floatformat:0|intcomma }}</strong>
+  </div>
+  <div class="bf-kpi info">
+    <small>Ready learners</small>
+    <strong>{{ postable_rows|length|intcomma }}</strong>
+  </div>
+  <div class="bf-kpi warning">
+    <small>Need setup</small>
+    <strong>{{ skipped_rows|length|intcomma }}</strong>
+  </div>
+</div>
+
+<div class="bf-panel">
+  <div class="bf-panel-header">
+    <div>
+      <h2>Balances found</h2>
+      <small>Review carefully before posting into the target term.</small>
+    </div>
+  </div>
+  <div class="bf-panel-body">
+    {% if preview_rows %}
+      <div class="bf-note">
+        <strong>Professional accounting treatment:</strong> posting is idempotent. If the same source bill is posted again, the system updates the existing carry-forward rows instead of creating duplicates.
+      </div>
+      <div class="table-responsive">
+        <table class="bf-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>From</th>
+              <th>To</th>
+              <th class="text-right">Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in preview_rows %}
+            <tr>
+              <td class="bf-student">
+                <strong>{{ row.student.student_name }}</strong>
+                <small>ID: {{ row.student.display_student_id }}</small>
+              </td>
+              <td>{{ row.source_bill.academic_class }}</td>
+              <td>
+                {% if row.target_academic_class %}
+                  {{ row.target_academic_class }}
+                {% else %}
+                  <span class="text-danger">Target class missing</span>
+                {% endif %}
+              </td>
+              <td class="text-right"><strong>UGX {{ row.outstanding|floatformat:0|intcomma }}</strong></td>
+              <td>
+                {% if row.can_post %}
+                  <span class="bf-badge bf-badge-ready">Ready</span>
+                {% else %}
+                  <span class="bf-badge bf-badge-skip">Skipped</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <form method="post" id="carryForwardForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="post">
+        <input type="hidden" name="source_term" value="{{ selected_source_term }}">
+        <input type="hidden" name="target_term" value="{{ selected_target_term }}">
+        <input type="hidden" name="class" value="{{ selected_class }}">
+        <input type="hidden" name="active_only" value="{% if active_students_only %}1{% else %}0{% endif %}">
+        <label class="bf-confirm">
+          <input type="checkbox" name="confirmed" value="1" id="confirmCarryForward">
+          <span>I have reviewed the preview and confirm that only valid previous-term balances should be carried into the target term.</span>
+        </label>
+        <button type="submit" class="bf-btn bf-btn-success" id="postCarryForwardBtn" {% if not postable_rows %}disabled{% endif %}>
+          <i class="fa fa-check"></i> Post Balance Brought Forward
+        </button>
+      </form>
+    {% else %}
+      <div class="bf-empty">
+        <i class="fa fa-check-circle" style="font-size:26px; color:#16a34a; margin-bottom:8px;"></i><br>
+        No outstanding balances found for the selected terms and class.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  (function () {
+    var form = document.getElementById('carryForwardForm');
+    var confirmBox = document.getElementById('confirmCarryForward');
+    var btn = document.getElementById('postCarryForwardBtn');
+    if (!form || !confirmBox || !btn || btn.disabled) return;
+    btn.disabled = true;
+    confirmBox.addEventListener('change', function () {
+      btn.disabled = !confirmBox.checked;
+    });
+    form.addEventListener('submit', function () {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Posting balances...';
+    });
+  })();
+</script>
+{% endblock content %}

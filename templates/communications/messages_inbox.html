@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block page_title %}Messages{% endblock page_title %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-envelope"></i> Messages</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <div class="comm-header">
+          <div class="comm-intro">
+            <div class="comm-title">Private conversations between staff.</div>
+            <div class="comm-tabs">
+              <a href="{% url 'message_inbox' %}" class="btn btn-default btn-xs {% if not show_archived %}active{% endif %}">Inbox</a>
+              <a href="{% url 'message_inbox' %}?archived=1" class="btn btn-default btn-xs {% if show_archived %}active{% endif %}">Archived</a>
+            </div>
+          </div>
+          <div class="comm-actions">
+            <div class="input-group message-search">
+              <input type="text" class="form-control" placeholder="Search messages..." id="messageSearch">
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button"><i class="fa fa-search"></i></button>
+              </span>
+            </div>
+            <a href="{% url 'message_new' %}" class="btn btn-success"><i class="fa fa-plus"></i> New Message</a>
+          </div>
+        </div>
+        {% if thread_items %}
+        <div class="list-group" id="messageCards">
+          {% for item in thread_items %}
+          <a href="{% url 'message_thread' item.thread.id %}" class="list-group-item message-card">
+            <div class="message-card-body">
+              <div class="message-main">
+                <div class="message-title">{{ item.thread.subject|default:"(No subject)" }}</div>
+                <div class="message-meta">Updated {{ item.thread.updated_at|date:"M d, Y H:i" }}</div>
+                <div class="message-to">
+                  To:
+                  {% for user in item.others %}
+                    {{ user.get_full_name|default:user.username }}{% if not forloop.last %}, {% endif %}
+                  {% empty %}
+                    (Just you)
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="message-badges">
+                <span class="label label-info">{{ item.thread.participants.count }} participants</span>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center">
+          <i class="fa fa-inbox fa-3x text-muted" style="margin-bottom:8px;"></i>
+          <h5 class="text-muted">No conversations yet</h5>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .comm-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    background:#f8fafc;
+    border:1px solid #e6edf5;
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:14px;
+  }
+  .comm-title{font-weight:600;color:#334155;margin-bottom:8px;}
+  .comm-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+  .comm-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+  .message-search .form-control{border-radius:999px 0 0 999px;}
+  .message-search .btn{border-radius:0 999px 999px 0;}
+  .message-card{border:1px solid #eef1f6;border-radius:12px;margin-bottom:10px;box-shadow:0 6px 16px rgba(0,0,0,0.04);}
+  .message-card:hover{box-shadow:0 12px 24px rgba(0,0,0,0.08);}
+  .message-card-body{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;}
+  .message-title{font-weight:700;color:#1f2a44;font-size:15px;}
+  .message-meta{font-size:12px;color:#64748b;margin-top:4px;}
+  .message-to{font-size:12px;color:#64748b;margin-top:6px;}
+  .message-badges{display:flex;gap:6px;}
+  .list-group-item.message-card{padding:14px 16px;}
+</style>
+
+<script>
+  $(document).ready(function() {
+    $('#messageSearch').on('keyup', function() {
+      var value = $(this).val().toLowerCase();
+      $('#messageCards .message-card').filter(function() {
+        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+      });
+    });
+  });
+</script>
+{% endblock content %}

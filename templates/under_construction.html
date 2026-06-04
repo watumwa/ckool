@@ -1,0 +1,65 @@
+{% extends "./base.html" %}
+{% load static %}
+
+{% block page_title %}Coming Soon ---{% endblock %}
+
+{% block content %}
+<div class="right_col" role="main">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12 col-sm-12 col-xs-12">
+        <div class="x_panel" style="border: none; box-shadow: none; background: transparent;">
+          <div class="x_content text-center" style="padding: 100px 20px;">
+            
+            <!-- Animated Construction Icon -->
+            <div class="construction-icon-container" style="margin-bottom: 40px;">
+              <i class="fa fa-cogs fa-5x" style="color: #2c3e50; font-size: 80px; animation: spin 4s linear infinite;"></i>
+            </div>
+
+            <!-- Main Heading -->
+            <h1 style="font-size: 56px; font-weight: 700; color: #2c3e50; margin-bottom: 20px;">
+              <span style="color: #337ab7;">Coming</span> Soon
+            </h1>
+            
+            <!-- Subtitle -->
+            <p style="font-size: 22px; color: #7f8c8d; margin-bottom: 30px;">
+              We're working on something amazing for you!
+            </p>
+
+            <!-- Progress Bar -->
+            <div class="col-md-6 col-md-offset-3" style="margin-bottom: 40px;">
+              <div class="progress progress-striped active" style="height: 25px; border-radius: 15px; background: #ecf0f1;">
+                <div class="progress-bar progress-bar-info" role="progressbar" style="width: 75%; border-radius: 15px; line-height: 25px; font-weight: 600;">
+                  63% Complete
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div style="margin-top: 50px; color: #95a5a6;">
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 36px !important;
+  }
+  
+  .construction-icon-container i {
+    font-size: 60px !important;
+  }
+}
+</style>
+{% endblock %}

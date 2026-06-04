@@ -1,0 +1,409 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load get_item %}
+
+
+
+{% block content %}
+<div class="">
+
+  <!-- Modern Header & Stats -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="m-0 font-weight-bold text-dark">Result Verification</h3>
+        <span class="badge badge-pill badge-light border px-3 py-2" style="font-size: 0.9rem;">
+          Assessment: <strong>{{ assessment }}</strong>
+        </span>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 stat-card">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="stat-icon bg-light-primary text-primary mr-3">
+            <i class="fa fa-users fa-2x"></i>
+          </div>
+          <div>
+            <div class="text-muted small text-uppercase font-weight-bold">Total Students</div>
+            <div class="h3 mb-0 font-weight-bold text-dark">{{ batch.results.count }}</div>
+            <small class="text-muted">in this batch</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 stat-card">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="stat-icon bg-light-info text-info mr-3">
+            <i class="fa fa-list-ol fa-2x"></i>
+          </div>
+          <div>
+            <div class="text-muted small text-uppercase font-weight-bold">Sample Size</div>
+            <div class="h3 mb-0 font-weight-bold text-dark">{{ samples|length }}</div>
+            <small class="text-muted">scripts selected</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 stat-card">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="stat-icon bg-light-success text-success mr-3">
+            <i class="fa fa-check-circle fa-2x"></i>
+          </div>
+            <div>
+              <div class="text-muted small text-uppercase font-weight-bold">Reviewed</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ reviewed_count|default:0 }}</div>
+              <small class="text-muted">scripts checked</small>
+            </div>
+</div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 stat-card">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="stat-icon 
+             {% if batch.status == 'VERIFIED' %}bg-light-success text-success
+             {% elif batch.status == 'FLAGGED' %}bg-light-danger text-danger
+             {% else %}bg-light-warning text-warning{% endif %} mr-3">
+            <i
+              class="fa {% if batch.status == 'VERIFIED' %}fa-check-double{% elif batch.status == 'FLAGGED' %}fa-exclamation-triangle{% else %}fa-hourglass-half{% endif %} fa-2x"></i>
+          </div>
+          <div>
+            <div class="text-muted small text-uppercase font-weight-bold">Status</div>
+            <div class="h4 mb-0 font-weight-bold 
+               {% if batch.status == 'VERIFIED' %}text-success
+               {% elif batch.status == 'FLAGGED' %}text-danger
+               {% else %}text-warning{% endif %}">
+              {{ batch.status }}
+            </div>
+            <small class="text-muted">current state</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-light border d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <strong>Reviewed / Sampled:</strong>
+      <span id="reviewProgressText">{{ reviewed_count|default:0 }} / {{ sampled_count|default:0 }}</span>
+      (<span id="reviewProgressPercent">{{ sampled_progress_percent|default:0 }}</span>%)
+    </div>
+    <div class="w-50">
+      <div class="progress" style="height:8px;">
+        <div id="reviewProgressBar" class="progress-bar bg-info" role="progressbar"
+          style="width: {{ sampled_progress_percent|default:0 }}%"
+          aria-valuenow="{{ sampled_progress_percent|default:0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+    </div>
+  </div>
+
+    <div class="row">
+    <div class="col-md-12 col-sm-12">
+      <div class="card border-0 shadow-lg mb-4">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+          <h5 class="card-title font-weight-bold text-dark mb-0">Verification Queue</h5>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info mb-4" role="alert">
+            <h6 class="font-weight-bold mb-2"><i class="fa fa-info-circle mr-1"></i> Result Verification Steps</h6>
+            <ol class="mb-0 pl-3">
+              <li>Enter any student marks you want to verify in <strong>Verifier Mark</strong>.</li>
+              <li>Click <strong>Run Verification</strong> to compare against teacher marks.</li>
+              <li>Any mismatches are highlighted in red. Add a <strong>Rejection Reason</strong> if mismatches exist.</li>
+            </ol>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text"><i class="fa fa-search"></i></span>
+                <input type="text" id="studentSearch" class="form-control" placeholder="Search by student name or reg number..." onkeyup="filterStudents()">
+                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6 text-end">
+              <span id="studentCount" class="badge bg-secondary p-2"></span>
+            </div>
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="table-responsive mb-4">
+              <table class="table table-hover align-middle" id="verificationTable">
+                <thead class="bg-light">
+                  <tr class="text-uppercase text-muted small">
+                    <th class="py-3 border-top-0" style="width: 5%;">#</th>
+                    <th class="py-3 border-top-0" style="width: 40%;">Student</th>
+                    {% if show_teacher_mark %}
+                    <th class="py-3 border-top-0 text-center" style="width: 15%;">Teacher Mark</th>
+                    {% endif %}
+                    <th class="py-3 border-top-0 text-center" style="width: 20%;">Verifier Mark</th>
+                    <th class="py-3 border-top-0 text-center" style="width: 20%;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for result in results %}
+                  {% with sample=sample_map|get_item:result.id %}
+                  <tr class="student-row {% if sample and sample.matched == False %}table-danger-soft{% endif %}" data-student-name="{{ result.student.student_name|lower }}" data-reg-no="{{ result.student.reg_no|lower }}">
+                    <td class="font-weight-bold text-muted">{{ forloop.counter }}</td>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <div class="avatar-circle mr-3 bg-light text-secondary font-weight-bold">
+                          {{ result.student|make_list|first }}
+                        </div>
+                        <div>
+                          <span class="d-block font-weight-bold text-dark">{{ result.student }}</span>
+                          <small class="text-muted">ID: {{ result.student_id|default:"N/A" }}</small>
+                        </div>
+                      </div>
+                    </td>
+                    {% if show_teacher_mark %}
+                    <td class="text-center font-weight-bold text-secondary" style="font-size: 1.1rem;">
+                      {{ result.score }}
+                    </td>
+                    {% endif %}
+                    <td class="text-center">
+                      <input type="number" step="0.01" name="dos_mark_{{ result.id }}"
+                        value="{% if sample %}{{ sample.dos_mark|default_if_none:'' }}{% endif %}" class="form-control form-control-lg text-center mx-auto verification-input font-weight-bold 
+                        {% if sample and sample.matched == True %}is-valid{% elif sample and sample.matched == False %}is-invalid{% endif %}"
+                        style="width: 100px; font-size: 1.1rem;" placeholder="-" min="0" max="{{ assessment.out_of }}"
+                        data-out-of="{{ assessment.out_of }}"
+                        data-was-checked="{% if sample and sample.checked_at %}1{% else %}0{% endif %}" />
+                      <small class="text-danger verifier-error d-block mt-1"></small>
+                    </td>
+                    <td class="text-center">
+                      {% if sample and sample.matched == True %}
+                      <span class="badge badge-pill badge-success px-3 py-2"><i class="fa fa-check mr-1"></i>
+                        Match</span>
+                      {% elif sample and sample.matched == False %}
+                      <span class="badge badge-pill badge-danger px-3 py-2"><i class="fa fa-times mr-1"></i>
+                        Mismatch</span>
+                      {% else %}
+                      <span class="badge badge-pill badge-light border text-muted px-3 py-2">Pending</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endwith %}
+                  {% empty %}
+                  <tr>
+                    <td colspan="{% if show_teacher_mark %}5{% else %}4{% endif %}" class="text-center py-5 text-muted">
+                      <i class="fa fa-folder-open fa-3x mb-3 text-light-gray"></i><br>
+                      No results available for verification.
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Danger Zone / Actions -->
+            <div class="card bg-light border-0 rounded-lg p-4 mt-4">
+              <div class="row align-items-start">
+                <div class="col-md-6 mb-3 mb-md-0">
+                  <h6 class="font-weight-bold text-danger mb-2"><i class="fa fa-exclamation-circle mr-1"></i> Rejection
+                    Reason</h6>
+                  <small class="text-muted d-block mb-2">Required if there are mismatches or if you are rejecting the
+                    batch.</small>
+                  <textarea id="rejection_reason" name="rejection_reason" class="form-control border-0 shadow-sm"
+                    style="resize: none;" placeholder="Enter reason for rejection here..."
+                    rows="3">{{ batch.rejection_reason|default_if_none:'' }}</textarea>
+                </div>
+                <div class="col-md-6 d-flex flex-column justify-content-center align-items-end">
+                  <div class="d-flex align-items-center mb-3">
+                    <button type="submit" name="finalize_verification" id="finalizeVerificationBtn"
+                      class="btn btn-primary btn-lg px-4 shadow-sm mr-2"
+                      data-can-finalize="{% if can_finalize_verification %}1{% else %}0{% endif %}">
+                      <i class="fa fa-check-circle mr-2"></i> Run Verification
+                    </button>
+                  </div>
+                  <small id="finalizeHint" class="text-muted mb-3 text-right d-block"></small>
+                  <div class="btn-group">
+                    <a href="{% url 'add_results' assessment.id %}" class="btn btn-outline-secondary btn-sm">Back</a>
+                    <a href="{% url 'verification_report' assessment.id %}" class="btn btn-outline-info btn-sm">View
+                      Report</a>
+                    <button type="submit" name="reject_batch" class="btn btn-outline-danger btn-sm"
+                      onclick="return confirmRejection()">
+                      <i class="fa fa-ban mr-1"></i> Reject Batch
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function filterStudents() {
+    var searchTerm = document.getElementById('studentSearch').value.toLowerCase();
+    var rows = document.querySelectorAll('.student-row');
+    var visibleCount = 0;
+
+    rows.forEach(function(row) {
+      var name = row.getAttribute('data-student-name') || '';
+      var reg = row.getAttribute('data-reg-no') || '';
+      if (name.includes(searchTerm) || reg.includes(searchTerm)) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    updateStudentCount(visibleCount, rows.length);
+  }
+
+  function clearSearch() {
+    document.getElementById('studentSearch').value = '';
+    filterStudents();
+  }
+
+  function updateStudentCount(visible, total) {
+    var countEl = document.getElementById('studentCount');
+    if (countEl) {
+      countEl.textContent = 'Showing ' + visible + ' of ' + total + ' students';
+    }
+  }
+
+  function validateVerifierInput(input) {
+    var rawValue = (input.value || '').trim();
+    var outOf = parseFloat(input.getAttribute('data-out-of') || '0');
+    var errorNode = input.parentElement.querySelector('.verifier-error');
+    var isEmpty = rawValue === '';
+    var isValid = true;
+    var message = '';
+
+    if (!isEmpty) {
+      var numericValue = parseFloat(rawValue);
+      if (Number.isNaN(numericValue)) {
+        isValid = false;
+        message = 'Use a numeric value.';
+      } else if (numericValue < 0 || numericValue > outOf) {
+        isValid = false;
+        message = 'Must be between 0 and ' + outOf + '.';
+      }
+    }
+
+    input.classList.toggle('is-invalid', !isValid);
+    if (errorNode) {
+      errorNode.textContent = message;
+    }
+    return { isEmpty: isEmpty, isValid: isValid };
+  }
+
+  function computeReviewProgress() {
+    var inputs = document.querySelectorAll('.verification-input');
+    var total = inputs.length;
+    var ready = 0;
+    var invalid = 0;
+
+    inputs.forEach(function(input) {
+      var wasChecked = input.getAttribute('data-was-checked') === '1';
+      var validation = validateVerifierInput(input);
+      if (!validation.isValid) {
+        invalid += 1;
+      }
+      if (wasChecked || (!validation.isEmpty && validation.isValid)) {
+        ready += 1;
+      }
+    });
+
+    return {
+      total: total,
+      ready: ready,
+      invalid: invalid,
+      pending: Math.max(total - ready, 0),
+      percent: total ? Math.round((ready / total) * 100) : 0
+    };
+  }
+
+  function refreshProgressAndFinalizeState() {
+    var progress = computeReviewProgress();
+    var progressText = document.getElementById('reviewProgressText');
+    var progressPercent = document.getElementById('reviewProgressPercent');
+    var progressBar = document.getElementById('reviewProgressBar');
+    var finalizeBtn = document.getElementById('finalizeVerificationBtn');
+    var finalizeHint = document.getElementById('finalizeHint');
+    var blockedByRole = finalizeBtn && finalizeBtn.getAttribute('data-can-finalize') === '0';
+
+    if (progressText) {
+      progressText.textContent = progress.ready + ' / ' + progress.total;
+    }
+    if (progressPercent) {
+      progressPercent.textContent = progress.percent;
+    }
+    if (progressBar) {
+      progressBar.style.width = progress.percent + '%';
+      progressBar.setAttribute('aria-valuenow', progress.percent);
+    }
+
+    if (!finalizeBtn) {
+      return;
+    }
+
+    if (blockedByRole) {
+      finalizeBtn.disabled = true;
+      if (finalizeHint) {
+        finalizeHint.textContent = 'You cannot verify a batch you submitted.';
+      }
+      return;
+    }
+
+    if (progress.total === 0) {
+      finalizeBtn.disabled = true;
+      if (finalizeHint) {
+        finalizeHint.textContent = 'No sampled scripts are available for verification.';
+      }
+      return;
+    }
+
+    finalizeBtn.disabled = progress.pending > 0 || progress.invalid > 0;
+    if (!finalizeHint) {
+      return;
+    }
+    if (progress.invalid > 0) {
+      finalizeHint.textContent = 'Fix invalid verifier marks before finalizing.';
+      return;
+    }
+    if (progress.pending > 0) {
+      finalizeHint.textContent = 'Complete all sampled verifier marks before finalizing.';
+      return;
+    }
+    finalizeHint.textContent = 'All sampled scripts are ready. You can finalize verification.';
+  }
+
+  function confirmRejection() {
+    var reason = document.getElementById("rejection_reason").value.trim();
+    if (!reason) {
+      alert("Please provide a reason for rejection before proceeding.");
+      document.getElementById("rejection_reason").focus();
+      return false;
+    }
+    return confirm("Are you sure you want to REJECT this batch? This will flag it for the teacher to fix.");
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var rows = document.querySelectorAll('.student-row');
+    updateStudentCount(rows.length, rows.length);
+    document.querySelectorAll('.verification-input').forEach(function(input) {
+      input.addEventListener('input', refreshProgressAndFinalizeState);
+      input.addEventListener('change', refreshProgressAndFinalizeState);
+    });
+    refreshProgressAndFinalizeState();
+  });
+</script>
+{% endblock content %}

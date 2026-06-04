@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Announcement{% endblock page_title %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12 col-sm-12 col-xs-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-bullhorn"></i> {% if announcement %}Edit Announcement{% else %}New Announcement{% endif %}</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <form method="POST">
+          {% csrf_token %}
+          {% if not can_target_head %}
+          <div class="alert alert-info" role="alert">
+            Teachers cannot target the Head Teacher. The audience option is limited.
+          </div>
+          {% endif %}
+          {{ form|crispy }}
+          <div class="btn-group" style="margin-top:12px;">
+            <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Save</button>
+            <a href="{% url 'announcement_list' %}" class="btn btn-default"><i class="fa fa-arrow-left"></i> Back</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

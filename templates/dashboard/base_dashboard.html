@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block page_title %}Admin Control Tower · {{ dashboard_section_title }}{% endblock %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<style>
+  .control-kpi-card .x_content {
+    min-height: 148px;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 12px;
+  }
+
+  .kpi-mini-chart {
+    margin-top: auto;
+  }
+
+  .kpi-mini-track {
+    height: 8px;
+    border-radius: 999px;
+    background: #e8edf3;
+    overflow: hidden;
+  }
+
+  .kpi-mini-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+  }
+
+  .kpi-mini-fill.success {
+    background: linear-gradient(90deg, #34d399, #10b981);
+  }
+
+  .kpi-mini-fill.warn {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  }
+
+  .kpi-mini-fill.danger {
+    background: linear-gradient(90deg, #f87171, #ef4444);
+  }
+
+  .kpi-mini-caption {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.2;
+  }
+
+  .kpi-mini-twin {
+    height: 44px;
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .kpi-mini-twin span {
+    flex: 1;
+    min-height: 6px;
+    border-radius: 4px 4px 0 0;
+  }
+
+  .kpi-mini-twin .left {
+    background: linear-gradient(180deg, #60a5fa, #2563eb);
+  }
+
+  .kpi-mini-twin .right {
+    background: linear-gradient(180deg, #34d399, #10b981);
+  }
+</style>
+
+<div class="x_panel control-tower-panel">
+  <div class="x_title">
+    <h2><i class="fa fa-rocket"></i> Admin Control Tower · {{ dashboard_section_title }}</h2>
+    <div class="clearfix"></div>
+  </div>
+  <div class="x_content">
+    <div class="row" style="margin-bottom: 12px;">
+      <div class="col-md-8 col-sm-12">
+        <p class="text-muted" style="margin-bottom: 6px;">
+          Centralized operational visibility for finance, academics, attendance, and risk.
+        </p>
+        {% if selected_term_label %}
+        <span class="label label-info">{{ selected_term_label }}</span>
+        {% endif %}
+      </div>
+      <div class="col-md-4 col-sm-12 text-right">
+        {% if term_options %}
+        <form method="get" class="form-inline pull-right">
+          <label for="dashboard-term-select" class="sr-only">Term</label>
+          <select id="dashboard-term-select" name="term" class="form-control input-sm" onchange="this.form.submit()">
+            {% for opt in term_options %}
+            <option value="{{ opt.id }}" {% if selected_term == opt.id|stringformat:"s" %}selected{% endif %}>
+              Term {{ opt.term }} {{ opt.academic_year.academic_year }}
+            </option>
+            {% endfor %}
+          </select>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="control-tabs-title">Dashboard Sections</div>
+    <ul class="nav nav-pills control-tower-tabs">
+      {% for item in dashboard_sections %}
+      <li role="presentation" class="{% if item.is_active %}active{% endif %}">
+        <a href="{{ item.url }}">
+          <span class="tab-icon"><i class="fa {{ item.icon }}"></i></span>
+          <span class="tab-label">{{ item.label }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+
+    {% if not scope_is_configured %}
+    <div class="alert alert-warning">
+      Academic year/term is not fully configured. Some metrics may appear as zero.
+    </div>
+    {% endif %}
+
+    {% block dashboard_section_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

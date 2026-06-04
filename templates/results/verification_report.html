@@ -1,0 +1,300 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+
+
+{% block content %}
+<div class="">
+
+  <!-- Modern Header & Stats -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="m-0 font-weight-bold text-dark">Exam Script Verification Report</h3>
+        <div>
+          <span class="badge badge-pill badge-light border px-3 py-2 mr-2" style="font-size: 0.9rem;">
+            Assessment: <strong>{{ assessment }}</strong>
+          </span>
+          <a href="{% url 'verification_queue' assessment.id %}" class="btn btn-outline-secondary btn-sm shadow-sm">
+            <i class="fa fa-arrow-left mr-1"></i> Back to Queue
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 stat-card">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="stat-icon bg-light-primary text-primary mr-3">
+            <i class="fa fa-users fa-2x"></i>
+          </div>
+          <div>
+            <div class="text-muted small text-uppercase font-weight-bold">Total Scripts</div>
+            <div class="h3 mb-0 font-weight-bold text-dark">{{ report.total_scripts|default:0 }}</div>
+            <small class="text-muted">students assessed</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 stat-card">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="stat-icon bg-light-info text-info mr-3">
+            <i class="fa fa-list-ol fa-2x"></i>
+          </div>
+          <div>
+            <div class="text-muted small text-uppercase font-weight-bold">Reviewed</div>
+            <div class="h3 mb-0 font-weight-bold text-dark">{{ report.reentered_count|default:0 }}</div>
+            <small class="text-muted">scripts checked</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 stat-card">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="stat-icon bg-light-danger text-danger mr-3">
+            <i class="fa fa-exclamation-triangle fa-2x"></i>
+          </div>
+          <div>
+            <div class="text-muted small text-uppercase font-weight-bold">Mismatches</div>
+            <div class="h3 mb-0 font-weight-bold text-danger">{{ report.mismatches_count|default:0 }}</div>
+            <small class="text-muted">discrepancies found</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 stat-card">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="stat-icon 
+             {% if batch.status == 'VERIFIED' %}bg-light-success text-success
+             {% elif batch.status == 'FLAGGED' %}bg-light-danger text-danger
+             {% else %}bg-light-warning text-warning{% endif %} mr-3">
+            <i
+              class="fa {% if batch.status == 'VERIFIED' %}fa-check-double{% elif batch.status == 'FLAGGED' %}fa-exclamation-triangle{% else %}fa-hourglass-half{% endif %} fa-2x"></i>
+          </div>
+          <div>
+            <div class="text-muted small text-uppercase font-weight-bold">Status</div>
+            <div class="h4 mb-0 font-weight-bold 
+               {% if batch.status == 'VERIFIED' %}text-success
+               {% elif batch.status == 'FLAGGED' %}text-danger
+               {% else %}text-warning{% endif %}">
+              {{ batch.status }}
+            </div>
+            <small class="text-muted">current state</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Summary Actions/Details -->
+    <div class="col-md-4 col-sm-12 ">
+      <div class="card border-0 shadow-lg text-dark mb-4">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+          <h5 class="card-title font-weight-bold text-dark mb-0">Detailed Summary</h5>
+        </div>
+        <div class="card-body">
+          <div class="list-group list-group-flush">
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span class="text-muted">Total Scripts</span>
+              <span class="font-weight-bold">{{ report.total_scripts|default:0 }}</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span class="text-muted">Sampled Count</span>
+              <span class="font-weight-bold">{{ report.sampled_count|default:0 }}</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span class="text-muted">Reviewed</span>
+              <span class="font-weight-bold">{{ report.reentered_count|default:0 }}</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span class="text-muted">Matches</span>
+              <span class="font-weight-bold">{{ report.matches_count|default:0 }}</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span class="text-muted">Mismatches</span>
+              <span class="font-weight-bold text-danger">{{ report.mismatches_count|default:0 }}</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span class="text-muted">Corrections</span>
+              <span class="font-weight-bold">{{ report.corrections_count|default:0 }}</span>
+            </div>
+            <div class="list-group-item px-0">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted">Accuracy</span>
+                <span class="font-weight-bold {{ report.accuracy_percent|default:0|yesno:'text-success,text-danger' }}">
+                  {{ report.accuracy_percent|default:0 }}%
+                </span>
+              </div>
+              <div class="progress" style="height: 6px;">
+                <div class="progress-bar bg-success" role="progressbar"
+                  style="width: {{ report.accuracy_percent|default:0 }}%"
+                  aria-valuenow="{{ report.accuracy_percent|default:0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span class="text-muted">Sampling Method</span>
+              <span class="font-weight-bold small">{{ report.sampling_method|default:"-" }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Discrepancies Table -->
+    <div class="col-md-8 col-sm-12 ">
+      <div class="card border-0 shadow-lg mb-4">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title font-weight-bold text-dark mb-0">Discrepancies Found</h5>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="bg-light">
+                <tr class="text-uppercase text-muted small">
+                  <th class="py-3 border-top-0"># </th>
+                  <th class="py-3 border-top-0">Student </th>
+                  <th class="py-3 border-top-0 text-center">Teacher Mark </th>
+                  <th class="py-3 border-top-0 text-center">Verifier Mark </th>
+                  <th class="py-3 border-top-0 text-center">Diff </th>
+                  <th class="py-3 border-top-0">Action </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in discrepancies %}
+                <tr>
+                  <td class="font-weight-bold text-muted">{{ forloop.counter }}</td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="avatar-circle mr-2 bg-light text-secondary font-weight-bold"
+                        style="width: 32px; height: 32px; font-size: 0.9rem;">
+                        {{ d.result.student|make_list|first }}
+                      </div>
+                      <span class="font-weight-bold text-dark">{{ d.result.student }}</span>
+                    </div>
+                  </td>
+                  <td class="text-center">{{ d.teacher_mark }}</td>
+                  <td class="text-center">{{ d.verifier_mark }}</td>
+                  <td class="text-center"><span class="badge badge-pill badge-danger">{{ d.difference }}</span></td>
+                  <td>{{ d.action_taken }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center py-5 text-muted">
+                    <i class="fa fa-check-circle fa-3x mb-3 text-light-success"></i><br>
+                    No discrepancies found. Excellent work!
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12 col-sm-12">
+      <div class="card border-0 shadow-lg mb-4">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+          <h5 class="card-title font-weight-bold text-dark mb-0">Teacher Verification Performance</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="bg-light">
+                <tr class="text-uppercase text-muted small">
+                  <th class="py-3 border-top-0">Teacher</th>
+                  <th class="py-3 border-top-0 text-center">Sampled</th>
+                  <th class="py-3 border-top-0 text-center">Checked</th>
+                  <th class="py-3 border-top-0 text-center">Mismatches</th>
+                  <th class="py-3 border-top-0 text-center">Corrections</th>
+                  <th class="py-3 border-top-0 text-center">Error Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in teacher_performance %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ row.teacher }}</td>
+                  <td class="text-center">{{ row.sampled_count }}</td>
+                  <td class="text-center">{{ row.checked_count }}</td>
+                  <td class="text-center text-danger font-weight-bold">{{ row.mismatch_count }}</td>
+                  <td class="text-center">{{ row.corrections_count }}</td>
+                  <td class="text-center">
+                    <span class="badge {% if row.error_rate > 0 %}badge-danger{% else %}badge-success{% endif %}">
+                      {{ row.error_rate }}%
+                    </span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">No teacher performance data available.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Correction Logs -->
+    <div class="col-md-12 col-sm-12 ">
+      <div class="card border-0 shadow-lg mb-4">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+          <h5 class="card-title font-weight-bold text-dark mb-0">Correction Logs</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="bg-light">
+                <tr class="text-uppercase text-muted small">
+                  <th class="py-3 border-top-0">#</th>
+                  <th class="py-3 border-top-0">Student</th>
+                  <th class="py-3 border-top-0 text-center">Old Mark</th>
+                  <th class="py-3 border-top-0 text-center">New Mark</th>
+                  <th class="py-3 border-top-0">Reason</th>
+                  <th class="py-3 border-top-0">Corrected By</th>
+                  <th class="py-3 border-top-0">Corrected At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in correction_logs %}
+                <tr>
+                  <td class="font-weight-bold text-muted">{{ forloop.counter }}</td>
+                  <td><span class="font-weight-bold text-dark">{{ log.result.student }}</span></td>
+                  <td class="text-center text-muted" style="text-decoration: line-through;">{{ log.old_mark }}</td>
+                  <td class="text-center font-weight-bold text-success">{{ log.new_mark }}</td>
+                  <td>{{ log.reason }}</td>
+                  <td>
+                    <span class="badge badge-light border">
+                      <i class="fa fa-user mr-1"></i> {{ log.corrected_by }}
+                    </span>
+                  </td>
+                  <td><small class="text-muted">{{ log.corrected_at|date:"M j, Y H:i" }}</small></td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted">No corrections logged.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

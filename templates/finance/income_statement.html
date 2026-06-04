@@ -1,0 +1,262 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Income Statement{% endblock %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_content">
+        <div class="comm-header">
+          <div class="comm-title">
+            <span class="comm-icon"><i class="fa fa-balance-scale"></i></span>
+            <div>
+              <h2>Income Statement</h2>
+              <p class="text-muted">Track income, expenses, and net position for the selected period.</p>
+            </div>
+          </div>
+          <div class="comm-actions">
+            <a class="btn btn-outline-secondary" onclick="window.print()" title="Print Report">
+              <i class="fa fa-print"></i> Print
+            </a>
+            <a class="btn btn-success" href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}mode={{ mode }}&export=csv" title="Export to CSV">
+              <i class="fa fa-download"></i> Export CSV
+            </a>
+          </div>
+        </div>
+
+        <div class="filter-card">
+          <form method="get" class="form-inline">
+            <div class="form-group">
+              <label for="start_date"><strong>Start Date:</strong></label>
+              <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
+            </div>
+            <div class="form-group">
+              <label for="end_date"><strong>End Date:</strong></label>
+              <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
+            </div>
+            <div class="form-group">
+              <label for="mode"><strong>Basis:</strong></label>
+              <select id="mode" name="mode" class="form-control">
+                <option value="accrual" {% if mode == 'accrual' %}selected{% endif %}>Accrual</option>
+                <option value="cash" {% if mode == 'cash' %}selected{% endif %}>Cash</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-refresh"></i> Apply
+            </button>
+          </form>
+        </div>
+
+        {% if used_term_default %}
+        <div class="alert alert-info range-alert" role="alert">
+          Using current term by default:
+          <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong>.
+          Included rows: {{ income_tx|length }} income, {{ expense_tx|length }} expense. | Basis: <strong>{{ mode|title }}</strong>
+        </div>
+        {% else %}
+        <div class="alert alert-info range-alert" role="alert">
+          Showing transactions from <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong>.
+          Included rows: {{ income_tx|length }} income, {{ expense_tx|length }} expense. | Basis: <strong>{{ mode|title }}</strong>
+        </div>
+        {% endif %}
+
+        <div class="row section-space">
+          <div class="col-md-6">
+            <div class="mini-card">
+              <div class="mini-title">Sample income (first {{ sample_income|length }}):</div>
+              {% if sample_income %}
+              <ul class="mini-list">
+                {% for t in sample_income %}
+                <li class="mini-item">
+                  <span class="mini-date">{{ t.date|date:"Y-m-d" }}</span>
+                  <span class="mini-text">{{ t.description }}</span>
+                  <span class="mini-amount text-success">UGX {{ t.amount|floatformat:0|intcomma }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <div class="text-muted">No income in range.</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mini-card">
+              <div class="mini-title">Sample expenses (first {{ sample_expense|length }}):</div>
+              {% if sample_expense %}
+              <ul class="mini-list">
+                {% for t in sample_expense %}
+                <li class="mini-item">
+                  <span class="mini-date">{{ t.date|date:"Y-m-d" }}</span>
+                  <span class="mini-text">{{ t.description }}</span>
+                  <span class="mini-amount text-danger">UGX {{ t.amount|floatformat:0|intcomma }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <div class="text-muted">No expenses in range.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="row section-space">
+          <div class="col-md-4">
+            <div class="stat-card stat-success">
+              <div class="stat-label">Total Income</div>
+              <div class="stat-value">UGX {{ total_income|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card stat-danger">
+              <div class="stat-label">Total Expenses</div>
+              <div class="stat-value">UGX {{ total_expense|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card stat-primary">
+              <div class="stat-label">Net Income</div>
+              <div class="stat-value {% if net_income >= 0 %}text-success{% else %}text-danger{% endif %}">UGX {{ net_income|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card section-space">
+          <div class="table-title"><i class="fa fa-list"></i> Income by Source</div>
+          {% if income_breakdown %}
+          <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+              <thead class="thead-dark">
+                <tr>
+                  <th>Source</th>
+                  <th>Amount (UGX)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in income_breakdown %}
+                <tr>
+                  <td><strong>{{ row.source }}</strong></td>
+                  <td>UGX {{ row.total|floatformat:0|intcomma }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="table-total">
+                  <td>TOTAL</td>
+                  <td>UGX {{ total_income|floatformat:0|intcomma }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {% else %}
+            <div class="alert alert-info">No income found for the selected period.</div>
+          {% endif %}
+        </div>
+
+        <div class="row section-space">
+          <div class="col-md-6">
+            <div class="table-card">
+              <div class="table-title"><i class="fa fa-arrow-down"></i> Income Transactions</div>
+              {% if income_tx %}
+              <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th>Source</th>
+                      <th>Amount (UGX)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for t in income_tx %}
+                    <tr>
+                      <td><small>{{ t.date|date:"Y-m-d" }}</small></td>
+                      <td><small>{{ t.description }}</small></td>
+                      <td><small>{% if t.related_income_source %}{{ t.related_income_source.name }}{% else %}Unspecified{% endif %}</small></td>
+                      <td><span class="badge badge-success">UGX {{ t.amount|floatformat:0|intcomma }}</span></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+                <div class="alert alert-info">No income transactions found.</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="table-card">
+              <div class="table-title"><i class="fa fa-arrow-up"></i> Expense Transactions</div>
+              {% if expense_tx %}
+              <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th>Amount (UGX)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for t in expense_tx %}
+                    <tr>
+                      <td><small>{{ t.date|date:"Y-m-d" }}</small></td>
+                      <td><small>{{ t.description }}</small></td>
+                      <td><span class="badge badge-danger">UGX {{ t.amount|floatformat:0|intcomma }}</span></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+                <div class="alert alert-info">No expense transactions found.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .comm-header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+  .comm-title{display:flex;gap:12px;align-items:center;}
+  .comm-title h2{margin:0;font-weight:700;}
+  .comm-title p{margin:4px 0 0;}
+  .comm-icon{width:44px;height:44px;border-radius:12px;background:#e0e7ff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .comm-actions .btn{margin-left:8px;}
+
+  .filter-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:16px;}
+  .filter-card .form-inline{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+  .filter-card .form-group{display:flex;align-items:center;gap:8px;}
+
+  .range-alert{border-radius:10px;margin-bottom:16px;}
+
+  .section-space{margin-top:18px;}
+  .mini-card{border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#fff;}
+  .mini-title{font-weight:600;color:#334155;margin-bottom:8px;}
+  .mini-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
+  .mini-item{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#f8fafc;border-radius:10px;padding:6px 10px;}
+  .mini-date{font-weight:600;color:#475569;}
+  .mini-text{flex:1;color:#1f2937;}
+  .mini-amount{font-weight:600;}
+
+  .stat-card{border:1px solid #e2e8f0;border-radius:12px;padding:16px;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,0.04);}
+  .stat-label{color:#64748b;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+  .stat-value{font-size:20px;font-weight:700;margin-top:6px;}
+  .stat-success{border-left:4px solid #22c55e;}
+  .stat-danger{border-left:4px solid #ef4444;}
+  .stat-primary{border-left:4px solid #2563eb;}
+
+  .table-card{border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#fff;}
+  .table-title{font-weight:700;color:#1f2937;margin-bottom:10px;}
+  .table-total{font-weight:700;background:#f8fafc;}
+  .badge{padding:4px 10px;border-radius:999px;}
+</style>
+{% endblock %}

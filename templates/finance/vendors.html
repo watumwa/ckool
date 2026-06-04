@@ -1,0 +1,155 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Vendors{% endblock page_title %}
+{% block content %}
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+            <div class="x_title">
+                <h2>Manage Vendors</h2>
+                <ul class="nav navbar-right panel_toolbox">
+                <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                </li>
+                </ul>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+
+                <button type="button" class="btn btn-success btn-sm mb-3" data-toggle="modal" data-target="#addVendorModal">
+                    <i class="fa fa-plus-circle"></i> Add Vendor
+                </button>
+
+                <!-- start vendor list -->
+                 {% if vendors %}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="vendorSearch" placeholder="Search vendors...">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="clearSearch">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <table id="datatable-checkbox" class="table table-striped table-bordered bulk_action dt-responsive nowrap" style="width:100%" cellspacing="0">
+                    <thead>
+                      <tr>
+                        <th class="text-center">
+                            <input type="checkbox" id="check-all">
+                        </th>
+                        <th class="text-center" style="width: 1%">#</th>
+                        <th>Vendor Name</th>
+                        <th>Description</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vendor in vendors %}
+                    <tr>
+                        <td class="align-middle text-center">
+                            <input type="checkbox" class="flat" name="table_records">
+                        </td>
+                        <td class="align-middle text-center">{{forloop.counter}}</td>
+                        <td class="align-middle">{{vendor.name}}</td>
+                        <td class="align-middle">{{vendor.description}}</td>
+                        <td class="align-middle text-center">
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'edit_vendor' vendor.id %}" class="btn btn-outline-info btn-sm"><i class="fa fa-edit"></i> Edit</a>
+                                <a href="{% url 'delete_vendor' vendor.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this record?')"><i class="fa fa-trash"></i> Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                </table>
+                {% else %}
+                    <div class="text-center py-5">
+                        <h4>No Vendors Available</h4>
+                        <p>Get started by adding your first vendor.</p>
+                        <button type="button" class="btn btn-success btn-sm mt-2" data-toggle="modal" data-target="#addVendorModal">
+                            <i class="fa fa-plus-circle"></i> Add First Vendor
+                        </button>
+                    </div>
+                {% endif %}
+                <!-- end class list -->
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Vendor Modal -->
+    <div class="modal fade add-vendor-modal" id="addVendorModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h4 class="modal-title" id="myModalLabel">Add Vendor</h4>
+              <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'add_vendor_page' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group row">
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable if not already initialized
+        if (!$.fn.DataTable.isDataTable('#datatable-checkbox')) {
+            $('#datatable-checkbox').DataTable({
+                responsive: true,
+                pageLength: 10,
+                order: [[1, 'asc']],
+                columnDefs: [
+                    { orderable: false, targets: 0 },
+                    { responsivePriority: 1, targets: 2 },
+                    { responsivePriority: 2, targets: 4 }
+                ]
+            });
+        }
+
+        // Search functionality
+        $('#vendorSearch').on('keyup', function() {
+            $('#datatable-checkbox').DataTable().search(this.value).draw();
+        });
+
+        // Clear search input
+        $('#clearSearch').on('click', function() {
+            $('#vendorSearch').val('');
+            $('#datatable-checkbox').DataTable().search('').draw();
+        });
+    });
+</script>
+<style>
+    .badge-pill {
+        border-radius: 50rem !important;
+    }
+    .table th, .table td {
+        vertical-align: middle;
+    }
+    .btn-outline-primary, .btn-outline-info, .btn-outline-danger {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    .input-group {
+        margin-bottom: 0 !important;
+    }
+</style>
+{% endblock extra_js %}
+                        {{form|crispy}}
+                    </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+
+          </div>
+        </div>
+    </div>
+
+{% endblock content%}

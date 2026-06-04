@@ -1,0 +1,435 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block page_title %}Vendor Payments Report{% endblock %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_content">
+        <div class="comm-header">
+          <div class="comm-title">
+            <span class="comm-icon"><i class="fa fa-industry"></i></span>
+            <div>
+              <h2>Vendor Payments Report</h2>
+              <p class="text-muted">Review vendor spending, trends, and transaction details.</p>
+            </div>
+          </div>
+          <div class="comm-actions">
+            <a class="btn btn-outline-secondary" onclick="window.print()" title="Print Report">
+              <i class="fa fa-print"></i> Print
+            </a>
+            <a
+              class="btn btn-success"
+              href="?{% if selected_vendor %}vendor={{ selected_vendor }}&{% endif %}{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if selected_academic_year %}academic_year={{ selected_academic_year }}&{% endif %}{% if selected_term %}term={{ selected_term }}&{% endif %}{% if show_all %}show_all=1&{% endif %}export=csv"
+              title="Export to CSV">
+              <i class="fa fa-download"></i> Export CSV
+            </a>
+          </div>
+        </div>
+        <!-- Filters -->
+        <div class="filter-card">
+          <form method="get" class="form-inline">
+            <div class="form-group">
+              <label for="vendor"><strong>Vendor:</strong></label>
+              <select name="vendor" id="vendor" class="form-control">
+                <option value="">All Vendors</option>
+                {% for v in vendors %}
+                  <option value="{{ v.id }}" {% if selected_vendor and v.id == selected_vendor %}selected{% endif %}>
+                    {{ v.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="start_date"><strong>Start Date:</strong></label>
+              <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date|default:'' }}">
+            </div>
+
+            <div class="form-group">
+              <label for="end_date"><strong>End Date:</strong></label>
+              <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date|default:'' }}">
+            </div>
+
+            <div class="form-group">
+              <label for="academic_year"><strong>Academic Year:</strong></label>
+              <select name="academic_year" id="academic_year" class="form-control">
+                <option value="">Current</option>
+                {% if academic_years %}
+                  {% for y in academic_years %}
+                    <option value="{{ y.id }}" {% if selected_academic_year and y.id == selected_academic_year %}selected{% endif %}>{{ y.academic_year }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="term"><strong>Term:</strong></label>
+              <select name="term" id="term" class="form-control">
+                <option value="">Current</option>
+                {% if terms %}
+                  {% for t in terms %}
+                    <option value="{{ t.id }}" {% if selected_term and t.id == selected_term %}selected{% endif %}>{{ t.term }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+
+            <div class="form-group form-check">
+              <input type="checkbox" class="form-check-input" id="show_all" name="show_all" value="1" {% if show_all %}checked{% endif %}>
+              <label class="form-check-label" for="show_all">Show all terms</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-refresh"></i> Apply
+            </button>
+          </form>
+
+          <!-- Current Scope Summary -->
+          <div class="alert alert-info range-alert">
+            <strong>Scope:</strong>
+            {% if show_all %}
+              All terms
+            {% else %}
+              {% if selected_academic_year %}
+                {% for y in academic_years %}{% if y.id == selected_academic_year %}{{ y.academic_year }}{% endif %}{% endfor %}
+              {% else %}
+                Current Year
+              {% endif %}
+              —
+              {% if selected_term %}
+                {% for t in terms %}{% if t.id == selected_term %}Term {{ t.term }}{% endif %}{% endfor %}
+              {% else %}
+                Current Term
+              {% endif %}
+            {% endif %}
+            {% if start_date or end_date %}
+              — Dates: {{ start_date|default:"-" }} to {{ end_date|default:"-" }}
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="row section-space">
+          <div class="col-md-4">
+            <div class="stat-card stat-primary">
+              <div class="stat-label">Vendors</div>
+              <div class="stat-value">{{ vendors|length }}</div>
+              <div class="stat-meta text-muted">Total vendors</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card stat-warning">
+              <div class="stat-label">Transactions</div>
+              <div class="stat-value">{{ breakdown|length }}</div>
+              <div class="stat-meta text-muted">Expenditures</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card stat-success">
+              <div class="stat-label">Total Spent</div>
+              <div class="stat-value">UGX {{ total_spent|floatformat:0|intcomma }}</div>
+              <div class="stat-meta text-muted">Selected scope</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vendor Summary -->
+        <div class="table-card section-space">
+          <div class="table-title"><i class="fa fa-bar-chart"></i> Summary by Vendor</div>
+            {% if summary %}
+              <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Vendor</th>
+                      <th>Transactions</th>
+                      <th>Total Spent (UGX)</th>
+                      <th>% of Total</th>
+                      <th>Receipt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in summary %}
+                      <tr>
+                        <td><strong>{{ row.vendor.name }}</strong></td>
+                        <td>{{ row.count }}</td>
+                        <td>UGX {{ row.total|floatformat:0|intcomma }}</td>
+                        <td>
+                          {% if total_spent %}
+                            {{ row.pct|floatformat:1 }}%
+                          {% else %}
+                            0%
+                          {% endif %}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            class="btn btn-outline-primary btn-xs print-vendor-receipt"
+                            data-receipt-id="vendor-receipt-{{ row.vendor.id }}">
+                            <i class="fa fa-print"></i> Print
+                          </button>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                  <tfoot>
+                    <tr class="table-total">
+                      <td colspan="2">TOTAL</td>
+                      <td>UGX {{ total_spent|floatformat:0|intcomma }}</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div class="receipt-list d-none">
+                {% for row in summary %}
+                <div id="vendor-receipt-{{ row.vendor.id }}" class="vendor-receipt">
+                  <div class="receipt-header">
+                    <div class="receipt-brand">
+                      {% if school_settings and school_settings.school_name %}
+                        {{ school_settings.school_name }}
+                      {% else %}
+                        School MIS
+                      {% endif %}
+                    </div>
+                    <div class="receipt-meta">
+                      <div class="receipt-title">Vendor Payment Receipt</div>
+                      <div class="receipt-date">{% now "Y-m-d H:i" %}</div>
+                    </div>
+                  </div>
+
+                  <div class="receipt-section">
+                    <div><strong>Vendor:</strong> {{ row.vendor.name }}</div>
+                    <div><strong>Scope:</strong>
+                      {% if show_all %}
+                        All terms
+                      {% else %}
+                        {% if selected_academic_year %}
+                          {% for y in academic_years %}{% if y.id == selected_academic_year %}{{ y.academic_year }}{% endif %}{% endfor %}
+                        {% else %}
+                          Current Year
+                        {% endif %}
+                        —
+                        {% if selected_term %}
+                          {% for t in terms %}{% if t.id == selected_term %}Term {{ t.term }}{% endif %}{% endfor %}
+                        {% else %}
+                          Current Term
+                        {% endif %}
+                      {% endif %}
+                    </div>
+                    <div><strong>Period:</strong> {{ start_date|default:"-" }} to {{ end_date|default:"-" }}</div>
+                  </div>
+
+                  <div class="receipt-grid">
+                    <div class="receipt-card">
+                      <div class="label">Transactions</div>
+                      <div class="value">{{ row.count }}</div>
+                    </div>
+                    <div class="receipt-card">
+                      <div class="label">Total Spent</div>
+                      <div class="value">UGX {{ row.total|floatformat:0|intcomma }}</div>
+                    </div>
+                    <div class="receipt-card">
+                      <div class="label">% of Total</div>
+                      <div class="value">
+                        {% if total_spent %}{{ row.pct|floatformat:1 }}%{% else %}0%{% endif %}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="receipt-table">
+                    <div class="receipt-subtitle">Expenditure Details</div>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Department</th>
+                          <th>Expense</th>
+                          <th>Description</th>
+                          <th>Amount (UGX)</th>
+                          <th>VAT (UGX)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for e in breakdown %}
+                          {% if e.vendor.id == row.vendor.id %}
+                          <tr>
+                            <td>{{ e.date_incurred|date:"Y-m-d" }}</td>
+                            <td>{% if e.budget_item %}{{ e.budget_item.department }}{% else %}N/A{% endif %}</td>
+                            <td>{% if e.budget_item %}{{ e.budget_item.expense }}{% else %}N/A{% endif %}</td>
+                            <td>{{ e.description|default:"-" }}</td>
+                            <td>UGX {{ e.amount|floatformat:0|intcomma }}</td>
+                            <td>UGX {{ e.vat|floatformat:0|intcomma }}</td>
+                          </tr>
+                          {% endif %}
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div class="receipt-footer">
+                    <div class="receipt-sign">
+                      <span>Prepared By</span>
+                      <div class="sign-line"></div>
+                    </div>
+                    <div class="receipt-sign">
+                      <span>Approved By</span>
+                      <div class="sign-line"></div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="alert alert-info">
+                No vendor summary available for the selected filters.
+              </div>
+            {% endif %}
+        </div>
+
+        <!-- Detailed Expenditures -->
+        <div class="table-card section-space">
+          <div class="table-title"><i class="fa fa-list"></i> Detailed Expenditures</div>
+            {% if breakdown %}
+              <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Date</th>
+                      <th>Vendor</th>
+                      <th>Department</th>
+                      <th>Expense</th>
+                      <th>Description</th>
+                      <th>Amount (UGX)</th>
+                      <th>VAT (UGX)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for e in breakdown %}
+                      <tr>
+                        <td><small>{{ e.date_incurred|date:"Y-m-d" }}</small></td>
+                        <td><small>{{ e.vendor.name }}</small></td>
+                        <td><small>{% if e.budget_item %}{{ e.budget_item.department }}{% else %}N/A{% endif %}</small></td>
+                        <td><small>{% if e.budget_item %}{{ e.budget_item.expense }}{% else %}N/A{% endif %}</small></td>
+                        <td><small>{{ e.description|default:"-" }}</small></td>
+                        <td><span class="badge badge-danger">UGX {{ e.amount|floatformat:0|intcomma }}</span></td>
+                        <td><small>UGX {{ e.vat|floatformat:0|intcomma }}</small></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="alert alert-info">
+                No expenditures found for the selected filters.
+              </div>
+            {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .comm-header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+  .comm-title{display:flex;gap:12px;align-items:center;}
+  .comm-title h2{margin:0;font-weight:700;}
+  .comm-title p{margin:4px 0 0;}
+  .comm-icon{width:44px;height:44px;border-radius:12px;background:#e0e7ff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .comm-actions .btn{margin-left:8px;}
+
+  .filter-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:16px;}
+  .filter-card .form-inline{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+  .filter-card .form-group{display:flex;align-items:center;gap:8px;}
+
+  .range-alert{border-radius:10px;margin-top:12px;margin-bottom:0;}
+
+  .section-space{margin-top:18px;}
+  .stat-card{border:1px solid #e2e8f0;border-radius:12px;padding:16px;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,0.04);}
+  .stat-label{color:#64748b;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+  .stat-value{font-size:20px;font-weight:700;margin-top:6px;}
+  .stat-meta{margin-top:4px;}
+  .stat-primary{border-left:4px solid #2563eb;}
+  .stat-warning{border-left:4px solid #f59e0b;}
+  .stat-success{border-left:4px solid #22c55e;}
+
+  .table-card{border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#fff;}
+  .table-title{font-weight:700;color:#1f2937;margin-bottom:10px;}
+  .table-total{font-weight:700;background:#f8fafc;}
+  .badge{padding:4px 10px;border-radius:999px;}
+
+  .vendor-receipt{font-family:"Inter",sans-serif;color:#0f172a;}
+  .receipt-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #e2e8f0;padding-bottom:12px;margin-bottom:14px;}
+  .receipt-brand{font-size:20px;font-weight:700;}
+  .receipt-title{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#475569;}
+  .receipt-date{font-size:12px;color:#64748b;margin-top:4px;}
+  .receipt-section{display:grid;gap:6px;margin-bottom:14px;font-size:13px;}
+  .receipt-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+  .receipt-card{border:1px solid #e2e8f0;border-radius:10px;padding:10px;background:#f8fafc;}
+  .receipt-card .label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+  .receipt-card .value{font-size:14px;font-weight:700;margin-top:6px;}
+  .receipt-table table{width:100%;border-collapse:collapse;font-size:12px;}
+  .receipt-table th,.receipt-table td{border:1px solid #e2e8f0;padding:6px;text-align:left;}
+  .receipt-table th{background:#f1f5f9;font-weight:700;}
+  .receipt-subtitle{font-weight:700;margin-bottom:8px;}
+  .receipt-footer{display:flex;justify-content:space-between;margin-top:20px;gap:20px;}
+  .receipt-sign{flex:1;font-size:12px;color:#475569;}
+  .sign-line{border-bottom:1px solid #94a3b8;margin-top:24px;}
+
+  @media print {
+    .right_col{background:#fff;}
+  }
+</style>
+
+<script>
+  (function () {
+    function printVendorReceipt(receiptId) {
+      var receiptEl = document.getElementById(receiptId);
+      if (!receiptEl) return;
+      var printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+      var styles = `
+        <style>
+          body{font-family:Inter,Segoe UI,Roboto,sans-serif;margin:24px;color:#0f172a;}
+          .vendor-receipt{font-family:Inter,Segoe UI,Roboto,sans-serif;color:#0f172a;}
+          .receipt-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #e2e8f0;padding-bottom:12px;margin-bottom:14px;}
+          .receipt-brand{font-size:20px;font-weight:700;}
+          .receipt-title{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#475569;}
+          .receipt-date{font-size:12px;color:#64748b;margin-top:4px;}
+          .receipt-section{display:grid;gap:6px;margin-bottom:14px;font-size:13px;}
+          .receipt-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+          .receipt-card{border:1px solid #e2e8f0;border-radius:10px;padding:10px;background:#f8fafc;}
+          .receipt-card .label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+          .receipt-card .value{font-size:14px;font-weight:700;margin-top:6px;}
+          .receipt-table table{width:100%;border-collapse:collapse;font-size:12px;}
+          .receipt-table th,.receipt-table td{border:1px solid #e2e8f0;padding:6px;text-align:left;}
+          .receipt-table th{background:#f1f5f9;font-weight:700;}
+          .receipt-subtitle{font-weight:700;margin-bottom:8px;}
+          .receipt-footer{display:flex;justify-content:space-between;margin-top:20px;gap:20px;}
+          .receipt-sign{flex:1;font-size:12px;color:#475569;}
+          .sign-line{border-bottom:1px solid #94a3b8;margin-top:24px;}
+        </style>
+      `;
+      printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Vendor Receipt</title>${styles}</head><body>${receiptEl.innerHTML}</body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    }
+
+    document.addEventListener('click', function (event) {
+      var target = event.target.closest('.print-vendor-receipt');
+      if (!target) return;
+      var receiptId = target.getAttribute('data-receipt-id');
+      if (!receiptId) return;
+      printVendorReceipt(receiptId);
+    });
+  })();
+</script>
+{% endblock %}

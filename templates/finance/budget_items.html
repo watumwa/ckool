@@ -1,0 +1,262 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block page_title %}
+<a href="{% url 'budget_page' %}" class="btn btn-outline-secondary btn-sm mr-2"><i class="fa fa-chevron-left"></i> Back to Budgets</a>
+{{budget}} Items{% endblock page_title %}
+{% block content %}
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+            <div class="x_title">
+                <h2>Manage Budget Items</h2>
+                <ul class="nav navbar-right panel_toolbox">
+                <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                </li>
+                </ul>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+
+                <button type="button" class="btn btn-success btn-sm mb-3" data-toggle="modal" data-target="#addBudgetItemModal">
+                    <i class="fa fa-plus-circle"></i> Add Item
+                </button>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h4 id="filteredTotalSpent" class="text-danger">Total Spent: <span id="totalSpent" data-initial-total="{{ budget_items|sum_attr:'amount_spent'|floatformat:'2' }}">{{ budget_items|sum_attr:'amount_spent'|floatformat:'2'|intcomma }} UGX</span></h4>
+                    </div>
+                </div>
+
+                <!-- start budget list -->
+                 {% if budget_items %}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="itemSearch" placeholder="Search items...">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="clearSearch">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <table id="datatable-checkbox" class="table table-striped table-bordered bulk_action dt-responsive nowrap" style="width:100%" cellspacing="0">
+                    <thead>
+                      <tr>
+                        <th class="text-center">
+                            <input type="checkbox" id="check-all">
+                        </th>
+                        <th class="text-center" style="width: 1%">#</th>
+                        <th>Budget Item</th>
+                        <th class="text-right">Allocated Amount</th>
+                        <th class="text-right">Amount Spent</th>
+                        <th class="text-right">Balance</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in budget_items %}
+                    <tr class="budget-item-row" data-spent="{{ item.amount_spent|default_if_none:0|floatformat:'2' }}">
+                        <td class="align-middle text-center">
+                            <input type="checkbox" class="flat" name="table_records">
+                        </td>
+                        <td class="align-middle text-center">{{forloop.counter}}</td>
+                        <td class="align-middle">{{item}}</td>
+                        <td class="align-middle text-right">
+                            <span class="amount-text">{{ item.allocated_amount|floatformat:'2'|intcomma }}/-</span>
+                        </td>
+                        <td class="align-middle text-right">
+                            <span class="item-amount-spent amount-text" data-amount="{{ item.amount_spent|floatformat:'2' }}">{{ item.amount_spent|floatformat:'2'|intcomma }}/-</span>
+                        </td>
+                        <td class="align-middle text-right">
+                            <span class="amount-text">{{ item.remaining_amount|floatformat:'2'|intcomma }}/-</span>
+                        </td>
+                        <td class="align-middle text-center">
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'edit_budget_item' item.id %}" class="btn btn-outline-info btn-sm"><i class="fa fa-edit"></i> Edit</a>
+                                <a href="{% url 'delete_budget_item' item.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this record?')"><i class="fa fa-trash"></i> Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th class="text-right" colspan="3">Totals:</th>
+                        <th class="text-right">
+                            <span class="amount-text">
+                                {{ budget_items|sum_attr:'allocated_amount'|floatformat:'2'|intcomma }}/-
+                            </span>
+                        </th>
+                        <th class="text-right">
+                            <span class="amount-text">
+                                {{ budget_items|sum_attr:'amount_spent'|floatformat:'2'|intcomma }}/-
+                            </span>
+                        </th>
+                        <th class="text-right">
+                            <span class="amount-text">
+                                {{ budget_items|sum_attr:'remaining_amount'|floatformat:'2'|intcomma }}/-
+                            </span>
+                        </th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+                </table>
+                {% else %}
+                    <div class="text-center py-5">
+                        <h4>No Budget Items Available</h4>
+                        <p>Get started by adding your first budget item.</p>
+                        <button type="button" class="btn btn-success btn-sm mt-2" data-toggle="modal" data-target="#addBudgetItemModal">
+                            <i class="fa fa-plus-circle"></i> Add First Item
+                        </button>
+                    </div>
+                {% endif %}
+                <!-- end class list -->
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add budget Item Modal -->
+    <div class="modal fade add-budget-modal" id="addBudgetItemModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+
+            <div class="modal-header">
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable if not already initialized
+        if (!$.fn.DataTable.isDataTable('#datatable-checkbox')) {
+            $('#datatable-checkbox').DataTable({
+                responsive: true,
+                pageLength: 10,
+                order: [[1, 'asc']],
+                columnDefs: [
+                    { orderable: false, targets: 0 },
+                    { responsivePriority: 1, targets: 2 },
+                    { responsivePriority: 2, targets: 6 }
+                ],
+                initComplete: function () {
+                    // Ensure total is computed after DataTable initializes
+                    updateTotalSpent();
+                }
+            });
+        }
+        // Always get the DataTable API instance
+        var table = $('#datatable-checkbox').DataTable();
+        // Recompute totals on any DataTable redraw
+        table.on('draw.dt order.dt search.dt page.dt length.dt', function () {
+            updateTotalSpent();
+        });
+
+        // Search functionality
+        $('#itemSearch').on('keyup', function() {
+            table.search(this.value).draw();
+        });
+
+        // Clear search input
+        $('#clearSearch').on('click', function() {
+            $('#itemSearch').val('');
+            table.search('').draw();
+        });
+
+        // Parse numeric amount from a text like "1,130,000.00/-"
+        function parseAmount(text) {
+            var cleaned = (text || '').toString()
+                .replace(/[^\d\.\-]/g, '')   // remove everything except digits, dot, minus
+                .replace(/\-+$/,'');         // remove trailing hyphens from "/-"
+            var val = parseFloat(cleaned);
+            return isNaN(val) ? 0 : val;
+        }
+
+        // Calculate and update total spent for filtered rows (across ALL pages)
+        function updateTotalSpent() {
+            var total = 0;
+
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#datatable-checkbox')) {
+                var tbl = $('#datatable-checkbox').DataTable();
+
+                // Preferred: sum using column data for "Amount Spent" (index 4)
+                var colIdx = 4;
+                tbl.column(colIdx, { search: 'applied' }).data().each(function(value) {
+                    // value may be HTML (badge). Extract text then parse
+                    var text = $('<div>').html(value).text();
+                    total += parseAmount(text);
+                });
+
+                // Fallback: if total is still zero and there are filtered rows, sum from DOM nodes
+                if (total === 0 && tbl.rows({ search: 'applied' }).count() > 0) {
+                    $(tbl.rows({ search: 'applied' }).nodes()).each(function() {
+                        var amountText = $(this).find('.item-amount-spent').text();
+                        total += parseAmount($('<div>').html(amountText).text());
+                    });
+                }
+            } else {
+                // No DataTable loaded - sum visible DOM rows
+                $('#datatable-checkbox tbody tr:visible').each(function() {
+                    var amountText = $(this).find('.item-amount-spent').text();
+                    total += parseAmount($('<div>').html(amountText).text());
+                });
+            }
+
+            if (total === 0) {
+                var init = parseFloat($('#totalSpent').data('initial-total'));
+                if (!isNaN(init)) { total = init; }
+            }
+            // Prefer computed total only when it's positive; otherwise keep initial server total
+            var display = total;
+            if (!(display > 0)) {
+                var init = parseFloat($('#totalSpent').data('initial-total'));
+                if (!isNaN(init) && init > 0) {
+                    display = init;
+                }
+            }
+            $('#totalSpent').text(display.toLocaleString() + ' UGX');
+        }
+
+        // Initialize total spent on page load
+        updateTotalSpent();
+    });
+</script>
+<style>
+    .badge-pill {
+        border-radius: 50rem !important;
+    }
+    .table th, .table td {
+        vertical-align: middle;
+    }
+    .btn-outline-primary, .btn-outline-info, .btn-outline-danger {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    .input-group {
+        margin-bottom: 0 !important;
+    }
+</style>
+{% endblock extra_js %}
+              <h4 class="modal-title" id="myModalLabel">Add Budget Item</h4>
+              <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'add_budget_item_page' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group row">
+                        {{form|crispy}}
+                    </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+
+          </div>
+        </div>
+    </div>
+
+{% endblock content%}

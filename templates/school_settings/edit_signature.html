@@ -1,0 +1,22 @@
+
+{% extends "../base.html" %}
+   {% block content %}
+   {% load crispy_forms_tags %}
+
+    <h2>Edit - {{signature.position}}</h2>
+
+    <div class="container">
+        
+        </div>
+        <form method="POST">
+             {% csrf_token %}
+             {{form|crispy}}
+
+            <input type ="submit" class="btn btn-primary btn-xs">
+           
+
+        </form>
+    </div>
+    
+
+{% endblock content %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block page_title %}Fees Reporting Help{% endblock page_title %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+    <div class="col-md-12 col-sm-12 col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-life-ring"></i> Fees Reporting Help</h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <div class="alert alert-info">
+                    Use this page as the quick guide for ledger exports, fee summaries, and student status handling.
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="x_panel">
+                            <div class="x_title">
+                                <h3>1. How Ledger Reports Are Generated</h3>
+                                <div class="clearfix"></div>
+                            </div>
+                            <div class="x_content">
+                                <p>Each exported ledger row represents one transaction.</p>
+                                <p>A charge row comes from a billed item. A payment row comes from a recorded payment.</p>
+                                <p>The term shown on a payment is taken from the bill being settled, not the payment date.</p>
+                                <p>Payment method is blank for charge rows and filled for payment rows.</p>
+
+                                <h4>Ledger export columns</h4>
+                                <ul>
+                                    {% for column in ledger_columns %}
+                                    <li>{{ column }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="x_panel">
+                            <div class="x_title">
+                                <h3>2. How Payment Summaries Are Produced</h3>
+                                <div class="clearfix"></div>
+                            </div>
+                            <div class="x_content">
+                                <p>The fees status page groups records by selected academic year, term, class, and payment status.</p>
+                                <p>Total fees come from billed items. Amount paid comes from recorded payments. Outstanding balances are the remaining debits after payments and credits are applied.</p>
+                                <p>Use the ledger when you need transaction-by-transaction reconciliation. Use the fees status page when you need totals and collection tracking.</p>
+
+                                <h4>Available filter groups</h4>
+                                <p><strong>Categories:</strong> {{ categories|join:", " }}</p>
+                                <p><strong>Payment methods:</strong> {{ payment_methods|join:", " }}</p>
+                                <p><strong>Other filters:</strong> classroom, class group, term, academic year, student, and custom date range.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="x_panel">
+                            <div class="x_title">
+                                <h3>3. How Student Status Is Managed</h3>
+                                <div class="clearfix"></div>
+                            </div>
+                            <div class="x_content">
+                                <p>Students should be marked <strong>Inactive</strong> when they leave. Their fee history and academic records stay in the system.</p>
+                                <p>If the student returns, reactivate the same record instead of creating a replacement record.</p>
+                                <p>Student deletion is blocked so historical payment records remain available for reconciliation and reporting.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="x_panel">
+                            <div class="x_title">
+                                <h3>4. Carrying Balances Forward</h3>
+                                <div class="clearfix"></div>
+                            </div>
+                            <div class="x_content">
+                                <p>Use Carry Forward Balances at the start of a new term to move unpaid balances from the previous term into the current term bill.</p>
+                                <p>The old bill receives a negative carried-forward adjustment. The new bill receives a matching Balance Brought Forward charge.</p>
+                                <p>This keeps arrears visible in the current term without losing the audit trail from the original term.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-right">
+                    <a href="{% url 'carry_forward_balances' %}" class="btn btn-warning">
+                        <i class="fa fa-arrow-circle-right"></i> Carry Forward
+                    </a>
+                    <a href="{% url 'fees_status' %}" class="btn btn-default">
+                        <i class="fa fa-bar-chart"></i> Fees Status
+                    </a>
+                    <a href="{% url 'payment_ledger' %}" class="btn btn-primary">
+                        <i class="fa fa-book"></i> Open Ledger
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

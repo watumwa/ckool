@@ -1,0 +1,22 @@
+{% extends "../base.html" %}
+   {% block content %}
+   {% load crispy_forms_tags %}
+
+   <h2>Edit - {{budget.academic_year}}</h2>
+    
+
+    <div class="container">
+        
+        </div>
+        <form method="POST">
+             {% csrf_token %}
+             {{form|crispy}}
+
+            <input type ="submit" class="btn btn-primary">
+           
+
+        </form>
+    </div>
+    
+
+{% endblock content %}

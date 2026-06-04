@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Quick Payment{% endblock %}
+
+{% block content %}
+<div class="ux-hero">
+  <h1><i class="fa fa-money"></i> Bursar Quick Payment</h1>
+  <p>Search learner by name, student ID, guardian or phone. Record payment without moving through many pages.</p>
+</div>
+
+<div class="x_panel">
+  <div class="x_title"><h2>1. Find learner</h2><div class="clearfix"></div></div>
+  <div class="x_content">
+    <form method="get" class="ux-toolbar">
+      <input type="text" name="q" class="form-control" style="max-width:520px" value="{{ query }}" placeholder="Learner name, student ID, guardian, phone" autofocus>
+      <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> Search</button>
+      <a href="{% url 'student_bill_page' %}" class="btn btn-default"><i class="fa fa-list"></i> All Bills</a>
+    </form>
+
+    {% if query and students %}
+      <div class="row">
+      {% for student in students %}
+        <div class="col-md-4 col-sm-6">
+          <div class="ux-student-card">
+            <h4>{{ student.student_name }}</h4>
+            <span class="ux-pill">{{ student.display_student_id }}</span>
+            <span class="ux-pill">{{ student.current_class.code|default:student.current_class.name }} {{ student.stream.stream|default:"" }}</span>
+            <p class="text-muted" style="margin-top:8px">Guardian: {{ student.guardian }} · {{ student.contact }}</p>
+            <a class="btn btn-sm btn-primary" href="{% url 'bursar_quick_payment' %}?student={{ student.id }}&q={{ query|urlencode }}">Select learner</a>
+          </div>
+        </div>
+      {% endfor %}
+      </div>
+    {% elif query %}
+      <div class="ux-empty">No learner found. Check spelling, student ID or guardian phone.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if selected_student %}
+<div class="row">
+  <div class="col-md-4">
+    <div class="x_panel">
+      <div class="x_title"><h2>2. Learner balance</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <h3>{{ selected_student.student_name }}</h3>
+        <p class="text-muted">{{ selected_student.display_student_id }} · {{ selected_student.current_class.code|default:selected_student.current_class.name }} {{ selected_student.stream.stream|default:"" }}</p>
+        <div class="ux-kpi-row" style="grid-template-columns:1fr">
+          <div class="ux-kpi info"><small>Total billed</small><strong>UGX {{ totals.total_billed|floatformat:0|intcomma }}</strong></div>
+          <div class="ux-kpi success"><small>Total paid</small><strong>UGX {{ totals.total_paid|floatformat:0|intcomma }}</strong></div>
+          <div class="ux-kpi danger"><small>Balance</small><strong>UGX {{ totals.balance|floatformat:0|intcomma }}</strong></div>
+        </div>
+        <a href="{% url 'student_details_page' selected_student.id %}" class="btn btn-default btn-sm">Open full profile</a>
+      </div>
+    </div>
+
+    <div class="x_panel">
+      <div class="x_title"><h2>Recent payments</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        {% for payment in recent_payments %}
+          <div class="d-flex justify-content-between align-items-start" style="gap:10px;border-bottom:1px solid #edf2f7;padding:8px 0;">
+            <div>
+              <strong>UGX {{ payment.amount|floatformat:0|intcomma }}</strong><br>
+              <small>{{ payment.payment_date }} · {{ payment.payment_method }} · {{ payment.reference_no }}</small>
+            </div>
+            <a href="{% url 'student_payment_receipt' payment.id %}" class="btn btn-xs btn-info" target="_blank" rel="noopener">Receipt</a>
+          </div>
+        {% empty %}
+          <div class="ux-empty">No payments yet for this learner.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="x_panel">
+      <div class="x_title"><h2>3. Select bill and record payment</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        {% if bills %}
+          <form method="get" class="ux-toolbar">
+            <input type="hidden" name="student" value="{{ selected_student.id }}">
+            <input type="hidden" name="q" value="{{ query }}">
+            <select name="bill" class="form-control" style="max-width:520px" onchange="this.form.submit()">
+              {% for bill in bills %}
+              <option value="{{ bill.id }}" {% if selected_bill and bill.id == selected_bill.id %}selected{% endif %}>
+                Bill #{{ bill.id }} · {{ bill.academic_class }} · Balance UGX {{ bill.balance|floatformat:0|intcomma }}
+              </option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-default" type="submit">Open bill</button>
+          </form>
+
+          {% if selected_bill %}
+            <div class="alert alert-info">
+              Selected Bill #{{ selected_bill.id }} · Total UGX {{ selected_bill.total_amount|floatformat:0|intcomma }} · Paid UGX {{ selected_bill.amount_paid|floatformat:0|intcomma }} · Balance <strong>UGX {{ selected_bill.balance|floatformat:0|intcomma }}</strong>
+            </div>
+            {% if not selected_bill_has_balance %}
+              <div class="ux-empty">This bill is fully paid. Select another bill or open the learner’s full bill page.</div>
+            {% else %}
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="bill" value="{{ selected_bill.id }}">
+                {{ payment_form|crispy }}
+                <button type="submit" class="btn btn-success btn-lg"><i class="fa fa-check"></i> Record Payment</button>
+                <a href="{% url 'student_bill_details_page' selected_bill.id %}" class="btn btn-default btn-lg">Open Receipt Page</a>
+              </form>
+            {% endif %}
+          {% endif %}
+        {% else %}
+          <div class="ux-empty">No bill found for this learner. Create a bill first before recording payment.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

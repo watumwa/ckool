@@ -1,0 +1,11 @@
+{% load crispy_forms_tags %}
+<form method="POST" enctype="multipart/form-data" action="{% url 'edit_student_page' student.id %}{% if is_modal %}?modal=1{% endif %}" id="editStudentFormModal">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <div class="d-flex justify-content-end gap-2 mt-2">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+            <i class="fa fa-save me-1"></i>Save Changes
+        </button>
+    </div>
+</form>

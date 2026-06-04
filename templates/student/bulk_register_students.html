@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <form method="POST">
+        {% csrf_token %}
+        <h3>Register Students</h3>
+
+        <h4>Unregistered Students:</h4>
+        {% if unregistered_students %}
+            <div class="table-responsive">
+                <table class="table table-striped jambo_table bulk_action">
+                    <thead>
+                        <tr class="headings">
+                            <!-- Master checkbox for select all functionality -->
+                            <th><input type="checkbox" id="select_all" onclick="toggleSelectAll(this)"></th>
+                            <th>Student Reg_no</th>
+                            <th>Name</th>
+                            <th>Class</th>
+                            <th>Stream</th>
+                            <th>Action</th>  <!-- New column for Edit button -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in unregistered_students %}
+                            <tr>
+                                <td><input type="checkbox" name="students" value="{{ student.id }}" class="student-checkbox"></td>
+                                <td>{{ student.reg_no }}</td>
+                                <td>{{ student.student_name }}</td>
+                                <td>{{ student.current_class.name }}</td>
+                                <td>{{ student.stream.stream }}</td>
+                                <td>
+                                    <!-- Edit Stream Button -->
+                                    <a href="" class="btn btn-primary">Edit Stream</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit" class="btn btn-primary">Register Selected Students</button>
+        {% else %}
+            <p>No unregistered students available.</p>
+        {% endif %}
+    </form>
+
+    <!-- JavaScript for select all functionality -->
+    <script>
+        function toggleSelectAll(source) {
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = source.checked;
+            });
+        }
+    </script>
+{% endblock %}

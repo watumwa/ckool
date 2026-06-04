@@ -1,0 +1,16 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="32" height="32" rx="8" fill="url(#paint0_linear_favicon)"/>
+<g clip-path="url(#clip0_favicon)">
+<path d="M16 6L22 14H19L16 10L13 14H10L16 6Z" fill="white"/>
+<path d="M11 20H21L19 14H13L11 20Z" fill="white"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_favicon" x1="29" y1="3" x2="3" y2="29" gradientUnits="userSpaceOnUse">
+<stop stop-color="#4680ff"/>
+<stop offset="1" stop-color="#2563eb"/>
+</linearGradient>
+<clipPath id="clip0_favicon">
+<rect width="18" height="18" fill="white" transform="translate(7 7)"/>
+</clipPath>
+</defs>
+</svg>

@@ -1,0 +1,208 @@
+<!-- <style>
+    /* Detailed Assessments Section */
+    .assessments-section {
+        margin-top: 1.5cm;
+        padding-top: 0.8cm;
+        border-top: 1px solid #e0e0e0;
+        break-inside: avoid;
+    }
+
+    .assessments-header {
+        display: inline-block;
+        padding: 0.3cm 0.8cm;
+        font-size: 0.9rem;
+        font-weight: 600;
+        background: #2c3e50;
+        color: #fff;
+        border-radius: 3px;
+        text-transform: uppercase;
+        margin-bottom: 0.8cm;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .assessments-header:hover {
+        background: #34495e;
+    }
+
+    .assessments-header i {
+        margin-right: 0.3cm;
+        transition: transform 0.3s;
+    }
+
+    .assessments-header.collapsed i {
+        transform: rotate(-90deg);
+    }
+
+    .assessments-content {
+        break-inside: avoid;
+    }
+
+    .subject-group {
+        margin-bottom: 1cm;
+        break-inside: avoid;
+    }
+
+    .subject-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5cm;
+    }
+
+    .subject-header h4 {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .subject-header .badge {
+        font-size: 0.7rem;
+        background: #e9ecef;
+        padding: 0.2cm 0.4cm;
+        border-radius: 3px;
+    }
+
+    .assessment-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.3cm;
+        background: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        border-radius: 3px;
+        margin-bottom: 0.3cm;
+        font-size: 0.75rem;
+    }
+
+    .assessment-item:nth-child(odd) {
+        background: #ffffff;
+    }
+
+    .assessment-details strong {
+        display: block;
+        color: #333;
+    }
+
+    .assessment-details small {
+        color: #555;
+    }
+
+    .assessment-details small .separator {
+        margin: 0 0.2cm;
+    }
+
+    .score-progress {
+        display: flex;
+        align-items: center;
+        gap: 0.3cm;
+    }
+
+    .score-progress span {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 1cm;
+        color: #555;
+        font-size: 0.8rem;
+        background: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        border-radius: 3px;
+    }
+
+    @media print {
+        .assessments-section {
+            border-top: none;
+        }
+        .assessments-header {
+            cursor: default;
+        }
+        .assessments-header:hover {
+            background: #2c3e50;
+        }
+        .assessments-header i {
+            display: none; /* Hide chevron in print */
+        }
+        .assessments-content {
+            display: block !important; /* Ensure content is visible in print */
+        }
+        .assessment-item {
+            break-inside: avoid;
+        }
+        .no-data i {
+            display: none; /* Hide decorative icons in print */
+        }
+    }
+
+    @media screen and (max-width: 768px) {
+        .assessments-section {
+            margin-top: 1cm;
+            padding-top: 0.5cm;
+        }
+        .assessments-header {
+            font-size: 0.8rem;
+            padding: 0.2cm 0.6cm;
+        }
+        .subject-header h4 {
+            font-size: 0.75rem;
+        }
+        .subject-header .badge {
+            font-size: 0.6rem;
+        }
+        .assessment-item {
+            font-size: 0.7rem;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.2cm;
+        }
+        .score-progress {
+            justify-content: flex-start;
+        }
+    }
+</style>
+
+<section class="assessments-section" aria-labelledby="assessments-heading">
+    <h3 class="assessments-header collapsed" id="assessments-heading" data-toggle="collapse" data-target="#assessments-content" aria-expanded="false" aria-controls="assessments-content">
+        <i class="fas fa-chevron-down mr-2"></i>Detailed Assessments
+    </h3>
+    <div id="assessments-content" class="assessments-content collapse" aria-labelledby="assessments-heading">
+        {% if assessments %}
+            {% regroup assessments by assessment.subject as subject_groups %}
+            {% for subject_group in subject_groups %}
+            <article class="subject-group">
+                <div class="subject-header">
+                    <h4><i class="fas fa-book mr-2"></i>{{ subject_group.grouper.name }}</h4>
+                    <span class="badge">{{ subject_group.list|length }} assessment{{ subject_group.list|pluralize }}</span>
+                </div>
+                {% for result in subject_group.list %}
+                <div class="assessment-item" aria-label="Assessment for {{ result.assessment.assessment_type.name }}">
+                    <div class="assessment-details">
+                        <strong>
+                            <i class="fas fa-{{ result.assessment.assessment_type.icon|default:'clipboard' }} mr-2"></i>
+                            {{ result.assessment.assessment_type.name }}
+                        </strong>
+                        <small>
+                            <i class="far fa-calendar mr-1"></i>{{ result.assessment.date|date:"M d, Y" }}
+                            <span class="separator">•</span>
+                            <i class="fas fa-weight-hanging mr-1"></i>{{ result.assessment.assessment_type.weight }}x weight
+                        </small>
+                    </div>
+                    <div class="score-progress">
+                        <span>{{ result.score }}%</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </article>
+            {% endfor %}
+        {% else %}
+        <div class="no-data">
+            <i class="fas fa-chart-pie fa-2x mb-2"></i>
+            <p>No assessment data available for the selected filter</p>
+        </div>
+        {% endif %}
+    </div>
+</section> -->

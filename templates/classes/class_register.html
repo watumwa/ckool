@@ -1,0 +1,79 @@
+{% load crispy_forms_tags %}
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+                <div class="x_content">
+
+                    <!-- Dropdown for Streams -->
+                    <div class="form-group row">
+                        <h4 class="control-label">Stream: </h4>
+                        <div class="col-md-3 col-sm-3 ">
+                            <select class="select2_single form-control" tabindex="-1">
+                                <option></option>
+                                {% for stream in class_streams %}
+                                <option>{{ stream }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Register Button -->
+                    <!-- <div class="form-group">
+                        <a href="{% url 'bulk_register_students' %}" class="btn btn-primary" style="color: white; font-weight: bold; border-radius: 5px; margin-bottom: 20px;">
+                            <i class="fa fa-plus"></i> Register New Students
+                        </a>
+                    </div> -->
+
+                    <!-- Start Student List -->
+                    <div class="table-responsive">
+                        <table id="datatable-checkbox" class="table table-striped table-bordered bulk_action" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th style="width: 1%">#</th>
+                                    <th>ID No.</th>
+                                    <th>Student Name</th>
+                                    <th>Gender</th>
+                                    <th>Stream</th>
+                                   <!-- <th>Action</th> -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for register in class_register %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ register.student.reg_no }}</td>
+                                    <td>
+                                        {% if register.student.photo %}
+                                        <img src="{{ register.student.photo.url }}" class="avatar" alt="Avatar">
+                                        {% endif %}
+                                        {{ register.student.student_name }}
+                                    </td>
+                                    <td>{{ register.student.gender }}</td>
+                                    <td>{{ register.academic_class_stream.stream }}</td>
+                                    <!-- <td>
+                                        <a href="" class="btn btn-primary btn-xs"><i class="fa fa-folder"></i></a>
+                                        <a href="#" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                                    </td> -->
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h4><center>No Student Registered for this Class</center></h4>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- End Student List -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

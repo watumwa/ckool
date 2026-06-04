@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block page_title %}Attendance Dashboard{% endblock page_title %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-calendar-check-o"></i> Teacher Attendance Dashboard</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <p class="text-muted">Lesson-based attendance for {{ today|date:"l, d M Y" }}.</p>
+
+        <div class="row" style="margin-bottom: 16px;">
+          <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="tile-stats" style="border-top: 3px solid #1f77b4;">
+              <div class="icon"><i class="fa fa-clock-o"></i></div>
+              <div class="count">{{ today_lessons_count }}</div>
+              <h3>Today's Lessons</h3>
+            </div>
+          </div>
+          <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="tile-stats" style="border-top: 3px solid #f39c12;">
+              <div class="icon"><i class="fa fa-hourglass-half"></i></div>
+              <div class="count">{{ pending_lessons_count }}</div>
+              <h3>Pending Attendance</h3>
+            </div>
+          </div>
+          <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="tile-stats" style="border-top: 3px solid #26b99a;">
+              <div class="icon"><i class="fa fa-check-square-o"></i></div>
+              <div class="count">{{ completed_lessons_count }}</div>
+              <h3>Completed Attendance</h3>
+            </div>
+          </div>
+          <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="tile-stats" style="border-top: 3px solid #2c3e50;">
+              <div class="icon"><i class="fa fa-line-chart"></i></div>
+              <div class="count">{{ attendance_rate }}%</div>
+              <h3>Attendance Rate</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="x_panel" style="margin-bottom:0;">
+          <div class="x_title">
+            <h2><i class="fa fa-table"></i> Today's Timetable</h2>
+            <div class="clearfix"></div>
+          </div>
+          <div class="x_content">
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Class</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in lesson_rows %}
+                  <tr>
+                    <td>{{ row.lesson.time_slot.start_time|time:"H:i" }} - {{ row.lesson.time_slot.end_time|time:"H:i" }}</td>
+                    <td>{{ row.lesson.class_stream }}</td>
+                    <td>{{ row.lesson.subject.name }}</td>
+                    <td><span class="label {{ row.status.css }}">{{ row.status.icon }} {{ row.status.label }}</span></td>
+                    <td>
+                      <a href="{{ row.action_url }}" class="btn btn-xs {{ row.action_css }}">{{ row.action_label }}</a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-muted text-center">No lessons scheduled for today.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top:10px;">
+              <a href="{% url 'teacher_timetable' %}" class="btn btn-default btn-sm">
+                <i class="fa fa-calendar"></i> Open My Timetable
+              </a>
+              <a href="{% url 'attendance_history' %}" class="btn btn-default btn-sm">
+                <i class="fa fa-history"></i> Attendance History
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

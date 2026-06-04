@@ -1,0 +1,577 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block page_title %}Student Fees Payment Status{% endblock page_title %}
+
+{% block content %}
+<div class="clearfix"></div>
+
+<div class="row">
+    <div class="col-md-12 col-sm-12 col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-chart-line"></i> Student Fees Payment Status</h2>
+                <ul class="nav navbar-right panel_toolbox">
+                    <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+                    <li><a class="close-link"><i class="fa fa-close"></i></a></li>
+                </ul>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <div class="comm-header">
+                    <div class="comm-intro">
+                        <div class="comm-title">Monitor student fee payments and outstanding balances for Term: {{ current_term.term }} {{ current_year.academic_year }}</div>
+                        <div class="text-muted">Track collection performance by class and student.</div>
+                    </div>
+                    <div class="comm-actions">
+                        <a href="{% url 'carry_forward_balances' %}" class="btn btn-warning">
+                            <i class="fa fa-arrow-circle-right"></i> Carry Forward
+                        </a>
+                        <a href="{% url 'payment_ledger' %}" class="btn btn-success">
+                            <i class="fa fa-book"></i> Open Ledger
+                        </a>
+                        <a href="{% url 'payment_ledger' %}?export=excel" class="btn btn-success">
+                            <i class="fa fa-file-excel-o"></i> Export Ledger Excel
+                        </a>
+                        <a href="{% url 'fees_help' %}" class="btn btn-default">
+                            <i class="fa fa-life-ring"></i> Help
+                        </a>
+                        <form method="get" action="{% url 'fees_status' %}" style="display: inline;">
+                            <input type="hidden" name="download_pdf" value="true">
+                            {% if class_filter %}<input type="hidden" name="academic_class"
+                                value="{{ class_filter }}">{% endif %}
+                            {% if year_filter %}<input type="hidden" name="year" value="{{ year_filter }}">{% endif %}
+                            {% if term_filter %}<input type="hidden" name="term" value="{{ term_filter }}">{% endif %}
+                            {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fa fa-file-pdf"></i> Download PDF
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="stat-label">Total Fees</div>
+                                        <div class="stat-value">UGX {{ total_fees|intcomma }}</div>
+                                        <div class="stat-note">{{ current_term.term }} {{ current_year.academic_year }}</div>
+                                    </div>
+                                    <div class="stat-icon primary"><i class="fa fa-calculator"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="stat-label">Total Paid</div>
+                                        <div class="stat-value">UGX {{ total_paid|intcomma }}</div>
+                                        <div class="stat-note">{{ student_fees_data|length }} students</div>
+                                    </div>
+                                    <div class="stat-icon success"><i class="fa fa-dollar-sign"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="stat-label">Outstanding</div>
+                                        <div class="stat-value">UGX {{ total_balance|intcomma }}</div>
+                                        <div class="stat-note">Pending payments</div>
+                                    </div>
+                                    <div class="stat-icon warning"><i class="fa fa-clock"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="stat-label">Collection Rate</div>
+                                        <div class="stat-value">{{ collection_rate|floatformat:1 }}%</div>
+                                        <div class="stat-note">Payment efficiency</div>
+                                    </div>
+                                    <div class="stat-icon info"><i class="fa fa-chart-pie"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card shadow-sm filter-card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fa fa-filter"></i> Filters & Search</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="get" action="{% url 'fees_status' %}" id="filterForm">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label for="academic_class" class="form-label fw-bold">
+                                                <i class="fa fa-graduation-cap text-primary me-1"></i>Class
+                                            </label>
+                                            <select name="academic_class" id="academic_class" class="form-control"
+                                                onchange="document.getElementById('filterForm').submit()">
+                                                <option value="">All Classes</option>
+                                                {% for academic_class in academic_classes %}
+                                                <option value="{{ academic_class.Class.id }}" {% if academic_class.Class.id|stringformat:"s" == academic_class_filter|stringformat:"s" %}selected{% endif %}>
+                                                    {{ academic_class.Class.name }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="year" class="form-label fw-bold">
+                                                <i class="fa fa-calendar text-success me-1"></i>Academic Year
+                                            </label>
+                                            <select name="year" id="year" class="form-control"
+                                                onchange="document.getElementById('filterForm').submit()">
+                                                <option value="">Current Year</option>
+                                                {% for y in academic_years %}
+                                                <option value="{{ y.id }}" {% if
+                                                    y.id|stringformat:"s"==year_filter|stringformat:"s" %}selected{%
+                                                    endif %}>{{ y.academic_year }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="term" class="form-label fw-bold">
+                                                <i class="fa fa-clock text-info me-1"></i>Term
+                                            </label>
+                                            <select name="term" id="term" class="form-control"
+                                                onchange="document.getElementById('filterForm').submit()">
+                                                <option value="">Current Term</option>
+                                                {% for term in terms %}
+                                                <option value="{{ term.id }}" {% if
+                                                    term.id|stringformat:"s"==term_filter|stringformat:"s" %}selected{%
+                                                    endif %}>
+                                                    {{ term.term }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fa fa-search text-warning me-1"></i>Quick Search
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="studentSearch"
+                                                    placeholder="Search students...">
+                                                <button class="btn btn-outline-secondary" type="button"
+                                                    onclick="clearSearch()">
+                                                    <i class="fa fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-3">
+                                            <label for="status" class="form-label fw-bold">
+                                                <i class="fa fa-tag text-danger me-1"></i>Payment Status
+                                            </label>
+                                            <select name="status" id="status" class="form-control"
+                                                onchange="document.getElementById('filterForm').submit()">
+                                                <option value="" {% if not status_filter %}selected{% endif %}>All Statuses</option>
+                                                <option value="outstanding" {% if status_filter == "outstanding" %}selected{% endif %}>Outstanding (DR)</option>
+                                                <option value="paid" {% if status_filter == "paid" %}selected{% endif %}>Paid</option>
+                                                <option value="partial" {% if status_filter == "partial" %}selected{% endif %}>Partial</option>
+                                                <option value="overdue" {% if status_filter == "overdue" %}selected{% endif %}>Overdue</option>
+                                                <option value="unpaid" {% if status_filter == "unpaid" %}selected{% endif %}>Unpaid</option>
+                                                <option value="overpaid" {% if status_filter == "overpaid" %}selected{% endif %}>Overpaid</option>
+                                                <option value="no_bill" {% if status_filter == "no_bill" %}selected{% endif %}>No Bill</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-9 text-end">
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                onclick="clearFilters()">
+                                                <i class="fa fa-refresh"></i> Clear All Filters
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fees Status Table -->
+                {% if student_fees_data %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-bordered datatable" id="feesTable">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th style="width: 5%">#</th>
+                                <th>Class</th>
+                                <th>Student</th>
+                                <th>Total Fees</th>
+                                <th>Amount Paid</th>
+                                <th>Balance</th>
+                                <th>Payment Status</th>
+                                <th style="width: 10%">Progress</th>
+                                <th style="width: 8%">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student_fee in student_fees_data %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ student_fee.academic_class.Class.name }}</strong>
+                                </td>
+                                <td>
+                                    <strong>{{ student_fee.student.student_name }}</strong>
+                                    <br><small class="text-muted">{{ student_fee.student.display_student_id }}</small>
+                                </td>
+                                <td>
+                                    <span class="text-primary font-weight-bold">UGX {{ student_fee.total_amount|intcomma }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-success font-weight-bold">UGX {{ student_fee.amount_paid|intcomma }}</span>
+                                </td>
+                                <td>
+                                    {% if student_fee.balance_label == "CR" %}
+                                    <span class="text-success font-weight-bold">
+                                        <i class="fa fa-plus-circle"></i> CR {{ student_fee.balance|intcomma }}
+                                    </span>
+                                    {% elif student_fee.balance_label == "DR" %}
+                                    <span class="text-danger font-weight-bold">
+                                        <i class="fa fa-minus-circle"></i> DR {{ student_fee.balance|intcomma }}
+                                    </span>
+                                    {% else %}
+                                    <span class="font-weight-bold">UGX {{ student_fee.balance|intcomma }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if student_fee.payment_status == "Paid" %}
+                                    <span class="badge bg-success">
+                                        <i class="fa fa-check-circle"></i> Paid
+                                    </span>
+                                    {% elif student_fee.payment_status == "Overpaid" %}
+                                    <span class="badge bg-info">
+                                        <i class="fa fa-plus-circle"></i> Overpaid
+                                    </span>
+                                    {% elif student_fee.payment_status == "Unpaid" %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fa fa-clock"></i> Unpaid
+                                    </span>
+                                    {% elif student_fee.payment_status == "Overdue" %}
+                                    <span class="badge bg-danger">
+                                        <i class="fa fa-exclamation-triangle"></i> Overdue
+                                    </span>
+                                    {% elif student_fee.payment_status == "Partial" %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fa fa-adjust"></i> Partial
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark">
+                                        <i class="fa fa-ban"></i> No Bill
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if student_fee.total_amount > 0 %}
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar
+                                                    {% if student_fee.amount_paid_percentage >= 100 %}bg-success{% elif student_fee.amount_paid_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                            role="progressbar" style="width: {{ student_fee.amount_paid_percentage }}%;"
+                                            aria-valuenow="{{ student_fee.amount_paid_percentage }}" aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{ student_fee.amount_paid_percentage|floatformat:0 }}%
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if student_fee.bill_id %}
+                                    <a href="{% url 'student_bill_details_page' student_fee.bill_id %}"
+                                        class="btn btn-info btn-sm" title="View Bill Details">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if student_fee.student_id %}
+                                    <a href="{% url 'student_fees_history' student_fee.student_id %}"
+                                        class="btn btn-primary btn-sm" title="View Complete Fees History">
+                                        <i class="fa fa-history"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-success btn-sm view-ledger-btn"
+                                        data-student-id="{{ student_fee.student_id }}"
+                                        data-student-name="{{ student_fee.student.student_name }}"
+                                        title="View Ledger">
+                                        <i class="fa fa-book"></i>
+                                    </button>
+                                    {% endif %}
+                                    {% if not student_fee.bill_id and not student_fee.student_id %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center">
+                    <div class="alert alert-info" role="alert">
+                        <i class="fa fa-info-circle fa-3x"></i>
+                        <h4>No Fee Records Found</h4>
+                        <p>No student fee records match your current filters. Try adjusting the filters or check if
+                            bills have been created for the selected period.</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<style>
+    .comm-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        background: #f8fafc;
+        border: 1px solid #e6edf5;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+    }
+
+    .comm-title {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 4px;
+    }
+
+    .comm-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e6edf5;
+        border-radius: 12px;
+        padding: 10px 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+    }
+
+    .stat-icon.primary {
+        background: #2563eb;
+    }
+
+    .stat-icon.success {
+        background: #22c55e;
+    }
+
+    .stat-icon.info {
+        background: #38bdf8;
+    }
+
+    .stat-icon.warning {
+        background: #f59e0b;
+    }
+
+    .stat-label {
+        font-size: 11px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        font-weight: 600;
+    }
+
+    .stat-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1f2a44;
+        line-height: 1.2;
+    }
+
+    .stat-note {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .filter-card {
+        border-radius: 12px;
+        border: 1px solid #e6edf5;
+    }
+
+    .filter-card .card-header {
+        background: #f8fafc;
+        border-bottom: 1px solid #e6edf5;
+    }
+
+    /* Print-friendly styles */
+    @media print {
+
+        /* Hide non-essential elements */
+        .no-print,
+        .x_panel,
+        .x_title,
+        .x_content,
+        .card,
+        .btn,
+        .progress,
+        .badge,
+        .fa,
+        .alert,
+        .form-group,
+        .input-group,
+        .nav,
+        .panel_toolbox {
+            display: none !important;
+        }
+
+        /* Show only the table container */
+        .table-responsive {
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        /* Clean table styling for print */
+        .table {
+            font-size: 10px;
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0;
+            visibility: visible !important;
+        }
+
+        .table th,
+        .table td {
+            padding: 4px !important;
+            border: 1px solid #000 !important;
+            text-align: left;
+            visibility: visible !important;
+        }
+
+        .table th {
+            background-color: #f8f9fa !important;
+            font-weight: bold;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .table tbody tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        /* Add print header */
+        body::before {
+            content: "Student Fees Payment Status Report";
+            display: block;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Ensure proper page layout */
+        body {
+            margin: 0;
+            padding: 20px;
+        }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem;
+        }
+
+        .table-responsive {
+            font-size: 0.875rem;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        // Initialize tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+
+        // Search functionality
+        $('#studentSearch').on('keyup', function () {
+            var value = $(this).val().toLowerCase();
+            $('#feesTable tbody tr').filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+    });
+
+    // Clear filters function
+    function clearFilters() {
+        document.getElementById('academic_class').value = '';
+        document.getElementById('year').value = '';
+        document.getElementById('term').value = '';
+        document.getElementById('status').value = '';
+        document.getElementById('filterForm').submit();
+    }
+
+    // Clear search function
+    function clearSearch() {
+        document.getElementById('studentSearch').value = '';
+        $('#feesTable tbody tr').show();
+    }
+
+    // View Ledger modal
+    $(document).on('click', '.view-ledger-btn', function(){
+        var studentId = $(this).data('student-id');
+        var studentName = $(this).data('student-name');
+        $('#ledgerModalContent').html('<div style="text-align:center;padding:40px;"><i class="fa fa-spinner fa-spin fa-2x"></i><p style="margin-top:12px;color:#64748b;">Loading ledger…</p></div>');
+        $('#ledgerModal').modal('show');
+        $.get('/student-ledger-modal/' + studentId + '/', function(html){
+            $('#ledgerModalContent').html(html);
+        }).fail(function(){
+            $('#ledgerModalContent').html('<div style="text-align:center;padding:40px;color:#dc2626;"><i class="fa fa-exclamation-triangle fa-2x"></i><p>Failed to load ledger.</p></div>');
+        });
+    });
+</script>
+
+<!-- Student Ledger Modal -->
+<div class="modal fade" id="ledgerModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document" style="max-width:860px;">
+    <div class="modal-content" style="border-radius:12px;overflow:hidden;border:none;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+      <div id="ledgerModalContent">
+        <!-- Loaded via AJAX -->
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

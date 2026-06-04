@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Grade Bands: {{ policy.name }}{% endblock page_title %}
+
+{% block content %}
+{% include 'secondary/_nav.html' %}
+
+<div class="row">
+  <div class="col-md-5">
+    <div class="x_panel">
+      <div class="x_title"><h2>Add Grade Band</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button type="submit" class="btn btn-primary">Save Band</button>
+          <a href="{% url 'secondary:policy_list' %}" class="btn btn-default">Back</a>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="x_panel">
+      <div class="x_title"><h2>Existing Bands</h2><div class="clearfix"></div></div>
+      <div class="x_content table-responsive">
+        <table class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>Grade</th>
+              <th>Descriptor</th>
+              <th>Min</th>
+              <th>Max</th>
+              <th>Order</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for band in bands %}
+            <tr>
+              <td>{{ band.grade }}</td>
+              <td>{{ band.descriptor }}</td>
+              <td>{{ band.min_score }}</td>
+              <td>{{ band.max_score }}</td>
+              <td>{{ band.display_order }}</td>
+              <td>
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="delete_band_id" value="{{ band.id }}">
+                  <button type="submit" class="btn btn-xs btn-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center">No grade bands configured.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

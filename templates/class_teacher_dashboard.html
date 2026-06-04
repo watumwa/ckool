@@ -1,0 +1,67 @@
+{% load static %}
+
+<ul class="nav side-menu">
+  <li>
+    <a href="{% url 'index_page' %}">
+      <i class="fa fa-dashboard"></i> Dashboard
+    </a>
+  </li>
+
+
+  <li>
+    <a href="{% url 'operations_center' %}">
+      <i class="fa fa-compass"></i> Task Center
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'academic_class_page' %}">
+      <i class="fa fa-users"></i> My Class
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'attendance_dashboard' %}">
+      <i class="fa fa-calendar-check-o"></i> Attendance
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'student_page' %}">
+      <i class="fa fa-user"></i> Student Profiles
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'message_inbox' %}">
+      <i class="fa fa-comments"></i> Parent Communication
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'class_bulk_reports' %}">
+      <i class="fa fa-file-text-o"></i> Report Cards
+    </a>
+  </li>
+
+  <li>
+    <a href="{% url 'class_stream_filter' %}">
+      <i class="fa fa-flag"></i> At-Risk Students
+    </a>
+  </li>
+
+  <li>
+    <a>
+      <i class="fa fa-bullhorn"></i> Announcements
+      {% if comm_unread_count > 0 %}
+      <span class="badge bg-green">{{ comm_unread_count }}</span>
+      {% endif %}
+      <span class="fa fa-chevron-down"></span>
+    </a>
+    <ul class="nav child_menu">
+      <li><a href="{% url 'announcement_list' %}">Announcements</a></li>
+      <li><a href="{% url 'event_list' %}">Events</a></li>
+      <li><a href="{% url 'message_inbox' %}">Messages</a></li>
+    </ul>
+  </li>
+</ul>

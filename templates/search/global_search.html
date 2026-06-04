@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block page_title %}Global Search{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-search"></i> Global Search</h2>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <form method="get" action="{% url 'global_search' %}" class="form-inline" style="width:100%;">
+          <div class="input-group" style="width:100%; max-width:760px;">
+            <input
+              type="text"
+              class="form-control"
+              name="q"
+              value="{{ query }}"
+              placeholder="Search students, staff, users, classes, streams, subjects"
+              autofocus
+            >
+            <span class="input-group-btn">
+              <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Search</button>
+            </span>
+          </div>
+        </form>
+        {% if has_query %}
+        <p class="text-muted" style="margin-top:10px;">
+          Results for <strong>"{{ query }}"</strong>: {{ total_results|intcomma }} matches.
+        </p>
+        {% else %}
+        <p class="text-muted" style="margin-top:10px;">
+          Enter a search term to find records across the system.
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if has_query %}
+<div class="row">
+  <div class="col-md-2 col-sm-4 col-xs-6">
+    <div class="x_panel"><div class="x_content text-center"><h4>{{ result_counts.students }}</h4><small>Students</small></div></div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-xs-6">
+    <div class="x_panel"><div class="x_content text-center"><h4>{{ result_counts.staff }}</h4><small>Staff</small></div></div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-xs-6">
+    <div class="x_panel"><div class="x_content text-center"><h4>{{ result_counts.users }}</h4><small>Users</small></div></div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-xs-6">
+    <div class="x_panel"><div class="x_content text-center"><h4>{{ result_counts.classes }}</h4><small>Classes</small></div></div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-xs-6">
+    <div class="x_panel"><div class="x_content text-center"><h4>{{ result_counts.academic_classes }}</h4><small>Academic Classes</small></div></div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-xs-6">
+    <div class="x_panel"><div class="x_content text-center"><h4>{{ result_counts.subjects }}</h4><small>Subjects</small></div></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title"><h2>Students</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead><tr><th>Name</th><th>Student ID</th><th>Class</th><th>Action</th></tr></thead>
+            <tbody>
+              {% for item in students %}
+              <tr>
+                <td>{{ item.student_name }}</td>
+                <td>{{ item.display_student_id }}</td>
+                <td>{{ item.current_class.code|default:item.current_class.name }}</td>
+                <td><a href="{% url 'student_details_page' item.id %}" class="btn btn-xs btn-primary">View</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted text-center">No student matches.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title"><h2>Staff</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead><tr><th>Name</th><th>Department</th><th>Email</th><th>Action</th></tr></thead>
+            <tbody>
+              {% for item in staff_members %}
+              <tr>
+                <td>{{ item.first_name }} {{ item.last_name }}</td>
+                <td>{{ item.department|default:"-" }}</td>
+                <td>{{ item.email|default:"-" }}</td>
+                <td><a href="{% url 'staff_details_page' item.id %}" class="btn btn-xs btn-primary">View</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted text-center">No staff matches.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title"><h2>Users</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              {% for item in users %}
+              <tr>
+                <td>{{ item.username }}</td>
+                <td>{{ item.role_name }}</td>
+                <td>{% if item.is_active %}Active{% else %}Inactive{% endif %}</td>
+                <td><a href="{% url 'user_detail' item.id %}" class="btn btn-xs btn-primary">View</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted text-center">No user matches.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title"><h2>Classes & Streams</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead><tr><th>Type</th><th>Name</th><th>Details</th><th>Action</th></tr></thead>
+            <tbody>
+              {% for item in classes %}
+              <tr>
+                <td>Class</td>
+                <td>{{ item.code }} - {{ item.name }}</td>
+                <td>{{ item.section.section_name|default:"-" }}</td>
+                <td><a href="{% url 'class_page' %}" class="btn btn-xs btn-primary">Open</a></td>
+              </tr>
+              {% endfor %}
+              {% for item in streams %}
+              <tr>
+                <td>Stream</td>
+                <td>{{ item.stream }}</td>
+                <td>-</td>
+                <td><a href="{% url 'stream_page' %}" class="btn btn-xs btn-primary">Open</a></td>
+              </tr>
+              {% endfor %}
+              {% if not classes and not streams %}
+              <tr><td colspan="4" class="text-muted text-center">No class or stream matches.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title"><h2>Academic Classes</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead><tr><th>Class</th><th>Term/Year</th><th>Section</th><th>Action</th></tr></thead>
+            <tbody>
+              {% for item in academic_classes %}
+              <tr>
+                <td>{{ item.Class.code }} - {{ item.Class.name }}</td>
+                <td>Term {{ item.term.term }} · {{ item.academic_year.academic_year }}</td>
+                <td>{{ item.section.section_name }}</td>
+                <td><a href="{% url 'academic_class_details_page' item.id %}" class="btn btn-xs btn-primary">View</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted text-center">No academic class matches.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="x_panel">
+      <div class="x_title"><h2>Subjects</h2><div class="clearfix"></div></div>
+      <div class="x_content">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead><tr><th>Subject</th><th>Section</th><th>Action</th></tr></thead>
+            <tbody>
+              {% for item in subjects %}
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.section.section_name|default:"-" }}</td>
+                <td><a href="{% url 'subjects_page' %}" class="btn btn-xs btn-primary">Open</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-muted text-center">No subject matches.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}Student Attendance Report{% endblock page_title %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2><i class="fa fa-user"></i> Student Attendance Report</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <!-- Filter Form -->
+        <form method="get" class="form-inline mb-3">
+          <div class="form-group mr-2">
+            <label for="student">Student:</label>
+            <select name="student" id="student" class="form-control ml-2" onchange="this.form.submit()">
+              <option value="">-- Select Student --</option>
+              {% for s in students %}
+              <option value="{{ s.id }}" {% if selected_student.id == s.id %}selected{% endif %}>
+                {{ s.student_name }} ({{ s.reg_no }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group mr-2">
+            <label for="date_from">From:</label>
+            <input type="date" name="date_from" id="date_from" class="form-control ml-2" 
+                   value="{{ date_from }}" onchange="this.form.submit()">
+          </div>
+          <div class="form-group mr-2">
+            <label for="date_to">To:</label>
+            <input type="date" name="date_to" id="date_to" class="form-control ml-2" 
+                   value="{{ date_to }}" onchange="this.form.submit()">
+          </div>
+        </form>
+
+        {% if selected_student %}
+        <!-- Student Info & Summary -->
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <div class="x_panel">
+              <div class="x_title">
+                <h3>{{ selected_student.student_name }} - Attendance Summary</h3>
+                <div class="clearfix"></div>
+              </div>
+              <div class="x_content">
+                <div class="row">
+                  <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="card text-white bg-aqua mb-3" style="border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                      <div class="card-body py-2 px-3">
+                        <h3 class="mb-0">{{ total }}</h3>
+                        <p class="mb-0 text-white-50 small">Total Sessions</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="card text-white bg-success mb-3" style="border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                      <div class="card-body py-2 px-3">
+                        <h3 class="mb-0">{{ present }}</h3>
+                        <p class="mb-0 text-white-50 small">Present</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="card text-white bg-danger mb-3" style="border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                      <div class="card-body py-2 px-3">
+                        <h3 class="mb-0">{{ absent }}</h3>
+                        <p class="mb-0 text-white-50 small">Absent</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="card text-white bg-warning mb-3" style="border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                      <div class="card-body py-2 px-3">
+                        <h3 class="mb-0">{{ late }}</h3>
+                        <p class="mb-0 text-white-50 small">Late</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="card text-white bg-secondary mb-3" style="border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                      <div class="card-body py-2 px-3">
+                        <h3 class="mb-0">{{ excused }}</h3>
+                        <p class="mb-0 text-white-50 small">Excused</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="card text-white mb-3 {% if attendance_percentage >= 75 %}bg-success{% else %}bg-danger{% endif %}" style="border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                      <div class="card-body py-2 px-3">
+                        <h3 class="mb-0">{{ attendance_percentage }}%</h3>
+                        <p class="mb-0 text-white-50 small">Attendance</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Records Table -->
+        {% if records %}
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Status</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rec in records %}
+              <tr>
+                <td>{{ rec.session.date }}</td>
+                <td>{{ rec.session.class_stream }}</td>
+                <td>{{ rec.session.subject }}</td>
+                <td>
+                  {% if rec.status == 'present' %}
+                  <span class="label label-success">Present</span>
+                  {% elif rec.status == 'absent' %}
+                  <span class="label label-danger">Absent</span>
+                  {% elif rec.status == 'late' %}
+                  <span class="label label-warning">Late</span>
+                  {% else %}
+                  <span class="label label-default">Excused</span>
+                  {% endif %}
+                </td>
+                <td>{{ rec.remarks|default:"-" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">No attendance records found for the selected period.</div>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-warning">Please select a student to view their attendance report.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

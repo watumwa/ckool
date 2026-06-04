@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">×</span>
+            </button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <div>
+                <h2 class="m-0 font-weight-bold text-primary">
+                    <i class="fa fa-filter mr-2"></i> Filter Students by Class Stream
+                </h2>
+                <small class="text-muted">Select Academic Year, Term, Class Stream and Assessment Type to view and print.</small>
+            </div>
+            <div>
+                <span class="badge badge-light" title="Pick filters then use the Print button to generate bulk mini reports.">
+                    <i class="fa fa-info-circle"></i>
+                </span>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="filter-toolbar sticky">
+                <form method="get" id="filterForm" class="form-row align-items-center">
+                <div class="col-md-3 mb-3">
+                    <label for="year_id">Academic Year</label>
+                    <select name="year_id" id="year_id" class="form-control" required>
+                        <option value="">-- Select Year --</option>
+                        {% for y in years %}
+                            <option value="{{ y.id }}" {% if y.id|stringformat:"s" == selected_year %}selected{% endif %}>
+                                {{ y.academic_year }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="term_id">Term</label>
+                    <select name="term_id" id="term_id" class="form-control">
+                        <option value="">-- Select Term --</option>
+                        {% for t in terms %}
+                            <option value="{{ t.id }}" {% if t.id|stringformat:"s" == selected_term %}selected{% endif %}>
+                                {{ t.term }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="class_stream_id">Class Stream</label>
+                    <select name="class_stream_id" id="class_stream_id" class="form-control" required>
+                        <option value="">-- Select Class Stream --</option>
+                        {% for cs in academic_class_streams %}
+                            <option value="{{ cs.id }}" {% if cs.id|stringformat:"s" == selected_class_stream %}selected{% endif %}>
+                                {{ cs.academic_class.Class.name }} - {{ cs.stream.stream }} ({{ cs.academic_class.academic_year.academic_year }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="assessment_type_id">Assessment Type</label>
+                    <select name="assessment_type_id" id="assessment_type_id" class="form-control">
+                        <option value="">-- Select Assessment Type --</option>
+                        {% for at in assessment_types %}
+                            <option value="{{ at.id }}" {% if at.id|stringformat:"s" == selected_assessment_type %}selected{% endif %}>
+                                {{ at.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-12 mb-2 d-flex justify-content-end">
+                    <a href="{% url 'class_stream_filter' %}" class="btn btn-light btn-sm">
+                        <i class="fa fa-undo mr-1"></i>Reset
+                    </a>
+                </div>
+
+
+                <!-- Hidden submit button for accessibility -->
+                <button type="submit" id="hiddenSubmit" style="display:none;">Filter</button>
+            </form>
+            </div>
+            </div>
+
+            <!-- Bulk mini-reports toolbar + selection chips -->
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+                <!-- Selection summary -->
+                <div class="d-flex flex-wrap gap-2">
+                    {% if selected_year %}
+                        <span class="badge badge-light border mr-1 mb-1">
+                            <i class="fa fa-calendar mr-1"></i> Year:
+                            {% for y in years %}{% if y.id|stringformat:"s" == selected_year %} {{ y.academic_year }} {% endif %}{% endfor %}
+                        </span>
+                    {% endif %}
+                    {% if selected_term %}
+                        <span class="badge badge-light border mr-1 mb-1">
+                            <i class="fa fa-flag mr-1"></i> Term:
+                            {% for t in terms %}{% if t.id|stringformat:"s" == selected_term %} {{ t.term }} {% endif %}{% endfor %}
+                        </span>
+                    {% endif %}
+                    {% if selected_class_stream %}
+                        <span class="badge badge-light border mr-1 mb-1">
+                            <i class="fa fa-stream mr-1"></i> Stream:
+                            {% for cs in academic_class_streams %}
+                                {% if cs.id|stringformat:"s" == selected_class_stream %}
+                                    {{ cs.academic_class.Class.name }} - {{ cs.stream.stream }} ({{ cs.academic_class.academic_year.academic_year }})
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                    {% endif %}
+                    {% if selected_assessment_type %}
+                        <span class="badge badge-info mr-1 mb-1">
+                            <i class="fa fa-list-alt mr-1"></i> Type:
+                            {% for at in assessment_types %}{% if at.id|stringformat:"s" == selected_assessment_type %} {{ at.name }} {% endif %}{% endfor %}
+                        </span>
+                    {% else %}
+                        <span class="badge badge-secondary mr-1 mb-1" title="Pick an Assessment Type above">
+                            <i class="fa fa-list-alt mr-1"></i> Type: Not selected
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex align-items-center">
+                    {% if bulk_year_id and bulk_term_id and bulk_class_id and selected_assessment_type %}
+                        <a href="{% url 'class_assessment_type_bulk_reports' %}?academic_year_id={{ bulk_year_id }}&term_id={{ bulk_term_id }}&class_id={{ bulk_class_id }}&assessment_type_id={{ selected_assessment_type }}"
+                           class="btn btn-info" target="_blank">
+                           <i class="fa fa-print"></i> Print Bulk Mini Reports
+                        </a>
+                    {% else %}
+                        <button class="btn btn-secondary" disabled
+                                title="{% if not bulk_year_id or not bulk_term_id or not bulk_class_id %}Select Academic Year, Term and Class Stream first{% else %}Select an Assessment Type to enable bulk mini-reports{% endif %}">
+                            <i class="fa fa-print"></i> Print Bulk Mini Reports
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <style>
+                .gap-2 { gap: 8px; }
+                .badge { font-size: 0.8rem; }
+                .badge.border { border: 1px solid #e5e7eb; }
+
+                .filter-toolbar.sticky {
+                    position: sticky;
+                    top: 0;
+                    z-index: 3;
+                    background: #fff;
+                    padding: 8px 8px 4px 8px;
+                    border-bottom: 1px solid #f0f2f5;
+                    border-radius: 6px;
+                }
+                .card-header .fa-info-circle { color: #6b7280; }
+
+                .table thead th {
+                    background: #2c3e50;
+                    color: #fff;
+                    text-transform: uppercase;
+                    letter-spacing: 0.03em;
+                    font-size: 12px;
+                    text-align: center;
+                }
+                .table tbody tr:hover {
+                    background: #f8fafc;
+                }
+                .btn-outline-primary, .btn-outline-info, .btn-outline-dark {
+                    border-width: 1px;
+                }
+                .btn-outline-secondary[disabled] {
+                    opacity: 0.6;
+                }
+                @media (max-width: 768px) {
+                    .form-row.align-items-center > [class^="col-"] { margin-bottom: 10px; }
+                }
+            </style>
+
+            {% if students %}
+            <div class="table-responsive mt-4">
+                <table id="datatable-checkbox" class="table table-striped table-bordered datatable" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Name</th>
+                            <th>Reg No</th>
+                            <th>Class</th>
+                            <th>Stream</th>
+                            <th>Year</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td class="text-center">
+                                {% if student.photo %}
+                                    <img src="{{ student.photo.url }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                    <img src="{% static 'img/default_profile.png' %}" class="rounded-circle" style="width: 40px; height: 40px;">
+                                {% endif %}
+                            </td>
+                            <td>{{ student.student_name }}</td>
+                            <td>{{ student.reg_no }}</td>
+                            <td>{{ student.current_class.name }}</td>
+                            <td>{{ student.stream.stream }}</td>
+                            <td>{{ student.academic_year.academic_year }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+                                    <a href="{% url 'student_performance' student.id %}" class="btn btn-outline-primary" title="View Performance">
+                                        <i class="fa fa-chart-line"></i>
+                                    </a>
+
+                                    {% if selected_assessment_type %}
+                                        <a href="{% url 'student_mini_report' student.id selected_assessment_type %}{% if selected_term %}?term_id={{ selected_term }}{% endif %}"
+                                           class="btn btn-outline-info" title="Mini Report (Selected Assessment Type)">
+                                            <i class="fa fa-file-alt"></i>
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-outline-secondary" disabled title="Select Assessment Type to enable Mini Report">
+                                            <i class="fa fa-file-alt"></i>
+                                        </button>
+                                    {% endif %}
+
+                                    {% if selected_term %}
+                                        <a href="{% url 'student_term_report' student.id %}?term_id={{ selected_term }}"
+                                           class="btn btn-outline-dark" title="Term Report">
+                                            <i class="fa fa-print"></i>
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-outline-secondary" disabled title="Select Term to enable Term Report">
+                                            <i class="fa fa-print"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% elif no_students_message %}
+                <div class="alert alert-warning mt-4">{{ no_students_message }}</div>
+            {% elif request.GET %}
+                <div class="alert alert-warning mt-4">No students found matching your criteria.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Destroy existing DataTable instance if it exists
+    if ($.fn.DataTable.isDataTable('#datatable-checkbox')) {
+        $('#datatable-checkbox').DataTable().destroy();
+    }
+
+    // Initialize DataTable
+    if ($.fn.DataTable) {
+        $('#datatable-checkbox').DataTable({
+            "pageLength": 25,
+            "responsive": true
+        });
+    }
+
+    // Auto-submit form on any selection change for a smoother UX
+    $('#filterForm select').on('change', function() {
+        $('#filterForm').submit();
+    });
+});
+</script>
+{% endblock %}
